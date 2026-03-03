@@ -20,9 +20,14 @@
 
 **Requirements:** BUG-01, BUG-02
 
+**Plans:** 1 plan
+
+Plans:
+- [ ] 01-01-PLAN.md -- Fix LEAD_FIELD_MAP + calificacion routing + isDeal source-based detection
+
 **Success Criteria:**
 1. All qualification fields (Toques de Contactacion, En que toque va, BANT fields) are mapped in LEAD_FIELD_MAP and persist correctly when saving a lead
-2. saveLeadChanges() correctly determines isDeal based on the item's _source property, not the user's role — an AE viewing a cross_lead saves to fact_leads, not fact_deals
+2. saveLeadChanges() correctly determines isDeal based on the item's _source property, not the user's role -- an AE viewing a cross_lead saves to fact_leads, not fact_deals
 
 ### Phase 2: Backend Analytics Engine
 
@@ -52,10 +57,10 @@
 ## Dependencies
 
 ```
-Phase 1 (Bugs) → Phase 2 (Analytics Backend) → Phase 3 (Frontend UI)
+Phase 1 (Bugs) -> Phase 2 (Analytics Backend) -> Phase 3 (Frontend UI)
 ```
 
-All phases are sequential — each depends on the previous.
+All phases are sequential -- each depends on the previous.
 
 ---
 *Roadmap created: 2026-03-03*
