@@ -480,20 +480,237 @@ function calculateIncontactables_(currentLeads, previousLeads, calificacionIdx) 
   };
 }
 
-function calculateCrossSelling_() {
-  return {};
+/**
+ * Calculate Cross Selling section: deals with tipo_transaccion = 'Cross-sell'.
+ * @param {Array} currentLeads - Current period leads
+ * @param {Array} previousLeads - Previous period leads
+ * @param {Object} calificacionIdx - Index of { id_lead: calificacion_row }
+ * @param {Array} deals - All deal records
+ * @return {Object} { crossSellDeals: { total, manufacturers, individuals } }
+ */
+function calculateCrossSelling_(currentLeads, previousLeads, calificacionIdx, deals) {
+  // Build deal proxies that carry segment info from their lead
+  var buildDealProxiesForCrossSell_ = function(leadsSubset) {
+    // Build explicit leadIds set
+    var leadIds = {};
+    for (var i = 0; i < leadsSubset.length; i++) {
+      leadIds[String(leadsSubset[i].id_lead)] = true;
+    }
+
+    var proxies = [];
+    for (var j = 0; j < deals.length; j++) {
+      var deal = deals[j];
+      var dealLeadId = String(deal.id_lead || '');
+      var tipoTransaccion = String(deal.tipo_transaccion || '').trim();
+
+      // Filter: id_lead in set AND tipo_transaccion === 'Cross-sell'
+      if (leadIds[dealLeadId] === true && tipoTransaccion === 'Cross-sell') {
+        // Proxy carries id_lead for segment lookup
+        proxies.push({
+          id_lead: deal.id_lead,
+          _deal: deal
+        });
+      }
+    }
+    return proxies;
+  };
+
+  var currentProxies = buildDealProxiesForCrossSell_(currentLeads);
+  var previousProxies = buildDealProxiesForCrossSell_(previousLeads);
+
+  var crossSellDeals = buildSegmentedMetricWithDelta_(currentProxies, previousProxies, calificacionIdx, function(proxy) {
+    return true; // Count all proxies (already filtered to Cross-sell)
+  });
+
+  return {
+    crossSellDeals: crossSellDeals
+  };
 }
 
-function calculateSemaforoContesto_() {
-  return {};
+/**
+ * Calculate Semaforo Contesto section: grid of channel x toque with resultado = 'Contesto'.
+ * @param {Array} currentLeads - Current period leads
+ * @param {Array} previousLeads - Previous period leads
+ * @param {Object} calificacionIdx - Index of { id_lead: calificacion_row }
+ * @param {Object} interaccionesIdx - Index of { id_lead: [interactions] }
+ * @return {Object} Nested grid: { telefono: {toque1, toque2, toque3}, whatsapp: {...}, correo: {toque1-4} }
+ */
+function calculateSemaforoContesto_(currentLeads, previousLeads, calificacionIdx, interaccionesIdx) {
+  // Performance optimization: build per-lead interaction summary once for current period
+  var buildLeadSummaries_ = function(leads) {
+    var leadSummaries = {};
+    for (var i = 0; i < leads.length; i++) {
+      var lid = String(leads[i].id_lead);
+      var inters = interaccionesIdx[lid] || [];
+      leadSummaries[lid] = {};
+      for (var j = 0; j < inters.length; j++) {
+        var key = inters[j].tipo_interaccion + '_' + inters[j].numero_toque + '_' + inters[j].resultado;
+        leadSummaries[lid][key] = true;
+      }
+    }
+    return leadSummaries;
+  };
+
+  var currentSummaries = buildLeadSummaries_(currentLeads);
+  var previousSummaries = buildLeadSummaries_(previousLeads);
+
+  // Helper to create metric function for a specific channel+toque+resultado
+  var createMetricFn = function(channel, toque, resultado) {
+    return function(lead) {
+      var lid = String(lead.id_lead);
+      var summaries = (currentLeads.indexOf(lead) >= 0) ? currentSummaries : previousSummaries;
+      var key = channel + '_' + toque + '_' + resultado;
+      return summaries[lid] && summaries[lid][key] === true;
+    };
+  };
+
+  // Build all cells
+  var result = {
+    telefono: {},
+    whatsapp: {},
+    correo: {}
+  };
+
+  // Telefono: toques 1, 2, 3
+  for (var t = 1; t <= 3; t++) {
+    var toqueKey = 'toque' + t;
+    result.telefono[toqueKey] = buildSegmentedMetricWithDelta_(
+      currentLeads,
+      previousLeads,
+      calificacionIdx,
+      createMetricFn('Telefono', t, 'Contesto')
+    );
+  }
+
+  // WhatsApp: toques 1, 2, 3
+  for (var w = 1; w <= 3; w++) {
+    var toqueKeyW = 'toque' + w;
+    result.whatsapp[toqueKeyW] = buildSegmentedMetricWithDelta_(
+      currentLeads,
+      previousLeads,
+      calificacionIdx,
+      createMetricFn('WhatsApp', w, 'Contesto')
+    );
+  }
+
+  // Correo: toques 1, 2, 3, 4
+  for (var c = 1; c <= 4; c++) {
+    var toqueKeyC = 'toque' + c;
+    result.correo[toqueKeyC] = buildSegmentedMetricWithDelta_(
+      currentLeads,
+      previousLeads,
+      calificacionIdx,
+      createMetricFn('Correo', c, 'Contesto')
+    );
+  }
+
+  return result;
 }
 
-function calculateSemaforoNoContesto_() {
-  return {};
+/**
+ * Calculate Semaforo No Contesto section: grid of channel x toque with resultado = 'No Contesto'.
+ * Only Telefono and WhatsApp (Correo excluded).
+ * @param {Array} currentLeads - Current period leads
+ * @param {Array} previousLeads - Previous period leads
+ * @param {Object} calificacionIdx - Index of { id_lead: calificacion_row }
+ * @param {Object} interaccionesIdx - Index of { id_lead: [interactions] }
+ * @return {Object} Nested grid: { telefono: {toque1, toque2, toque3}, whatsapp: {...} }
+ */
+function calculateSemaforoNoContesto_(currentLeads, previousLeads, calificacionIdx, interaccionesIdx) {
+  // Performance optimization: build per-lead interaction summary once
+  var buildLeadSummaries_ = function(leads) {
+    var leadSummaries = {};
+    for (var i = 0; i < leads.length; i++) {
+      var lid = String(leads[i].id_lead);
+      var inters = interaccionesIdx[lid] || [];
+      leadSummaries[lid] = {};
+      for (var j = 0; j < inters.length; j++) {
+        var key = inters[j].tipo_interaccion + '_' + inters[j].numero_toque + '_' + inters[j].resultado;
+        leadSummaries[lid][key] = true;
+      }
+    }
+    return leadSummaries;
+  };
+
+  var currentSummaries = buildLeadSummaries_(currentLeads);
+  var previousSummaries = buildLeadSummaries_(previousLeads);
+
+  // Helper to create metric function for a specific channel+toque+resultado
+  var createMetricFn = function(channel, toque, resultado) {
+    return function(lead) {
+      var lid = String(lead.id_lead);
+      var summaries = (currentLeads.indexOf(lead) >= 0) ? currentSummaries : previousSummaries;
+      var key = channel + '_' + toque + '_' + resultado;
+      return summaries[lid] && summaries[lid][key] === true;
+    };
+  };
+
+  // Build all cells (Telefono + WhatsApp only, no Correo)
+  var result = {
+    telefono: {},
+    whatsapp: {}
+  };
+
+  // Telefono: toques 1, 2, 3
+  for (var t = 1; t <= 3; t++) {
+    var toqueKey = 'toque' + t;
+    result.telefono[toqueKey] = buildSegmentedMetricWithDelta_(
+      currentLeads,
+      previousLeads,
+      calificacionIdx,
+      createMetricFn('Telefono', t, 'No Contesto')
+    );
+  }
+
+  // WhatsApp: toques 1, 2, 3
+  for (var w = 1; w <= 3; w++) {
+    var toqueKeyW = 'toque' + w;
+    result.whatsapp[toqueKeyW] = buildSegmentedMetricWithDelta_(
+      currentLeads,
+      previousLeads,
+      calificacionIdx,
+      createMetricFn('WhatsApp', w, 'No Contesto')
+    );
+  }
+
+  return result;
 }
 
-function calculateSinRespuesta6toToque_() {
-  return {};
+/**
+ * Calculate Sin Respuesta 6to Toque: leads with 6+ toques and no 'Contesto' interaction.
+ * @param {Array} currentLeads - Current period leads
+ * @param {Array} previousLeads - Previous period leads
+ * @param {Object} calificacionIdx - Index of { id_lead: calificacion_row }
+ * @param {Object} interaccionesIdx - Index of { id_lead: [interactions] }
+ * @return {Object} { sinRespuesta: { total, manufacturers, individuals } }
+ */
+function calculateSinRespuesta6toToque_(currentLeads, previousLeads, calificacionIdx, interaccionesIdx) {
+  var metricFn = function(lead) {
+    var idLead = String(lead.id_lead || '');
+    var interactions = interaccionesIdx[idLead] || [];
+
+    // Check condition 1: 6+ toques (use interaction count OR numero_toques field)
+    var toqueCount = interactions.length;
+    var numeroToquesField = Number(lead.numero_toques);
+    var has6PlusToques = toqueCount >= 6 || (!isNaN(numeroToquesField) && numeroToquesField >= 6);
+
+    if (!has6PlusToques) return false;
+
+    // Check condition 2: No 'Contesto' interaction
+    for (var i = 0; i < interactions.length; i++) {
+      if (String(interactions[i].resultado || '').trim() === 'Contesto') {
+        return false; // Has at least one Contesto, so doesn't qualify
+      }
+    }
+
+    return true; // Has 6+ toques AND no Contesto
+  };
+
+  var sinRespuesta = buildSegmentedMetricWithDelta_(currentLeads, previousLeads, calificacionIdx, metricFn);
+
+  return {
+    sinRespuesta: sinRespuesta
+  };
 }
 
 /**
@@ -752,10 +969,10 @@ function getSDRReport(dateIn, dateOut) {
     // Call section calculators
     var embudoGeneral = calculateEmbudoGeneral_(currentLeads, previousLeads, allLeads, contactosIdx, interaccionesIdx, calificacionIdx, allDeals, dateIn, dateOut, prevDateIn, prevDateOut);
     var incontactables = calculateIncontactables_(currentLeads, previousLeads, calificacionIdx);
-    var crossSelling = calculateCrossSelling_();
-    var semaforoContesto = calculateSemaforoContesto_();
-    var semaforoNoContesto = calculateSemaforoNoContesto_();
-    var sinRespuesta6toToque = calculateSinRespuesta6toToque_();
+    var crossSelling = calculateCrossSelling_(currentLeads, previousLeads, calificacionIdx, allDeals);
+    var semaforoContesto = calculateSemaforoContesto_(currentLeads, previousLeads, calificacionIdx, interaccionesIdx);
+    var semaforoNoContesto = calculateSemaforoNoContesto_(currentLeads, previousLeads, calificacionIdx, interaccionesIdx);
+    var sinRespuesta6toToque = calculateSinRespuesta6toToque_(currentLeads, previousLeads, calificacionIdx, interaccionesIdx);
     var razonesNoPasoVentas = calculateRazonesNoPasoVentas_(currentLeads, previousLeads, calificacionIdx);
     var razonesPerdioVenta = calculateRazonesPerdioVenta_(currentLeads, previousLeads, calificacionIdx, allDeals);
 
@@ -938,6 +1155,37 @@ function testSDRReport_() {
     isValid = false;
   }
 
+
+  // Validate Cross Selling
+  if (result.crossSelling && typeof result.crossSelling === 'object') {
+    if (!result.crossSelling.crossSellDeals) {
+      errors.push('crossSelling missing crossSellDeals');
+      isValid = false;
+    }
+  }
+
+  // Validate Semaforo Contesto structure
+  if (result.semaforoContesto && typeof result.semaforoContesto === 'object') {
+    if (!result.semaforoContesto.telefono) errors.push('semaforoContesto missing telefono');
+    if (!result.semaforoContesto.whatsapp) errors.push('semaforoContesto missing whatsapp');
+    if (!result.semaforoContesto.correo) errors.push('semaforoContesto missing correo');
+  }
+
+  // Validate Semaforo No Contesto structure
+  if (result.semaforoNoContesto && typeof result.semaforoNoContesto === 'object') {
+    if (!result.semaforoNoContesto.telefono) errors.push('semaforoNoContesto missing telefono');
+    if (!result.semaforoNoContesto.whatsapp) errors.push('semaforoNoContesto missing whatsapp');
+    if (result.semaforoNoContesto.correo) errors.push('semaforoNoContesto should NOT have correo');
+  }
+
+  // Validate Sin Respuesta 6to Toque
+  if (result.sinRespuesta6toToque && typeof result.sinRespuesta6toToque === 'object') {
+    if (!result.sinRespuesta6toToque.sinRespuesta) {
+      errors.push('sinRespuesta6toToque missing sinRespuesta');
+      isValid = false;
+    }
+  }
+
   // Log summary with sample values
   Logger.log('Total leads: ' + (result.metadata ? result.metadata.totalLeads : 'N/A'));
   Logger.log('Non-empty sections: ' + nonEmptySections + '/' + sections.length);
@@ -967,6 +1215,13 @@ function testSDRReport_() {
   }
   if (result.razonesPerdioVenta && result.razonesPerdioVenta._totalPerdidas) {
     Logger.log('Sample - razonesPerdioVenta._totalPerdidas.total.count: ' + result.razonesPerdioVenta._totalPerdidas.total.count);
+  }
+
+  if (result.semaforoContesto && result.semaforoContesto.telefono && result.semaforoContesto.telefono.toque1) {
+    Logger.log('Sample - semaforoContesto.telefono.toque1.total.count: ' + result.semaforoContesto.telefono.toque1.total.count);
+  }
+  if (result.sinRespuesta6toToque && result.sinRespuesta6toToque.sinRespuesta) {
+    Logger.log('Sample - sinRespuesta6toToque.sinRespuesta.total.count: ' + result.sinRespuesta6toToque.sinRespuesta.total.count);
   }
 
   if (errors.length > 0) {
