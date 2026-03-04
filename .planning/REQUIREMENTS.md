@@ -7,8 +7,8 @@
 
 ### Bug Fixes & Stabilization
 
-- [ ] **BUG-01**: LEAD_FIELD_MAP debe incluir campos de calificacion faltantes (Toques de Contactacion, En que toque va, campos BANT)
-- [ ] **BUG-02**: saveLeadChanges() debe detectar si el item es deal o lead por _source, no asumir por userRole
+- [x] **BUG-01**: LEAD_FIELD_MAP debe incluir campos de calificacion faltantes (Toques de Contactacion, En que toque va, campos BANT)
+- [x] **BUG-02**: saveLeadChanges() debe detectar si el item es deal o lead por _source, no asumir por userRole
 
 ### Backend Analytics
 
@@ -63,8 +63,8 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| BUG-01 | Phase 1 | Pending |
-| BUG-02 | Phase 1 | Pending |
+| BUG-01 | Phase 1 | Complete |
+| BUG-02 | Phase 1 | Complete |
 | ANLYT-01 | Phase 2 | Pending |
 | ANLYT-02 | Phase 2 | Pending |
 | ANLYT-03 | Phase 2 | Pending |
