@@ -437,8 +437,350 @@
             <h3 class="chart-title">{{ section.label }}</h3>
           </div>
           <div v-show="openSections.includes(section.id)" class="section-body">
-            <!-- Table content will be added in Plans 02 and 03 -->
-            <p v-if="!section.component" style="color: var(--text-muted); padding: 1rem;">Seccion en construccion...</p>
+            <!-- Embudo General Table -->
+            <div v-if="section.id === 'embudoGeneral'" class="report-table-wrapper">
+              <table class="report-table">
+                <thead>
+                  <tr>
+                    <th rowspan="2" style="min-width:160px;">Metrica</th>
+                    <th colspan="3" class="col-group-header">Total</th>
+                    <th colspan="3" class="col-group-header">Manufacturers</th>
+                    <th colspan="3" class="col-group-header">Individuals</th>
+                  </tr>
+                  <tr>
+                    <th>Cant</th>
+                    <th>%</th>
+                    <th data-tooltip="Cambio porcentual vs periodo anterior">Delta%</th>
+                    <th>Cant</th>
+                    <th>%</th>
+                    <th data-tooltip="Cambio porcentual vs periodo anterior">Delta%</th>
+                    <th>Cant</th>
+                    <th>%</th>
+                    <th data-tooltip="Cambio porcentual vs periodo anterior">Delta%</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="row in embudoRows" :key="row.label">
+                    <td class="col-metric">{{ row.label }}</td>
+                    <!-- Total segment -->
+                    <template v-if="row.type === 'amount'">
+                      <td class="col-count">{{ formatAmount(getSegmentValue(row.metric, 'total').amount) }}</td>
+                      <td class="col-percentage"><span class="percentage-value">--</span></td>
+                    </template>
+                    <template v-else>
+                      <td class="col-count">{{ getSegmentValue(row.metric, 'total').count }}</td>
+                      <td class="col-percentage">
+                        <div class="percentage-cell">
+                          <div class="percentage-bar" :style="{ width: getSegmentValue(row.metric, 'total').pct + '%', background: 'var(--accent-primary)' }"></div>
+                          <span class="percentage-value">{{ getSegmentValue(row.metric, 'total').pct }}%</span>
+                        </div>
+                      </td>
+                    </template>
+                    <td class="col-delta">
+                      <span v-if="Number(getSegmentValue(row.metric, 'total').delta) > 0" class="delta-positive">
+                        <span class="material-symbols-outlined">arrow_upward</span>
+                        +{{ getSegmentValue(row.metric, 'total').delta }}%
+                      </span>
+                      <span v-else-if="Number(getSegmentValue(row.metric, 'total').delta) < 0" class="delta-negative">
+                        <span class="material-symbols-outlined">arrow_downward</span>
+                        {{ getSegmentValue(row.metric, 'total').delta }}%
+                      </span>
+                      <span v-else class="delta-neutral">
+                        <span class="material-symbols-outlined">remove</span>
+                        0%
+                      </span>
+                    </td>
+                    <!-- Manufacturers segment -->
+                    <template v-if="row.type === 'amount'">
+                      <td class="col-count">{{ formatAmount(getSegmentValue(row.metric, 'manufacturers').amount) }}</td>
+                      <td class="col-percentage"><span class="percentage-value">--</span></td>
+                    </template>
+                    <template v-else>
+                      <td class="col-count">{{ getSegmentValue(row.metric, 'manufacturers').count }}</td>
+                      <td class="col-percentage">
+                        <div class="percentage-cell">
+                          <div class="percentage-bar" :style="{ width: getSegmentValue(row.metric, 'manufacturers').pct + '%', background: 'var(--accent-info)' }"></div>
+                          <span class="percentage-value">{{ getSegmentValue(row.metric, 'manufacturers').pct }}%</span>
+                        </div>
+                      </td>
+                    </template>
+                    <td class="col-delta">
+                      <span v-if="Number(getSegmentValue(row.metric, 'manufacturers').delta) > 0" class="delta-positive">
+                        <span class="material-symbols-outlined">arrow_upward</span>
+                        +{{ getSegmentValue(row.metric, 'manufacturers').delta }}%
+                      </span>
+                      <span v-else-if="Number(getSegmentValue(row.metric, 'manufacturers').delta) < 0" class="delta-negative">
+                        <span class="material-symbols-outlined">arrow_downward</span>
+                        {{ getSegmentValue(row.metric, 'manufacturers').delta }}%
+                      </span>
+                      <span v-else class="delta-neutral">
+                        <span class="material-symbols-outlined">remove</span>
+                        0%
+                      </span>
+                    </td>
+                    <!-- Individuals segment -->
+                    <template v-if="row.type === 'amount'">
+                      <td class="col-count">{{ formatAmount(getSegmentValue(row.metric, 'individuals').amount) }}</td>
+                      <td class="col-percentage"><span class="percentage-value">--</span></td>
+                    </template>
+                    <template v-else>
+                      <td class="col-count">{{ getSegmentValue(row.metric, 'individuals').count }}</td>
+                      <td class="col-percentage">
+                        <div class="percentage-cell">
+                          <div class="percentage-bar" :style="{ width: getSegmentValue(row.metric, 'individuals').pct + '%', background: 'var(--accent-warning)' }"></div>
+                          <span class="percentage-value">{{ getSegmentValue(row.metric, 'individuals').pct }}%</span>
+                        </div>
+                      </td>
+                    </template>
+                    <td class="col-delta">
+                      <span v-if="Number(getSegmentValue(row.metric, 'individuals').delta) > 0" class="delta-positive">
+                        <span class="material-symbols-outlined">arrow_upward</span>
+                        +{{ getSegmentValue(row.metric, 'individuals').delta }}%
+                      </span>
+                      <span v-else-if="Number(getSegmentValue(row.metric, 'individuals').delta) < 0" class="delta-negative">
+                        <span class="material-symbols-outlined">arrow_downward</span>
+                        {{ getSegmentValue(row.metric, 'individuals').delta }}%
+                      </span>
+                      <span v-else class="delta-neutral">
+                        <span class="material-symbols-outlined">remove</span>
+                        0%
+                      </span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Incontactables Table -->
+            <div v-else-if="section.id === 'incontactables'" class="report-table-wrapper">
+              <table class="report-table">
+                <thead>
+                  <tr>
+                    <th rowspan="2" style="min-width:160px;">Metrica</th>
+                    <th colspan="3" class="col-group-header">Total</th>
+                    <th colspan="3" class="col-group-header">Manufacturers</th>
+                    <th colspan="3" class="col-group-header">Individuals</th>
+                  </tr>
+                  <tr>
+                    <th>Cant</th>
+                    <th>%</th>
+                    <th data-tooltip="Cambio porcentual vs periodo anterior">Delta%</th>
+                    <th>Cant</th>
+                    <th>%</th>
+                    <th data-tooltip="Cambio porcentual vs periodo anterior">Delta%</th>
+                    <th>Cant</th>
+                    <th>%</th>
+                    <th data-tooltip="Cambio porcentual vs periodo anterior">Delta%</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="row in incontactablesRows" :key="row.label">
+                    <td class="col-metric">{{ row.label }}</td>
+                    <!-- Total segment -->
+                    <template v-if="row.type === 'amount'">
+                      <td class="col-count">{{ formatAmount(getSegmentValue(row.metric, 'total').amount) }}</td>
+                      <td class="col-percentage"><span class="percentage-value">--</span></td>
+                    </template>
+                    <template v-else>
+                      <td class="col-count">{{ getSegmentValue(row.metric, 'total').count }}</td>
+                      <td class="col-percentage">
+                        <div class="percentage-cell">
+                          <div class="percentage-bar" :style="{ width: getSegmentValue(row.metric, 'total').pct + '%', background: 'var(--accent-primary)' }"></div>
+                          <span class="percentage-value">{{ getSegmentValue(row.metric, 'total').pct }}%</span>
+                        </div>
+                      </td>
+                    </template>
+                    <td class="col-delta">
+                      <span v-if="Number(getSegmentValue(row.metric, 'total').delta) > 0" class="delta-positive">
+                        <span class="material-symbols-outlined">arrow_upward</span>
+                        +{{ getSegmentValue(row.metric, 'total').delta }}%
+                      </span>
+                      <span v-else-if="Number(getSegmentValue(row.metric, 'total').delta) < 0" class="delta-negative">
+                        <span class="material-symbols-outlined">arrow_downward</span>
+                        {{ getSegmentValue(row.metric, 'total').delta }}%
+                      </span>
+                      <span v-else class="delta-neutral">
+                        <span class="material-symbols-outlined">remove</span>
+                        0%
+                      </span>
+                    </td>
+                    <!-- Manufacturers segment -->
+                    <template v-if="row.type === 'amount'">
+                      <td class="col-count">{{ formatAmount(getSegmentValue(row.metric, 'manufacturers').amount) }}</td>
+                      <td class="col-percentage"><span class="percentage-value">--</span></td>
+                    </template>
+                    <template v-else>
+                      <td class="col-count">{{ getSegmentValue(row.metric, 'manufacturers').count }}</td>
+                      <td class="col-percentage">
+                        <div class="percentage-cell">
+                          <div class="percentage-bar" :style="{ width: getSegmentValue(row.metric, 'manufacturers').pct + '%', background: 'var(--accent-info)' }"></div>
+                          <span class="percentage-value">{{ getSegmentValue(row.metric, 'manufacturers').pct }}%</span>
+                        </div>
+                      </td>
+                    </template>
+                    <td class="col-delta">
+                      <span v-if="Number(getSegmentValue(row.metric, 'manufacturers').delta) > 0" class="delta-positive">
+                        <span class="material-symbols-outlined">arrow_upward</span>
+                        +{{ getSegmentValue(row.metric, 'manufacturers').delta }}%
+                      </span>
+                      <span v-else-if="Number(getSegmentValue(row.metric, 'manufacturers').delta) < 0" class="delta-negative">
+                        <span class="material-symbols-outlined">arrow_downward</span>
+                        {{ getSegmentValue(row.metric, 'manufacturers').delta }}%
+                      </span>
+                      <span v-else class="delta-neutral">
+                        <span class="material-symbols-outlined">remove</span>
+                        0%
+                      </span>
+                    </td>
+                    <!-- Individuals segment -->
+                    <template v-if="row.type === 'amount'">
+                      <td class="col-count">{{ formatAmount(getSegmentValue(row.metric, 'individuals').amount) }}</td>
+                      <td class="col-percentage"><span class="percentage-value">--</span></td>
+                    </template>
+                    <template v-else>
+                      <td class="col-count">{{ getSegmentValue(row.metric, 'individuals').count }}</td>
+                      <td class="col-percentage">
+                        <div class="percentage-cell">
+                          <div class="percentage-bar" :style="{ width: getSegmentValue(row.metric, 'individuals').pct + '%', background: 'var(--accent-warning)' }"></div>
+                          <span class="percentage-value">{{ getSegmentValue(row.metric, 'individuals').pct }}%</span>
+                        </div>
+                      </td>
+                    </template>
+                    <td class="col-delta">
+                      <span v-if="Number(getSegmentValue(row.metric, 'individuals').delta) > 0" class="delta-positive">
+                        <span class="material-symbols-outlined">arrow_upward</span>
+                        +{{ getSegmentValue(row.metric, 'individuals').delta }}%
+                      </span>
+                      <span v-else-if="Number(getSegmentValue(row.metric, 'individuals').delta) < 0" class="delta-negative">
+                        <span class="material-symbols-outlined">arrow_downward</span>
+                        {{ getSegmentValue(row.metric, 'individuals').delta }}%
+                      </span>
+                      <span v-else class="delta-neutral">
+                        <span class="material-symbols-outlined">remove</span>
+                        0%
+                      </span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Cross Selling Table -->
+            <div v-else-if="section.id === 'crossSelling'" class="report-table-wrapper">
+              <table class="report-table">
+                <thead>
+                  <tr>
+                    <th rowspan="2" style="min-width:160px;">Metrica</th>
+                    <th colspan="3" class="col-group-header">Total</th>
+                    <th colspan="3" class="col-group-header">Manufacturers</th>
+                    <th colspan="3" class="col-group-header">Individuals</th>
+                  </tr>
+                  <tr>
+                    <th>Cant</th>
+                    <th>%</th>
+                    <th data-tooltip="Cambio porcentual vs periodo anterior">Delta%</th>
+                    <th>Cant</th>
+                    <th>%</th>
+                    <th data-tooltip="Cambio porcentual vs periodo anterior">Delta%</th>
+                    <th>Cant</th>
+                    <th>%</th>
+                    <th data-tooltip="Cambio porcentual vs periodo anterior">Delta%</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="row in crossSellingRows" :key="row.label">
+                    <td class="col-metric">{{ row.label }}</td>
+                    <!-- Total segment -->
+                    <template v-if="row.type === 'amount'">
+                      <td class="col-count">{{ formatAmount(getSegmentValue(row.metric, 'total').amount) }}</td>
+                      <td class="col-percentage"><span class="percentage-value">--</span></td>
+                    </template>
+                    <template v-else>
+                      <td class="col-count">{{ getSegmentValue(row.metric, 'total').count }}</td>
+                      <td class="col-percentage">
+                        <div class="percentage-cell">
+                          <div class="percentage-bar" :style="{ width: getSegmentValue(row.metric, 'total').pct + '%', background: 'var(--accent-primary)' }"></div>
+                          <span class="percentage-value">{{ getSegmentValue(row.metric, 'total').pct }}%</span>
+                        </div>
+                      </td>
+                    </template>
+                    <td class="col-delta">
+                      <span v-if="Number(getSegmentValue(row.metric, 'total').delta) > 0" class="delta-positive">
+                        <span class="material-symbols-outlined">arrow_upward</span>
+                        +{{ getSegmentValue(row.metric, 'total').delta }}%
+                      </span>
+                      <span v-else-if="Number(getSegmentValue(row.metric, 'total').delta) < 0" class="delta-negative">
+                        <span class="material-symbols-outlined">arrow_downward</span>
+                        {{ getSegmentValue(row.metric, 'total').delta }}%
+                      </span>
+                      <span v-else class="delta-neutral">
+                        <span class="material-symbols-outlined">remove</span>
+                        0%
+                      </span>
+                    </td>
+                    <!-- Manufacturers segment -->
+                    <template v-if="row.type === 'amount'">
+                      <td class="col-count">{{ formatAmount(getSegmentValue(row.metric, 'manufacturers').amount) }}</td>
+                      <td class="col-percentage"><span class="percentage-value">--</span></td>
+                    </template>
+                    <template v-else>
+                      <td class="col-count">{{ getSegmentValue(row.metric, 'manufacturers').count }}</td>
+                      <td class="col-percentage">
+                        <div class="percentage-cell">
+                          <div class="percentage-bar" :style="{ width: getSegmentValue(row.metric, 'manufacturers').pct + '%', background: 'var(--accent-info)' }"></div>
+                          <span class="percentage-value">{{ getSegmentValue(row.metric, 'manufacturers').pct }}%</span>
+                        </div>
+                      </td>
+                    </template>
+                    <td class="col-delta">
+                      <span v-if="Number(getSegmentValue(row.metric, 'manufacturers').delta) > 0" class="delta-positive">
+                        <span class="material-symbols-outlined">arrow_upward</span>
+                        +{{ getSegmentValue(row.metric, 'manufacturers').delta }}%
+                      </span>
+                      <span v-else-if="Number(getSegmentValue(row.metric, 'manufacturers').delta) < 0" class="delta-negative">
+                        <span class="material-symbols-outlined">arrow_downward</span>
+                        {{ getSegmentValue(row.metric, 'manufacturers').delta }}%
+                      </span>
+                      <span v-else class="delta-neutral">
+                        <span class="material-symbols-outlined">remove</span>
+                        0%
+                      </span>
+                    </td>
+                    <!-- Individuals segment -->
+                    <template v-if="row.type === 'amount'">
+                      <td class="col-count">{{ formatAmount(getSegmentValue(row.metric, 'individuals').amount) }}</td>
+                      <td class="col-percentage"><span class="percentage-value">--</span></td>
+                    </template>
+                    <template v-else>
+                      <td class="col-count">{{ getSegmentValue(row.metric, 'individuals').count }}</td>
+                      <td class="col-percentage">
+                        <div class="percentage-cell">
+                          <div class="percentage-bar" :style="{ width: getSegmentValue(row.metric, 'individuals').pct + '%', background: 'var(--accent-warning)' }"></div>
+                          <span class="percentage-value">{{ getSegmentValue(row.metric, 'individuals').pct }}%</span>
+                        </div>
+                      </td>
+                    </template>
+                    <td class="col-delta">
+                      <span v-if="Number(getSegmentValue(row.metric, 'individuals').delta) > 0" class="delta-positive">
+                        <span class="material-symbols-outlined">arrow_upward</span>
+                        +{{ getSegmentValue(row.metric, 'individuals').delta }}%
+                      </span>
+                      <span v-else-if="Number(getSegmentValue(row.metric, 'individuals').delta) < 0" class="delta-negative">
+                        <span class="material-symbols-outlined">arrow_downward</span>
+                        {{ getSegmentValue(row.metric, 'individuals').delta }}%
+                      </span>
+                      <span v-else class="delta-neutral">
+                        <span class="material-symbols-outlined">remove</span>
+                        0%
+                      </span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Placeholder for other sections -->
+            <p v-else style="color: var(--text-muted); padding: 1rem;">Seccion en construccion...</p>
           </div>
         </div>
       </div>
