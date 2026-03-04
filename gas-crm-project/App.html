@@ -132,6 +132,75 @@
                 ];
             });
 
+            const semaforoContestoGrid = computed(() => {
+                if (!reportData.value || !reportData.value.semaforoContesto) return [];
+                const sc = reportData.value.semaforoContesto;
+                return [
+                    { channel: 'Telefono', toques: [sc.telefono.toque1, sc.telefono.toque2, sc.telefono.toque3] },
+                    { channel: 'WhatsApp', toques: [sc.whatsapp.toque1, sc.whatsapp.toque2, sc.whatsapp.toque3] },
+                    { channel: 'Correo', toques: [sc.correo.toque1, sc.correo.toque2, sc.correo.toque3, sc.correo.toque4] }
+                ];
+            });
+
+            const maxToquesContesto = 4;
+
+            const semaforoNoContestoGrid = computed(() => {
+                if (!reportData.value || !reportData.value.semaforoNoContesto) return [];
+                const snc = reportData.value.semaforoNoContesto;
+                return [
+                    { channel: 'Telefono', toques: [snc.telefono.toque1, snc.telefono.toque2, snc.telefono.toque3] },
+                    { channel: 'WhatsApp', toques: [snc.whatsapp.toque1, snc.whatsapp.toque2, snc.whatsapp.toque3] }
+                ];
+            });
+
+            const maxToquesNoContesto = 3;
+
+            const sinRespuestaRows = computed(() => {
+                if (!reportData.value || !reportData.value.sinRespuesta6toToque) return [];
+                const sr = reportData.value.sinRespuesta6toToque;
+                return [
+                    { label: 'Sin Respuesta (6+ toques)', metric: sr.sinRespuesta, type: 'count' }
+                ];
+            });
+
+            const razonesNoPasoRows = computed(() => {
+                if (!reportData.value || !reportData.value.razonesNoPasoVentas) return [];
+                const rnp = reportData.value.razonesNoPasoVentas;
+                return [
+                    { label: 'No perfil adecuado', metric: rnp.noPerfilAdecuado, type: 'count' },
+                    { label: 'Sin presupuesto', metric: rnp.sinPresupuesto, type: 'count' },
+                    { label: 'Sin interes genuino', metric: rnp.sinInteresGenuino, type: 'count' },
+                    { label: 'Necesita tercero para decidir', metric: rnp.necesitaTercero, type: 'count' },
+                    { label: 'No entendio info marketing', metric: rnp.noEntendioMarketing, type: 'count' },
+                    { label: 'Otros', metric: rnp.otros, type: 'count' },
+                    { label: 'Total Descartados', metric: rnp._totalDescartados, type: 'count', isSummary: true }
+                ];
+            });
+
+            const razonesPerdioRows = computed(() => {
+                if (!reportData.value || !reportData.value.razonesPerdioVenta) return [];
+                const rpv = reportData.value.razonesPerdioVenta;
+                return [
+                    { label: 'Sin presupuesto', metric: rpv.sinPresupuesto, type: 'count' },
+                    { label: 'Eligio competidor', metric: rpv.eligioCompetidor, type: 'count' },
+                    { label: 'No responde', metric: rpv.noResponde, type: 'count' },
+                    { label: 'Timing inadecuado', metric: rpv.timingInadecuado, type: 'count' },
+                    { label: 'No tiene poder de decision', metric: rpv.noTienePoderDecision, type: 'count' },
+                    { label: 'Producto no se ajusta', metric: rpv.productoNoSeAjusta, type: 'count' },
+                    { label: 'Cambio de prioridades', metric: rpv.cambioPrioridades, type: 'count' },
+                    { label: 'Mala experiencia previa', metric: rpv.malaExperienciaPrevia, type: 'count' },
+                    { label: 'Precio muy alto', metric: rpv.precioMuyAlto, type: 'count' },
+                    { label: 'Proceso interno largo', metric: rpv.procesoInternoLargo, type: 'count' },
+                    { label: 'Se fue con otra solucion', metric: rpv.seFueConOtraSolucion, type: 'count' },
+                    { label: 'No era el perfil', metric: rpv.noEraElPerfil, type: 'count' },
+                    { label: 'Empresa cerro', metric: rpv.empresaCerro, type: 'count' },
+                    { label: 'Sin especificar', metric: rpv.sinEspecificar, type: 'count' },
+                    { label: 'Total Perdidas', metric: rpv._totalPerdidas, type: 'count', isSummary: true }
+                ];
+            });
+
+            const semaforoSegment = ref('total');
+
             function getSegmentValue(metric, segment) {
                 if (!metric || !metric[segment]) return { count: 0, pct: '0.0', delta: '0.0' };
                 return metric[segment];
@@ -1282,6 +1351,9 @@
                 reportData, reportLoading, reportError, dateRange, comparisonRange,
                 openSections, reportSections,
                 embudoRows, incontactablesRows, crossSellingRows,
+                semaforoContestoGrid, semaforoNoContestoGrid, maxToquesContesto, maxToquesNoContesto,
+                sinRespuestaRows, razonesNoPasoRows, razonesPerdioRows,
+                semaforoSegment,
                 getSegmentValue, formatAmount,
                 // Computed
                 navItems, currentPageTitle, userInitials,
