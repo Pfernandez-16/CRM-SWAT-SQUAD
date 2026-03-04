@@ -19,12 +19,12 @@
 - [x] **ANLYT-05**: Calculo de Delta% vs periodo anterior automatico
 - [x] **ANLYT-06**: Seccion Embudo General (total leads, pruebas, contactables, contactados, con respuesta, dialogo completo/intermitente, interes, descartados, asignados a ventas, carry-over, montos inversion, deals cerrados, monto cierres)
 - [x] **ANLYT-07**: Seccion Incontactables (Duplicado, Equivocado, SPAM)
-- [ ] **ANLYT-08**: Seccion Cross Selling
-- [ ] **ANLYT-09**: Seccion Semaforo Contesto (Telefono 1/2/3, WhatsApp 1/2/3, Correo 1/2/3/4)
-- [ ] **ANLYT-10**: Seccion Semaforo No Contesto (Telefono 1/2/3, WhatsApp 1/2/3)
-- [ ] **ANLYT-11**: Seccion Sin Respuesta 6to Toque
-- [ ] **ANLYT-12**: Seccion Por que no paso a Ventas (12 razones)
-- [ ] **ANLYT-13**: Seccion Por que se perdio la venta (12 razones)
+- [x] **ANLYT-08**: Seccion Cross Selling
+- [x] **ANLYT-09**: Seccion Semaforo Contesto (Telefono 1/2/3, WhatsApp 1/2/3, Correo 1/2/3/4)
+- [x] **ANLYT-10**: Seccion Semaforo No Contesto (Telefono 1/2/3, WhatsApp 1/2/3)
+- [x] **ANLYT-11**: Seccion Sin Respuesta 6to Toque
+- [x] **ANLYT-12**: Seccion Por que no paso a Ventas (12 razones)
+- [x] **ANLYT-13**: Seccion Por que se perdio la venta (12 razones)
 
 ### Frontend Reportes
 
@@ -72,12 +72,12 @@
 | ANLYT-05 | Phase 2 | Complete |
 | ANLYT-06 | Phase 2 | Complete |
 | ANLYT-07 | Phase 2 | Complete |
-| ANLYT-08 | Phase 2 | Pending |
-| ANLYT-09 | Phase 2 | Pending |
-| ANLYT-10 | Phase 2 | Pending |
-| ANLYT-11 | Phase 2 | Pending |
-| ANLYT-12 | Phase 2 | Pending |
-| ANLYT-13 | Phase 2 | Pending |
+| ANLYT-08 | Phase 2 | Complete |
+| ANLYT-09 | Phase 2 | Complete |
+| ANLYT-10 | Phase 2 | Complete |
+| ANLYT-11 | Phase 2 | Complete |
+| ANLYT-12 | Phase 2 | Complete |
+| ANLYT-13 | Phase 2 | Complete |
 | UI-01 | Phase 3 | Pending |
 | UI-02 | Phase 3 | Pending |
 | UI-03 | Phase 3 | Pending |
