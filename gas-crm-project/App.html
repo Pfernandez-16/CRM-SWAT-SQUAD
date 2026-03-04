@@ -1,0 +1,1118 @@
+<script>
+    /*************************************************************
+     *  App.html — Vue 3 Application for CRM SWAT Squad
+     *  All components, state, and logic in a single file.
+     *************************************************************/
+
+    const { createApp, ref, reactive, computed, onMounted, onUnmounted, watch, nextTick, toRaw } = Vue;
+
+    const app = createApp({
+        setup() {
+            // ── State ──
+            const loading = ref(true);
+            const refreshing = ref(false);
+            const saving = ref(false);
+            const savingCatalog = ref(false);
+            const sidebarCollapsed = ref(false);
+            const currentView = ref('leads');
+            const viewMode = ref('table'); // 'table' or 'kanban'
+            const searchQuery = ref('');
+            const filterStatus = ref('');
+            const currentPage = ref(1);
+            const pageSize = 50;
+            const isDark = ref(true);
+            const modalTab = ref('Info');
+            const showLeadModal = ref(false);
+            const activeCatalog = ref('');
+            const activeConfigCategory = ref('general');
+
+            // ── Handoff Modal (Ficha de Negociación) ──
+            const showHandoffModal = ref(false);
+            const handoffLead = ref({});
+            const handoffData = reactive({
+                necesidad_puntual: '',
+                necesita_decision_tercero: '',
+                tiene_presupuesto: '',
+                monto_presupuesto: '',
+                notas_bandeja_plata: ''
+            });
+
+            // ── HMN Config ──
+            const hmnVariables = ref({});
+            const savingHMN = ref(false);
+
+            // ── User Management ──
+            const allUsers = ref([]);
+            const savingUsers = ref(false);
+            const newUserEmail = ref('');
+            const newUserNombre = ref('');
+            const newUserRol = ref('SDR');
+
+            const leads = ref([]);
+            const deals = ref([]);
+            const catalogs = ref({});
+            const pricing = ref([]);
+            const currentUser = ref({ email: '', nombre: '', rol: 'GUEST', sheetId: '' });
+            const userRole = computed(() => currentUser.value.rol || 'GUEST');
+            const userConnected = ref(false);
+            const clockInTime = ref(null);
+            const clockTimer = ref('');
+            const activeAEs = ref([]);
+            let clockInterval = null;
+            let inactivityTimeout = null;
+            const INACTIVITY_LIMIT_MS = 30 * 60 * 1000; // 30 minutes
+            const stats = ref({ total: 0, thisWeek: 0, thisMonth: 0, byStatus: {}, byCalidad: {}, byVendedor: {} });
+            const selectedLead = ref({});
+            const editLead = reactive({});
+            const leadHistory = reactive({ pipeline: [], leads: [], deals: [], loading: false });
+            const editingCatalogValues = ref([]);
+
+            // ── Creation Mode ──
+            const isCreating = ref(false);
+            const creationType = ref('lead'); // 'lead' or 'deal'
+
+            const calendarDate = ref(new Date());
+
+            const toast = reactive({ show: false, message: '', type: 'info' });
+
+            // ── Navigation ──
+            const navItems = computed(() => [
+                { id: 'dashboard', icon: 'dashboard', label: 'Dashboard' },
+                { id: 'leads', icon: 'list_alt', label: 'Prospectos', badge: leads.value.length || null },
+                { id: 'negociaciones', icon: 'handshake', label: 'Negociaciones', badge: deals.value.length || null },
+                { id: 'calendar', icon: 'calendar_month', label: 'Calendario' },
+                { id: 'config', icon: 'settings', label: 'Configuración' },
+                { id: 'account', icon: 'person', label: 'Cuenta' },
+            ]);
+
+            const currentPageTitle = computed(() => {
+                const titles = {
+                    dashboard: 'Dashboard', leads: 'Prospectos', negociaciones: 'Negociaciones',
+                    calendar: 'Calendario', config: 'Configuración', account: 'Cuenta'
+                };
+                return titles[currentView.value] || '';
+            });
+
+            // ── User ──
+            const userInitials = computed(() => {
+                const email = currentUser.value.email || 'U';
+                return email.substring(0, 2).toUpperCase();
+            });
+
+            // ── Kanban ──
+            const sdrKanbanStatuses = computed(() => catalogs.value['Status'] || []);
+            const aeKanbanStatuses = computed(() => catalogs.value['Status de Venta'] || []);
+
+            // Kanban statuses depend on which view is active, not the user role
+            const kanbanStatuses = computed(() => {
+                if (currentView.value === 'negociaciones') return aeKanbanStatuses.value;
+                return sdrKanbanStatuses.value;
+            });
+
+            const activeDataset = computed(() => {
+                if (currentView.value === 'negociaciones') return deals.value;
+                return leads.value;
+            });
+
+            // Kanban: get items by status for the active view
+            function getLeadsByStatus(status) {
+                const isNeg = currentView.value === 'negociaciones';
+                let items;
+                if (isNeg) {
+                    items = deals.value.filter(d => (d['Status de Venta'] || '').trim() === status);
+                    items.forEach(d => { d._source = 'deal'; });
+                } else {
+                    items = leads.value.filter(l => (l._colW_Status || '').trim() === status);
+                    items.forEach(l => { l._source = 'lead'; });
+                }
+                return items;
+            }
+
+            function getFilteredLeadsByStatus(status) {
+                let items = getLeadsByStatus(status);
+                if (searchQuery.value) {
+                    const q = searchQuery.value.toLowerCase();
+                    items = items.filter(l =>
+                        (l._name || '').toLowerCase().includes(q) ||
+                        (l._empresa || '').toLowerCase().includes(q) ||
+                        (l._email || '').toLowerCase().includes(q) ||
+                        (l._tel || '').toLowerCase().includes(q) ||
+                        String(l._id).includes(q)
+                    );
+                }
+                return items;
+            }
+
+            // ── Prospectos (SDR) List ──
+            const filteredLeads = computed(() => {
+                let items = leads.value;
+                if (filterStatus.value) {
+                    items = items.filter(l => l._colW_Status === filterStatus.value);
+                }
+                if (searchQuery.value) {
+                    const q = searchQuery.value.toLowerCase();
+                    items = items.filter(l =>
+                        (l._name || '').toLowerCase().includes(q) ||
+                        (l._empresa || '').toLowerCase().includes(q) ||
+                        (l._email || '').toLowerCase().includes(q) ||
+                        (l._tel || '').toLowerCase().includes(q) ||
+                        String(l._id).includes(q)
+                    );
+                }
+                return items;
+            });
+
+            const totalPages = computed(() => Math.ceil(filteredLeads.value.length / pageSize) || 1);
+
+            const paginatedLeads = computed(() => {
+                const start = (currentPage.value - 1) * pageSize;
+                return filteredLeads.value.slice(start, start + pageSize);
+            });
+
+            // ── Negociaciones (AE) List ──
+            const currentNegPage = ref(1);
+            const filterDealStatus = ref('');
+
+            const filteredDeals = computed(() => {
+                let items = deals.value;
+                if (filterDealStatus.value) {
+                    items = items.filter(d => d['Status de Venta'] === filterDealStatus.value);
+                }
+                if (searchQuery.value) {
+                    const q = searchQuery.value.toLowerCase();
+                    items = items.filter(d =>
+                        (d._name || '').toLowerCase().includes(q) ||
+                        (d._empresa || '').toLowerCase().includes(q) ||
+                        (d._email || '').toLowerCase().includes(q) ||
+                        (d._tel || '').toLowerCase().includes(q) ||
+                        String(d._id).includes(q)
+                    );
+                }
+                return items;
+            });
+
+            const totalDealPages = computed(() => Math.ceil(filteredDeals.value.length / pageSize) || 1);
+
+            const paginatedDeals = computed(() => {
+                const start = (currentNegPage.value - 1) * pageSize;
+                return filteredDeals.value.slice(start, start + pageSize);
+            });
+
+            // ── Status Colors ──
+            const statusColorMap = {
+                'Nuevo': '#6c63ff',
+                'Contactado sin Respuesta': '#ff6b6b',
+                'En Seguimiento': '#f5a623',
+                'Reagendar': '#4fc3f7',
+                'Tocar en el futuro': '#a78bfa',
+                'Paso a Ventas': '#00d68f',
+                'Cross Selling': '#00bcd4',
+                'Perdido': '#8b5cf6',
+                'Resucitado': '#ff9800',
+            };
+
+            function getStatusColor(status) {
+                return statusColorMap[status] || '#8892b0';
+            }
+
+            // ── Pricing Computed ──
+            const uniqueRegions = computed(() => [...new Set(pricing.value.map(p => p.region))]);
+            const uniqueMembershipTypes = computed(() => [...new Set(pricing.value.map(p => p.membershipType))]);
+            const uniqueAttractions = computed(() => [...new Set(pricing.value.map(p => p.attraction))]);
+
+            const computedPricing = computed(() => {
+                const r = editLead['¿Cual es su región?'];
+                const m = editLead['¿Que tipo de membresía es?'];
+                const a = editLead['Pricing Tier'];
+                if (!r || !m || !a) return null;
+                const match = pricing.value.find(p =>
+                    p.region === r && p.membershipType === m && p.attraction === a
+                );
+                return match || null;
+            });
+
+            // ── Catalog Names ──
+            const catalogNames = computed(() => Object.keys(catalogs.value).filter(k => k.trim()));
+
+            // ── Config Categories ──
+            const configCategoryMap = {
+                general: {
+                    label: '⚙️ General & Status',
+                    keys: ['Status', 'Calidad de Contacto', 'Vendedor Asignado para Seguimiento']
+                },
+                calificacion: {
+                    label: '📊 Lead Scoring',
+                    keys: ['¿Cuál es tu necesidad puntual?', '¿Entendió la información de Marketing?', '¿Mostró Interés genuino?', '¿El perfil del prospecto es el adecuado?', '¿Tienes presupuesto asignado para este proyecto, en este año?', '¿han sido parte de alguna asociación de la industria?', '¿Necesitas tocar base con alguién para decidir la compra?']
+                },
+                seguimiento: {
+                    label: '📞 Seguimiento',
+                    keys: ['Toques de Contactación', 'Tipo de Seguimiento', 'Toques de Seguimiento', 'Status del Seguimiento', 'Razón de pérdida']
+                },
+                pricing: {
+                    label: '💰 Pricing',
+                    keys: ['¿Cual es su región?', '¿Que tipo de membresía es?', 'Pricing Tier']
+                }
+            };
+
+            const filteredCatalogNames = computed(() => {
+                const cat = activeConfigCategory.value;
+                const allNames = catalogNames.value;
+                if (configCategoryMap[cat]) {
+                    return allNames.filter(n => configCategoryMap[cat].keys.includes(n));
+                }
+                // 'otros' — show any catalog not in known categories
+                const allKnown = Object.values(configCategoryMap).flatMap(c => c.keys);
+                return allNames.filter(n => !allKnown.includes(n));
+            });
+
+            const configCategories = computed(() => {
+                const cats = Object.entries(configCategoryMap).map(([id, c]) => ({ id, label: c.label }));
+                // Check for "Otros"
+                const allKnown = Object.values(configCategoryMap).flatMap(c => c.keys);
+                const hasOthers = catalogNames.value.some(n => !allKnown.includes(n));
+                if (hasOthers) cats.push({ id: 'otros', label: '📁 Otros' });
+                return cats;
+            });
+
+            // ── Calendar ──
+            const calendarYear = computed(() => calendarDate.value.getFullYear());
+            const calendarMonthName = computed(() => {
+                const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+                return months[calendarDate.value.getMonth()];
+            });
+
+            const calendarDays = computed(() => {
+                const year = calendarDate.value.getFullYear();
+                const month = calendarDate.value.getMonth();
+                const first = new Date(year, month, 1);
+                const last = new Date(year, month + 1, 0);
+                const today = new Date();
+
+                // Build events map from lead history
+                const eventsMap = {};
+                leads.value.forEach(lead => {
+                    if (lead._history) {
+                        lead._history.forEach(h => {
+                            try {
+                                const d = new Date(h.date);
+                                if (d.getMonth() === month && d.getFullYear() === year) {
+                                    const key = d.getDate();
+                                    if (!eventsMap[key]) eventsMap[key] = [];
+                                    eventsMap[key].push({ lead: lead._name || '#' + lead._id, type: h.type });
+                                }
+                            } catch (e) { }
+                        });
+                    }
+                });
+
+                const days = [];
+                // Empty cells for days before first of month (Mon=0)
+                let startDay = (first.getDay() + 6) % 7; // Convert Sun=0 to Mon=0
+                for (let i = 0; i < startDay; i++) days.push({ date: null });
+
+                for (let d = 1; d <= last.getDate(); d++) {
+                    days.push({
+                        date: d,
+                        isToday: d === today.getDate() && month === today.getMonth() && year === today.getFullYear(),
+                        events: eventsMap[d] || null
+                    });
+                }
+                return days;
+            });
+
+            function calendarPrev() {
+                const d = new Date(calendarDate.value);
+                d.setMonth(d.getMonth() - 1);
+                calendarDate.value = d;
+            }
+            function calendarNext() {
+                const d = new Date(calendarDate.value);
+                d.setMonth(d.getMonth() + 1);
+                calendarDate.value = d;
+            }
+
+            // ── Theme ──
+            function toggleTheme() { setTheme(isDark.value ? 'light' : 'dark'); }
+            function setTheme(theme) {
+                isDark.value = theme === 'dark';
+                document.documentElement.setAttribute('data-theme', theme);
+                try { localStorage.setItem('crm-theme', theme); } catch (e) { }
+            }
+
+            // ── Lead Detail Modal ──
+            function openLeadDetail(lead) {
+                selectedLead.value = lead;
+                Object.assign(editLead, JSON.parse(JSON.stringify(lead)));
+                modalTab.value = 'Lead';
+                showLeadModal.value = true;
+                // Load history asynchronously
+                const isDealItem = (lead._source === 'deal' || lead._source === 'cross_deal');
+                loadLeadHistory(lead._id, isDealItem);
+            }
+
+            function loadLeadHistory(idLead, isDeal) {
+                leadHistory.loading = true;
+                leadHistory.pipeline = [];
+                leadHistory.leads = [];
+                leadHistory.deals = [];
+                google.script.run
+                    .withSuccessHandler(function (jsonStr) {
+                        try {
+                            var result = typeof jsonStr === 'string' ? JSON.parse(jsonStr) : jsonStr;
+                            if (result && result.status === 'success' && result.data) {
+                                leadHistory.pipeline = result.data.pipeline || [];
+                                leadHistory.leads = result.data.leads || [];
+                                leadHistory.deals = result.data.deals || [];
+                            }
+                        } catch (e) {
+                            console.error('Error parsing history:', e);
+                        }
+                        leadHistory.loading = false;
+                    })
+                    .withFailureHandler(function (err) {
+                        console.error('Error loading history:', err);
+                        leadHistory.loading = false;
+                    })
+                    .getLeadHistory(idLead);
+            }
+
+            function closeLeadModal() {
+                showLeadModal.value = false;
+                isCreating.value = false;
+            }
+
+            // ── Manual Creation ──
+            function openCreateLead() {
+                // Clear all keys in editLead
+                Object.keys(editLead).forEach(k => delete editLead[k]);
+                selectedLead.value = {};
+                isCreating.value = true;
+                creationType.value = 'lead';
+                modalTab.value = 'Lead';
+                showLeadModal.value = true;
+            }
+
+            function openCreateDeal() {
+                Object.keys(editLead).forEach(k => delete editLead[k]);
+                selectedLead.value = {};
+                editLead['Status'] = 'Nuevo';
+                isCreating.value = true;
+                creationType.value = 'deal';
+                modalTab.value = 'Deal';
+                showLeadModal.value = true;
+            }
+
+            function submitCreation() {
+                saving.value = true;
+                const payload = {};
+                const ALL_KEYS = [
+                    'Nombre', 'Apellido', 'Email', 'Teléfono', 'Teléfono 2',
+                    'empresa', 'Area', 'source', 'medium', 'campaign', 'term', 'content',
+                    'Nivel', 'fbclid', 'Servicio', 'Ip', 'Link', 'Pais', 'Empleados',
+                    'Status', 'Calidad de Contacto', 'Toques de Contactación',
+                    '¿En qué toque va?', 'Tipo de Seguimiento', 'Toques de Seguimiento',
+                    'Status del Seguimiento', 'Razón de pérdida',
+                    '¿Entendió la información de Marketing?', '¿Mostró Interés genuino?',
+                    '¿Cuál es tu necesidad puntual?', '¿El perfil del prospecto es el adecuado?',
+                    '¿Necesitas tocar base con alguién para decidir la compra?',
+                    '¿Tienes presupuesto asignado para este proyecto, en este año?',
+                    '¿han sido parte de alguna asociación de la industria?',
+                    '¿Cual es su región?', '¿Que tipo de membresía es?', 'Pricing Tier',
+                    '¿Cuánto?', 'Vendedor Asignado para Seguimiento',
+                    'Notas', 'Status de Venta', '¿Ventas Contactó Cliente?',
+                    'Fecha de Reagenda', 'Hora de Reagenda', 'Index',
+                    '1 Year Mem', '2 Year Mem', 'Descuento',
+                    '¿Por qué perdimos la venta?', 'City', 'Country',
+                    'Link de Pago', 'Renovación', 'Soporte de pago'
+                ];
+                for (const key of ALL_KEYS) {
+                    const v = editLead[key];
+                    if (v !== undefined && v !== null && String(v).trim() !== '') {
+                        payload[key] = v;
+                    }
+                }
+
+                google.script.run
+                    .withSuccessHandler(function (result) {
+                        saving.value = false;
+                        if (result && result.status === 'error') {
+                            showToast('❌ Error al crear: ' + result.message, 'error');
+                            return;
+                        }
+                        const label = creationType.value === 'deal' ? 'Deal' : 'Lead';
+                        showToast('✅ ' + label + ' creado con ID #' + (result.data && result.data.id), 'success');
+                        closeLeadModal();
+                        refreshData();
+                    })
+                    .withFailureHandler(function (err) {
+                        saving.value = false;
+                        showToast('❌ Error al crear: ' + err.message, 'error');
+                    })
+                    .createNewLeadOrDeal(payload, creationType.value);
+            }
+
+            function saveLeadChanges() {
+                saving.value = true;
+                const row = selectedLead.value._row;
+                const updates = {};
+
+                // All Standard Keys the backend recognizes
+                const EDITABLE_KEYS = [
+                    // Lead fields
+                    'Nombre', 'Apellido', 'Email', 'Teléfono', 'Teléfono 2',
+                    'empresa', 'Area', 'source', 'medium', 'campaign', 'term', 'content',
+                    'Nivel', 'fbclid', 'Servicio', 'Ip', 'Link', 'Pais', 'Empleados',
+                    // Deal fields
+                    'Status', 'Calidad de Contacto', 'Toques de Contactación',
+                    '¿En qué toque va?', 'Tipo de Seguimiento', 'Toques de Seguimiento',
+                    'Status del Seguimiento', 'Razón de pérdida',
+                    '¿Entendió la información de Marketing?', '¿Mostró Interés genuino?',
+                    '¿Cuál es tu necesidad puntual?', '¿El perfil del prospecto es el adecuado?',
+                    '¿Necesitas tocar base con alguién para decidir la compra?',
+                    '¿Tienes presupuesto asignado para este proyecto, en este año?',
+                    '¿han sido parte de alguna asociación de la industria?',
+                    '¿Cual es su región?', '¿Que tipo de membresía es?', 'Pricing Tier',
+                    '¿Cuánto?', 'Vendedor Asignado para Seguimiento',
+                    'Notas', 'Status de Venta', '¿Ventas Contactó Cliente?',
+                    'Fecha de Reagenda', 'Hora de Reagenda', 'Index',
+                    '1 Year Mem', '2 Year Mem', 'Descuento',
+                    '¿Por qué perdimos la venta?', 'City', 'Country',
+                    'Link de Pago', 'Renovación', 'Soporte de pago',
+                    // AE-exclusive fields (BC -> BX)
+                    'Toque', 'Fecha de primer contacto AE', 'Numero de toque',
+                    'Proyeccion', 'Monto de proyección', 'Monto de Apartado',
+                    'Monto de cierre', 'Fecha de Cierre', 'Producto de Cierre',
+                    'Cross Selling?', 'Notas Vendedor', '¿Es cliente activo?',
+                    '¿Es recompra?', 'Producto de Recompra', 'Valor de compra',
+                    'Fecha de compra', 'Fuente de origen', 'Tipo de Transacción',
+                    'Deal Code'
+                ];
+
+                for (const key of EDITABLE_KEYS) {
+                    const oldVal = String(selectedLead.value[key] ?? '');
+                    const newVal = String(editLead[key] ?? '');
+                    if (oldVal !== newVal) {
+                        updates[key] = editLead[key];
+                    }
+                }
+
+                if (Object.keys(updates).length === 0) {
+                    saving.value = false;
+                    showToast('No hay cambios para guardar.', 'info');
+                    return;
+                }
+
+                google.script.run
+                    .withSuccessHandler(function (result) {
+                        saving.value = false;
+                        if (result && result.status === 'error') {
+                            showToast('❌ Error al guardar: ' + result.message, 'error');
+                            return;
+                        }
+                        showToast('✅ Registro actualizado correctamente', 'success');
+                        // Update local data using correct dataset
+                        const isDealSource = (selectedLead.value._source === 'deal' || selectedLead.value._source === 'cross_deal');
+                        const dataset = isDealSource ? deals : leads;
+                        const idx = dataset.value.findIndex(l => l._row === row);
+                        if (idx >= 0) {
+                            for (const key of EDITABLE_KEYS) {
+                                if (updates.hasOwnProperty(key)) {
+                                    dataset.value[idx][key] = editLead[key];
+                                }
+                            }
+                            // Rebuild UI convenience aliases
+                            dataset.value[idx]._colW_Status = dataset.value[idx]['Status'] || '';
+                            dataset.value[idx]._colX_Calidad = dataset.value[idx]['Calidad de Contacto'] || '';
+                            dataset.value[idx]._colY_Toques = dataset.value[idx]['Toques de Contactación'] || '';
+                            dataset.value[idx]._colAQ_Vendedor = dataset.value[idx]['Vendedor Asignado para Seguimiento'] || '';
+                            dataset.value[idx]._colAS_Notas = dataset.value[idx]['Notas'] || '';
+                            dataset.value[idx]._name = ((dataset.value[idx]['Nombre'] || '') + ' ' + (dataset.value[idx]['Apellido'] || '')).trim();
+                            dataset.value[idx]._empresa = dataset.value[idx]['empresa'] || '';
+                            dataset.value[idx]._email = dataset.value[idx]['Email'] || '';
+                            dataset.value[idx]._tel = dataset.value[idx]['Teléfono'] || '';
+                        }
+                        closeLeadModal();
+                        loadStats();
+                    })
+                    .withFailureHandler(function (err) {
+                        saving.value = false;
+                        showToast('❌ Error al guardar: ' + err.message, 'error');
+                    })
+                    .updateLeadMultiple(row, updates, selectedLead.value._source === 'deal' || selectedLead.value._source === 'cross_deal');
+            }
+
+            // ── Catalog Editor ──
+            watch(activeCatalog, (newCat) => {
+                if (newCat && catalogs.value[newCat]) {
+                    editingCatalogValues.value = [...catalogs.value[newCat]];
+                } else {
+                    editingCatalogValues.value = [];
+                }
+            });
+
+            function saveCatalog() {
+                if (!activeCatalog.value) return;
+                savingCatalog.value = true;
+                const clean = editingCatalogValues.value.filter(v => v.trim());
+
+                google.script.run
+                    .withSuccessHandler(function (result) {
+                        savingCatalog.value = false;
+                        catalogs.value[activeCatalog.value] = [...clean];
+                        showToast('✅ Catálogo "' + activeCatalog.value + '" guardado', 'success');
+                    })
+                    .withFailureHandler(function (err) {
+                        savingCatalog.value = false;
+                        showToast('❌ Error: ' + err.message, 'error');
+                    })
+                    .updateCatalog(activeCatalog.value, clean);
+            }
+
+            // ── Toast ──
+            function showToast(message, type) {
+                toast.show = true;
+                toast.message = message;
+                toast.type = type || 'info';
+                setTimeout(() => { toast.show = false; }, 3000);
+            }
+
+            // ── Date formatting ──
+            function formatDate(dateStr) {
+                if (!dateStr) return '—';
+                try {
+                    const d = new Date(dateStr);
+                    return d.toLocaleDateString('es-MX', {
+                        day: '2-digit', month: 'short', year: 'numeric',
+                        hour: '2-digit', minute: '2-digit'
+                    });
+                } catch (e) {
+                    return dateStr;
+                }
+            }
+
+            // ── Data Loading ──
+            function loadLeads() {
+                return new Promise((resolve) => {
+                    google.script.run
+                        .withSuccessHandler(function (response) {
+                            try {
+                                if (typeof response === 'string') {
+                                    response = JSON.parse(response || '{}');
+                                }
+                                // New format: { leads: [...], deals: [...] }
+                                if (response.leads !== undefined) {
+                                    leads.value = response.leads || [];
+                                    deals.value = response.deals || [];
+                                }
+                                // Legacy wrapped format: { status, data: { leads, deals } }
+                                else if (response.data && response.data.leads) {
+                                    leads.value = response.data.leads || [];
+                                    deals.value = response.data.deals || [];
+                                }
+                                // Oldest fallback: raw array
+                                else if (Array.isArray(response)) {
+                                    leads.value = response;
+                                    deals.value = [];
+                                } else if (Array.isArray(response.data)) {
+                                    leads.value = response.data;
+                                    deals.value = [];
+                                }
+                                if (response.error) {
+                                    console.error('[API] getLeads error:', response.error);
+                                }
+                            } catch (e) {
+                                console.error('[DEBUG] Parsing error:', e);
+                            }
+                            console.log('[DEBUG] Loaded:', leads.value.length, 'leads,', deals.value.length, 'deals.');
+                            resolve();
+                        })
+                        .withFailureHandler(function (err) {
+                            console.error('[DEBUG] getLeads FAILED:', err);
+                            showToast('Error cargando datos: ' + err.message, 'error');
+                            resolve();
+                        })
+                        .getLeads();
+                });
+            }
+
+            function loadCatalogs() {
+                return new Promise((resolve) => {
+                    google.script.run
+                        .withSuccessHandler(function (response) {
+                            let data = {};
+                            if (response && response.status === 'success') {
+                                data = response.data || {};
+                            } else if (response && response.status === 'error') {
+                                console.error('[API] getCatalogs error:', response.message);
+                            } else {
+                                // Backward compat: raw object
+                                data = response || {};
+                            }
+                            console.log('[DEBUG] getCatalogs returned:', Object.keys(data));
+                            if (data['Status']) {
+                                console.log('[DEBUG] Status catalog values:', JSON.stringify(data['Status']));
+                            } else {
+                                console.warn('[DEBUG] No "Status" catalog found — Pipeline will be empty!');
+                            }
+                            catalogs.value = data;
+                            resolve();
+                        })
+                        .withFailureHandler(function (err) {
+                            console.error('[DEBUG] getCatalogs FAILED:', err);
+                            resolve();
+                        })
+                        .getCatalogs();
+                });
+            }
+
+            function loadPricing() {
+                return new Promise((resolve) => {
+                    google.script.run
+                        .withSuccessHandler(function (response) {
+                            if (response && response.status === 'success') {
+                                pricing.value = response.data || [];
+                            } else if (response && response.data) {
+                                pricing.value = response.data || [];
+                            } else {
+                                // Backward compat: raw array
+                                pricing.value = response || [];
+                            }
+                            resolve();
+                        })
+                        .withFailureHandler(function (err) {
+                            console.error('Error loading pricing:', err);
+                            resolve();
+                        })
+                        .getPricingData();
+                });
+            }
+
+            function loadUser() {
+                return new Promise((resolve) => {
+                    google.script.run
+                        .withSuccessHandler(function (data) {
+                            currentUser.value = data || { email: 'Unknown', nombre: 'Unknown', rol: 'GUEST' };
+                            userConnected.value = data && data.isConnected;
+                            if (data && data.isConnected && data.clockInTime) {
+                                clockInTime.value = new Date(data.clockInTime);
+                                startClockTimer_();
+                            }
+                            resolve();
+                        })
+                        .withFailureHandler(function (err) {
+                            console.error('Error loading user config:', err);
+                            resolve();
+                        })
+                        .getUserConfig();
+                });
+            }
+
+            // ── Clock-In / Clock-Out ──
+            function handleClockIn() {
+                google.script.run
+                    .withSuccessHandler(function (result) {
+                        if (result && result.status === 'success') {
+                            userConnected.value = true;
+                            clockInTime.value = new Date();
+                            startClockTimer_();
+                            showToast('🟢 Conectado — ¡a trabajar!', 'success');
+                            resetInactivityTimer_();
+                        } else {
+                            showToast('Error al conectarse: ' + (result && result.message), 'error');
+                        }
+                    })
+                    .withFailureHandler(function (err) {
+                        showToast('Error: ' + err.message, 'error');
+                    })
+                    .clockIn();
+            }
+
+            function handleClockOut() {
+                google.script.run
+                    .withSuccessHandler(function (result) {
+                        if (result && result.status === 'success') {
+                            userConnected.value = false;
+                            clockInTime.value = null;
+                            clockTimer.value = '';
+                            if (clockInterval) { clearInterval(clockInterval); clockInterval = null; }
+                            if (inactivityTimeout) { clearTimeout(inactivityTimeout); inactivityTimeout = null; }
+                            showToast('🔴 Desconectado', 'info');
+                        }
+                    })
+                    .withFailureHandler(function (err) {
+                        showToast('Error: ' + err.message, 'error');
+                    })
+                    .clockOut();
+            }
+
+            function startClockTimer_() {
+                if (clockInterval) clearInterval(clockInterval);
+                clockInterval = setInterval(() => {
+                    if (!clockInTime.value) return;
+                    const diff = Date.now() - new Date(clockInTime.value).getTime();
+                    const h = Math.floor(diff / 3600000);
+                    const m = Math.floor((diff % 3600000) / 60000);
+                    clockTimer.value = h + 'h ' + String(m).padStart(2, '0') + 'm';
+                }, 10000); // Update every 10 sec
+            }
+
+            // ── Inactivity Auto-Disconnect ──
+            function resetInactivityTimer_() {
+                if (inactivityTimeout) clearTimeout(inactivityTimeout);
+                if (!userConnected.value) return;
+                inactivityTimeout = setTimeout(() => {
+                    if (userConnected.value) {
+                        handleClockOut();
+                        showToast('⏰ Desconectado por inactividad (30 min)', 'info');
+                    }
+                }, INACTIVITY_LIMIT_MS);
+            }
+
+            function loadActiveAEs() {
+                google.script.run
+                    .withSuccessHandler(function (result) {
+                        if (result && result.status === 'success') {
+                            activeAEs.value = result.data || [];
+                        }
+                    })
+                    .withFailureHandler(function () { activeAEs.value = []; })
+                    .getActiveAEs();
+            }
+
+            function loadStats() {
+                google.script.run
+                    .withSuccessHandler(function (response) {
+                        if (response && response.status === 'success') {
+                            stats.value = response.data || stats.value;
+                        } else if (response && !response.status) {
+                            // Backward compat
+                            stats.value = response || stats.value;
+                        }
+                    })
+                    .withFailureHandler(function (err) { console.error('Stats error:', err); })
+                    .getLeadStats();
+            }
+
+            async function refreshData() {
+                refreshing.value = true;
+                await Promise.all([loadLeads(), loadCatalogs()]);
+                loadStats();
+                refreshing.value = false;
+                showToast('Datos actualizados', 'info');
+                if (viewMode.value === 'kanban') nextTick(() => initKanbanDragDrop());
+            }
+
+            // ── Kanban Drag & Drop with SortableJS ──
+            function initKanbanDragDrop() {
+                if (viewMode.value !== 'kanban') return;
+
+                nextTick(() => {
+                    const columns = document.querySelectorAll('.kanban-cards');
+                    columns.forEach(col => {
+                        if (col._sortable) col._sortable.destroy();
+
+                        col._sortable = new Sortable(col, {
+                            group: 'kanban',
+                            animation: 300,
+                            ghostClass: 'sortable-ghost',
+                            chosenClass: 'sortable-chosen',
+                            dragClass: 'sortable-drag',
+                            easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+                            onEnd: function (evt) {
+                                const cardEl = evt.item;
+                                const newCol = evt.to;
+                                const rowNum = parseInt(cardEl.dataset.row, 10);
+                                const newStatus = newCol.dataset.status;
+                                const cardSource = cardEl.dataset.source || '';
+
+                                if (!rowNum || !newStatus) return;
+
+                                // Determine if this item is a deal or lead
+                                const itemIsDeal = cardSource === 'deal';
+                                const dataset = itemIsDeal ? deals : leads;
+                                const lead = dataset.value.find(l => l._row === rowNum);
+
+                                if (lead) {
+                                    const oldStatus = itemIsDeal ? lead['Status de Venta'] : lead._colW_Status;
+                                    if (oldStatus === newStatus) return;
+
+                                    // ── HANDOFF: Intercept "Paso a Ventas" with modal instead of confirm() ──
+                                    if (!itemIsDeal && newStatus.toLowerCase().trim() === 'paso a ventas') {
+                                        openHandoffModal(lead);
+                                        // Revert visually for now; the actual move happens after handoff form
+                                        nextTick(() => initKanbanDragDrop());
+                                        return;
+                                    }
+
+                                    // Update locally
+                                    if (itemIsDeal) {
+                                        lead['Status de Venta'] = newStatus;
+                                    } else {
+                                        lead._colW_Status = newStatus;
+                                        lead['Status'] = newStatus;
+                                    }
+
+                                    // Persist status change to backend
+                                    google.script.run
+                                        .withSuccessHandler(function (result) {
+                                            if (result && result.triggerError) {
+                                                if (itemIsDeal) {
+                                                    lead['Status de Venta'] = oldStatus;
+                                                } else {
+                                                    lead._colW_Status = oldStatus;
+                                                    lead['Status'] = oldStatus;
+                                                }
+                                                showToast('Error al mover: ' + result.triggerError, 'error');
+                                            } else {
+                                                const labelPrefix = itemIsDeal ? 'Deal #' : 'Lead #';
+                                                showToast(labelPrefix + (lead._id || rowNum) + ' → ' + newStatus, 'success');
+                                                loadStats();
+                                            }
+                                        })
+                                        .withFailureHandler(function (err) {
+                                            if (itemIsDeal) {
+                                                lead['Status de Venta'] = oldStatus;
+                                            } else {
+                                                lead._colW_Status = oldStatus;
+                                                lead['Status'] = oldStatus;
+                                            }
+                                            showToast('Error al mover: ' + err.message, 'error');
+                                        })
+                                        .updateLeadField(rowNum, itemIsDeal ? 'Status de Venta' : 'Status', newStatus, itemIsDeal);
+                                }
+                            }
+                        });
+                    });
+                });
+            }
+
+            // ── Handoff Modal (Ficha de Negociación) ──
+            function openHandoffModal(lead) {
+                handoffLead.value = lead;
+                handoffData.necesidad_puntual = '';
+                handoffData.necesita_decision_tercero = '';
+                handoffData.tiene_presupuesto = '';
+                handoffData.monto_presupuesto = '';
+                handoffData.notas_bandeja_plata = '';
+                showHandoffModal.value = true;
+            }
+
+            function cancelHandoff() {
+                showHandoffModal.value = false;
+                handoffLead.value = {};
+            }
+
+            function submitHandoff() {
+                saving.value = true;
+                const lead = handoffLead.value;
+                const row = lead._row;
+
+                // Build updates: Status = 'Paso a Ventas' + BANT fields + notes
+                const updates = {
+                    'Status': 'Paso a Ventas',
+                    '¿Cuál es tu necesidad puntual?': handoffData.necesidad_puntual,
+                    '¿Necesitas tocar base con alguién para decidir la compra?': handoffData.necesita_decision_tercero,
+                    '¿Tienes presupuesto asignado para este proyecto, en este año?': handoffData.tiene_presupuesto,
+                    '¿Cuánto?': handoffData.monto_presupuesto,
+                    'Notas': handoffData.notas_bandeja_plata
+                };
+
+                google.script.run
+                    .withSuccessHandler(function (result) {
+                        saving.value = false;
+                        if (result && result.status === 'error') {
+                            showToast('❌ Error en el traspaso: ' + result.message, 'error');
+                            return;
+                        }
+                        // Update local state
+                        lead._colW_Status = 'Paso a Ventas';
+                        lead['Status'] = 'Paso a Ventas';
+
+                        showHandoffModal.value = false;
+                        showToast('✅ Ficha de Negociación creada — Lead #' + (lead._id || row) + ' enviado al AE', 'success');
+                        refreshData();
+                    })
+                    .withFailureHandler(function (err) {
+                        saving.value = false;
+                        showToast('❌ Error: ' + err.message, 'error');
+                    })
+                    .updateLeadMultiple(row, updates, false);
+            }
+
+            // ── HMN Config Functions ──
+            function loadHMN() {
+                google.script.run
+                    .withSuccessHandler(function (result) {
+                        if (result && result.status === 'success') {
+                            hmnVariables.value = result.data || {};
+                        }
+                    })
+                    .withFailureHandler(function (err) { console.error('HMN load error:', err); })
+                    .getHMNConfig();
+            }
+
+            function saveHMN() {
+                savingHMN.value = true;
+                google.script.run
+                    .withSuccessHandler(function (result) {
+                        savingHMN.value = false;
+                        showToast('✅ Configuración HMN guardada', 'success');
+                    })
+                    .withFailureHandler(function (err) {
+                        savingHMN.value = false;
+                        showToast('❌ Error: ' + err.message, 'error');
+                    })
+                    .saveHMNConfig(JSON.parse(JSON.stringify(hmnVariables.value)));
+            }
+
+            // ── User Management Functions ──
+            function loadAllUsers() {
+                google.script.run
+                    .withSuccessHandler(function (result) {
+                        if (result && result.status === 'success') {
+                            allUsers.value = result.data || [];
+                        }
+                    })
+                    .withFailureHandler(function (err) { console.error('Users load error:', err); })
+                    .getAllUsers();
+            }
+
+            function addUser() {
+                if (!newUserEmail.value.trim()) { showToast('Ingresa un email', 'warning'); return; }
+                savingUsers.value = true;
+                google.script.run
+                    .withSuccessHandler(function (result) {
+                        savingUsers.value = false;
+                        if (result && result.status === 'success') {
+                            showToast('✅ Usuario creado', 'success');
+                            newUserEmail.value = '';
+                            newUserNombre.value = '';
+                            newUserRol.value = 'SDR';
+                            loadAllUsers();
+                        } else {
+                            showToast('❌ ' + (result && result.message), 'error');
+                        }
+                    })
+                    .withFailureHandler(function (err) {
+                        savingUsers.value = false;
+                        showToast('❌ Error: ' + err.message, 'error');
+                    })
+                    .createUser(newUserEmail.value.trim(), newUserNombre.value.trim(), newUserRol.value);
+            }
+
+            function toggleUserActive(user) {
+                google.script.run
+                    .withSuccessHandler(function (result) {
+                        if (result && result.status === 'success') {
+                            user.activo = !user.activo;
+                            showToast(user.activo ? '✅ Usuario activado' : '🟡 Usuario desactivado', 'info');
+                        }
+                    })
+                    .withFailureHandler(function (err) { showToast('❌ Error: ' + err.message, 'error'); })
+                    .toggleUserActive(user.email);
+            }
+
+            function updateUserRole(user, newRole) {
+                google.script.run
+                    .withSuccessHandler(function (result) {
+                        if (result && result.status === 'success') {
+                            user.rol = newRole;
+                            showToast('✅ Rol actualizado a ' + newRole, 'success');
+                        }
+                    })
+                    .withFailureHandler(function (err) { showToast('❌ Error: ' + err.message, 'error'); })
+                    .updateUserRole(user.email, newRole);
+            }
+
+            // Watch for view/mode changes to re-init kanban
+            watch(currentView, (newView) => {
+                if (viewMode.value === 'kanban') {
+                    nextTick(() => initKanbanDragDrop());
+                }
+                if (newView === 'leads') currentPage.value = 1;
+                if (newView === 'negociaciones') currentNegPage.value = 1;
+                if (newView === 'config' && userRole.value === 'ADMIN') {
+                    loadHMN();
+                    loadAllUsers();
+                }
+            });
+
+            watch(viewMode, (newMode) => {
+                if (newMode === 'kanban') {
+                    nextTick(() => initKanbanDragDrop());
+                }
+            });
+
+            // ── Init ──
+            onMounted(async () => {
+                // Apply saved theme
+                try {
+                    const saved = localStorage.getItem('crm-theme');
+                    if (saved) setTheme(saved); else setTheme('dark');
+                } catch (e) { setTheme('dark'); }
+
+                // Load all data
+                await Promise.all([loadLeads(), loadCatalogs(), loadPricing(), loadUser()]);
+                loadStats();
+                loadActiveAEs();
+                loading.value = false;
+
+                // Set up inactivity listener
+                ['click', 'keydown', 'mousemove', 'scroll'].forEach(ev => {
+                    document.addEventListener(ev, resetInactivityTimer_, { passive: true });
+                });
+
+                nextTick(() => initKanbanDragDrop());
+            });
+
+            // Cleanup event listeners y timers al desmontar (fix MEM #1)
+            onUnmounted(() => {
+                ['click', 'keydown', 'mousemove', 'scroll'].forEach(ev => {
+                    document.removeEventListener(ev, resetInactivityTimer_);
+                });
+                if (clockInterval) { clearInterval(clockInterval); clockInterval = null; }
+                if (inactivityTimeout) { clearTimeout(inactivityTimeout); inactivityTimeout = null; }
+            });
+
+            return {
+                // State
+                loading, refreshing, saving, savingCatalog, savingHMN, savingUsers,
+                sidebarCollapsed, currentView, viewMode, searchQuery, filterStatus, filterDealStatus,
+                currentPage, currentNegPage, isDark, modalTab, showLeadModal, activeCatalog,
+                activeConfigCategory,
+                leads, deals, activeDataset, catalogs, pricing, currentUser, stats,
+                selectedLead, editLead, leadHistory, editingCatalogValues,
+                isCreating, creationType,
+                userRole, userConnected, clockInTime, clockTimer, activeAEs,
+                toast, calendarDate,
+                // Handoff
+                showHandoffModal, handoffLead, handoffData,
+                // HMN & Users
+                hmnVariables, allUsers, newUserEmail, newUserNombre, newUserRol,
+                // Computed
+                navItems, currentPageTitle, userInitials,
+                kanbanStatuses, filteredLeads, totalPages, paginatedLeads,
+                filteredDeals, totalDealPages, paginatedDeals,
+                catalogNames, filteredCatalogNames, configCategories,
+                uniqueRegions, uniqueMembershipTypes, uniqueAttractions,
+                computedPricing, calendarYear, calendarMonthName, calendarDays,
+                // Methods
+                getLeadsByStatus, getFilteredLeadsByStatus, getStatusColor,
+                toggleTheme, setTheme,
+                openLeadDetail, closeLeadModal, saveLeadChanges,
+                openCreateLead, openCreateDeal, submitCreation,
+                handleClockIn, handleClockOut, loadActiveAEs,
+                saveCatalog, showToast, formatDate,
+                refreshData,
+                calendarPrev, calendarNext,
+                pageSize,
+                // Handoff methods
+                openHandoffModal, cancelHandoff, submitHandoff,
+                // HMN & User methods
+                loadHMN, saveHMN, loadAllUsers, addUser, toggleUserActive, updateUserRole,
+            };
+        }
+    });
+
+    app.mount('#app');
+</script>
