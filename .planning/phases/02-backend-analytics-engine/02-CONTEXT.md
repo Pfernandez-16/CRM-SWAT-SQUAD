@@ -29,9 +29,11 @@ Create Analytics.js as a standalone GAS file that reads from the normalized data
 - **Deals cerrados**: Count of deals with status_venta = 'Vendido' linked to leads in the period
 - **Monto cierres**: Sum of monto_cierre from deals with status_venta = 'Vendido'
 
+### Segmentation (Locked per Research)
+- **Segmentation field**: Use `tipo_membresia` from fact_calificacion (values: 'Manufacturers', 'Individuals', 'Attraction') — NOT servicio_interes from fact_leads (which has service names like 'Consultoría', not segment names). Leads without a fact_calificacion record or with NULL tipo_membresia count only in Total, not in any segment.
+- **Period comparison**: Same duration shifted back (e.g., if current = Mar 1-15, previous = Feb 14-28).
+
 ### Claude's Discretion
-- **Segmentation mapping**: Determine how to map leads to Manufacturers/Individuals segments. Options: use fact_calificacion.tipo_membresia, or servicio_interes in fact_leads, or dim_productos.membership_type via fact_deals. Research the reference report (Reporte SS.xlsx) to determine the correct source.
-- **Period comparison**: How to calculate the previous period for delta%. Likely: same duration shifted back (e.g., if current = Mar 1-15, previous = Feb 14-28).
 - **Section 7 "Por qué no pasó a Ventas" reasons**: The 12 specific reasons listed in requirements don't match cat_opciones 'Razón de Pérdida'. Research whether these come from a different field, are derived from interaction patterns, or need to be added as a new category.
 - **Section 8 "Por qué se perdió la venta" reasons**: The 12 reasons match closer to cat_opciones 'Razón de Pérdida' but may need verification against fact_deals.razon_perdida values.
 - **Cross Selling section**: Determine what identifies a cross-selling lead (possibly tipo_transaccion = 'Cross-sell' in fact_deals or a flag in fact_leads).
