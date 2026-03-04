@@ -30,9 +30,9 @@
 
 - [x] **UI-01**: Nueva vista "Reportes" en sidebar con icono, visible solo para ADMIN
 - [x] **UI-02**: Selector de rango de fechas (Day In / Day Out) con date pickers
-- [ ] **UI-03**: Tabla Embudo General con columnas Total|%|Delta por segmento
-- [ ] **UI-04**: Tabla Incontactables
-- [ ] **UI-05**: Tabla Cross Selling
+- [x] **UI-03**: Tabla Embudo General con columnas Total|%|Delta por segmento
+- [x] **UI-04**: Tabla Incontactables
+- [x] **UI-05**: Tabla Cross Selling
 - [ ] **UI-06**: Tabla Semaforo Contesto
 - [ ] **UI-07**: Tabla Semaforo No Contesto
 - [ ] **UI-08**: Tabla Sin Respuesta 6to Toque
@@ -80,9 +80,9 @@
 | ANLYT-13 | Phase 2 | Complete |
 | UI-01 | Phase 3 | Complete |
 | UI-02 | Phase 3 | Complete |
-| UI-03 | Phase 3 | Pending |
-| UI-04 | Phase 3 | Pending |
-| UI-05 | Phase 3 | Pending |
+| UI-03 | Phase 3 | Complete |
+| UI-04 | Phase 3 | Complete |
+| UI-05 | Phase 3 | Complete |
 | UI-06 | Phase 3 | Pending |
 | UI-07 | Phase 3 | Pending |
 | UI-08 | Phase 3 | Pending |

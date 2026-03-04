@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-last_updated: "2026-03-04T21:20:22.861Z"
+last_updated: "2026-03-04T21:24:25Z"
 progress:
   total_phases: 3
   completed_phases: 2
   total_plans: 9
-  completed_plans: 6
-  percent: 67
+  completed_plans: 7
+  percent: 78
 ---
 
 ---
@@ -81,7 +81,7 @@ See: .planning/PROJECT.md (updated 2026-03-03)
 
 **Phase:** 3 — Frontend Reportes View
 **Status:** In Progress
-**Plans:** 1/4 complete
+**Plans:** 2/4 complete
 
 ## Phase History
 
@@ -120,6 +120,11 @@ See: .planning/PROJECT.md (updated 2026-03-03)
   - Duration: 3 minutes
   - Commits: 873c53e, 9b8c56a
   - ADMIN-only Reportes nav with Flatpickr date picker, accordion framework, loading/error/empty states, and complete report CSS infrastructure
+- **Plan 03-02:** Embudo, Incontactables, Cross Selling Tables ✅
+  - Completed: 2026-03-04
+  - Duration: 2 minutes
+  - Commits: d8dd064, fb299b4
+  - Three core report tables with grouped segmentation columns, inline percentage bars, and colored delta indicators
 
 ## Milestone
 
@@ -146,6 +151,8 @@ See: .planning/PROJECT.md (updated 2026-03-03)
 - [Phase 03-01]: Default to current month date range on initial load with auto-load report
 - [Phase 03-01]: Use border-collapse separate for sticky table headers compatibility
 - [Phase 03-01]: Open embudoGeneral section by default in accordion
+- [Phase 03-02]: Used v-if conditions for section-specific rendering instead of component props (simpler for GAS HTML Service)
+- [Phase 03-02]: Amount-type rows display formatted currency with "--" for percentage column (percentages don't apply to monetary amounts)
 
 ## Performance Metrics
 
@@ -155,9 +162,9 @@ See: .planning/PROJECT.md (updated 2026-03-03)
 | 02 | 01 | 2 min | 2 | 1 | 2026-03-04 |
 | 02 | 02 | 2 min | 2 | 1 | 2026-03-04 |
 | 02 | 04 | 3 min | 2 | 1 | 2026-03-04 |
+| 03 | 01 | 3 min | 2 | 3 | 2026-03-04 |
+| 03 | 02 | 2 min | 2 | 2 | 2026-03-04 |
 
 ---
-*Last updated: 2026-03-04T18:49:00Z*
-| Phase 02 P03 | 8 | 2 tasks | 1 files |
-| Phase 03 P01 | 3 | 2 tasks | 3 files |
+*Last updated: 2026-03-04T21:24:25Z*
 
