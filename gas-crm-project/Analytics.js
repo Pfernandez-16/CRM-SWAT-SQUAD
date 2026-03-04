@@ -231,8 +231,219 @@ function buildSegmentedAmountWithDelta_(currentLeads, previousLeads, calificacio
 
 // ============ SECTION CALCULATORS (Stubs - to be implemented in Plans 02-04) ============
 
-function calculateEmbudoGeneral_() {
-  return {};
+/**
+ * Calculate Embudo General (Sales Funnel) with all 13 metrics.
+ * Each metric is segmented by tipo_membresia and includes delta vs previous period.
+ *
+ * @param {Array} currentLeads - Leads in current date range
+ * @param {Array} previousLeads - Leads in previous date range
+ * @param {Array} allLeads - ALL leads (unfiltered) for carryOver calculation
+ * @param {Object} contactosIdx - Index of { id_contacto: contacto_row }
+ * @param {Object} interaccionesIdx - Index of { id_lead: [interactions] }
+ * @param {Object} calificacionIdx - Index of { id_lead: calificacion_row }
+ * @param {Array} deals - All deal records
+ * @param {string} dateIn - Current period start (YYYY-MM-DD)
+ * @param {string} dateOut - Current period end (YYYY-MM-DD)
+ * @param {string} prevDateIn - Previous period start (YYYY-MM-DD)
+ * @param {string} prevDateOut - Previous period end (YYYY-MM-DD)
+ * @return {Object} 13 funnel metrics with segmentation + delta
+ */
+function calculateEmbudoGeneral_(currentLeads, previousLeads, allLeads, contactosIdx, interaccionesIdx, calificacionIdx, deals, dateIn, dateOut, prevDateIn, prevDateOut) {
+
+  // --- Helper: check if lead has consecutive Contesto toques ---
+  var hasConsecutiveContesto_ = function(leadId) {
+    var interactions = interaccionesIdx[String(leadId)] || [];
+    var contestoToques = [];
+    for (var i = 0; i < interactions.length; i++) {
+      if (String(interactions[i].resultado || '').trim() === 'Contesto') {
+        var toque = Number(interactions[i].numero_toque);
+        if (!isNaN(toque)) {
+          contestoToques.push(toque);
+        }
+      }
+    }
+    if (contestoToques.length < 2) return false;
+    contestoToques.sort(function(a, b) { return a - b; });
+    for (var j = 1; j < contestoToques.length; j++) {
+      if (contestoToques[j] - contestoToques[j - 1] === 1) return true;
+    }
+    return false;
+  };
+
+  // --- Helper: check if lead has at least one Contesto ---
+  var hasAnyContesto_ = function(leadId) {
+    var interactions = interaccionesIdx[String(leadId)] || [];
+    for (var i = 0; i < interactions.length; i++) {
+      if (String(interactions[i].resultado || '').trim() === 'Contesto') return true;
+    }
+    return false;
+  };
+
+  // --- Build deal indexes for current and previous period leads ---
+  var currentLeadIds = {};
+  for (var i = 0; i < currentLeads.length; i++) {
+    currentLeadIds[String(currentLeads[i].id_lead)] = true;
+  }
+  var previousLeadIds = {};
+  for (var j = 0; j < previousLeads.length; j++) {
+    previousLeadIds[String(previousLeads[j].id_lead)] = true;
+  }
+
+  var currentDeals = [];
+  var previousDeals = [];
+  for (var d = 0; d < deals.length; d++) {
+    var dealLeadId = String(deals[d].id_lead || '');
+    if (currentLeadIds[dealLeadId]) currentDeals.push(deals[d]);
+    if (previousLeadIds[dealLeadId]) previousDeals.push(deals[d]);
+  }
+
+  // --- 1. totalLeads ---
+  var totalLeads = buildSegmentedMetricWithDelta_(currentLeads, previousLeads, calificacionIdx, function(lead) {
+    return true;
+  });
+
+  // --- 2. contactables ---
+  var contactables = buildSegmentedMetricWithDelta_(currentLeads, previousLeads, calificacionIdx, function(lead) {
+    var idContacto = String(lead.id_contacto || '');
+    var contacto = contactosIdx[idContacto];
+    if (!contacto) return false;
+    var tel = String(contacto.telefono_1 || '').trim();
+    var email = String(contacto.email || '').trim();
+    return tel !== '' || email !== '';
+  });
+
+  // --- 3. contactados ---
+  var contactados = buildSegmentedMetricWithDelta_(currentLeads, previousLeads, calificacionIdx, function(lead) {
+    var idLead = String(lead.id_lead || '');
+    var interactions = interaccionesIdx[idLead] || [];
+    return interactions.length > 0;
+  });
+
+  // --- 4. conRespuesta ---
+  var conRespuesta = buildSegmentedMetricWithDelta_(currentLeads, previousLeads, calificacionIdx, function(lead) {
+    return hasAnyContesto_(lead.id_lead);
+  });
+
+  // --- 5. dialogoCompleto ---
+  var dialogoCompleto = buildSegmentedMetricWithDelta_(currentLeads, previousLeads, calificacionIdx, function(lead) {
+    return hasConsecutiveContesto_(lead.id_lead);
+  });
+
+  // --- 6. dialogoIntermitente ---
+  var dialogoIntermitente = buildSegmentedMetricWithDelta_(currentLeads, previousLeads, calificacionIdx, function(lead) {
+    return hasAnyContesto_(lead.id_lead) && !hasConsecutiveContesto_(lead.id_lead);
+  });
+
+  // --- 7. interes ---
+  var interes = buildSegmentedMetricWithDelta_(currentLeads, previousLeads, calificacionIdx, function(lead) {
+    var idLead = String(lead.id_lead || '');
+    var cal = calificacionIdx[idLead];
+    if (!cal) return false;
+    return String(cal.mostro_interes_genuino || '').trim() === 'Si';
+  });
+
+  // --- 8. descartados ---
+  var descartados = buildSegmentedMetricWithDelta_(currentLeads, previousLeads, calificacionIdx, function(lead) {
+    return String(lead.status || '').trim() === 'Perdido';
+  });
+
+  // --- 9. asignadosVentas ---
+  var asignadosVentas = buildSegmentedMetricWithDelta_(currentLeads, previousLeads, calificacionIdx, function(lead) {
+    return String(lead.status || '').trim() === 'Paso a Ventas';
+  });
+
+  // --- 10. carryOver ---
+  // Leads from BEFORE the period that got assigned to sales DURING the period
+  var dateInMs = new Date(dateIn).getTime();
+  var dateOutMs = new Date(dateOut).getTime();
+  var prevDateInMs = new Date(prevDateIn).getTime();
+  var prevDateOutMs = new Date(prevDateOut).getTime();
+
+  var currentCarryLeads = [];
+  var previousCarryLeads = [];
+  for (var c = 0; c < allLeads.length; c++) {
+    var aLead = allLeads[c];
+    var fechaIngreso = new Date(aLead.fecha_ingreso || '').getTime();
+    var fechaAsignacion = new Date(aLead.fecha_asignacion || '').getTime();
+    var leadStatus = String(aLead.status || '').trim();
+
+    if (leadStatus === 'Paso a Ventas' && !isNaN(fechaIngreso) && !isNaN(fechaAsignacion)) {
+      // Current carry-over: ingreso before dateIn, assigned during current period
+      if (fechaIngreso < dateInMs && fechaAsignacion >= dateInMs && fechaAsignacion <= dateOutMs) {
+        currentCarryLeads.push(aLead);
+      }
+      // Previous carry-over: ingreso before prevDateIn, assigned during previous period
+      if (fechaIngreso < prevDateInMs && fechaAsignacion >= prevDateInMs && fechaAsignacion <= prevDateOutMs) {
+        previousCarryLeads.push(aLead);
+      }
+    }
+  }
+  var carryOver = buildSegmentedMetricWithDelta_(currentCarryLeads, previousCarryLeads, calificacionIdx, function(lead) {
+    return true;
+  });
+
+  // --- 11. montosInversion ---
+  // Build deal-as-lead proxy arrays for amount helpers
+  // We need to pass deals through amount helpers but segmentation uses lead's segment
+  // So we create proxy objects that carry both deal data and lead id for segment lookup
+  var buildDealProxies_ = function(dealSubset) {
+    var proxies = [];
+    for (var i = 0; i < dealSubset.length; i++) {
+      var deal = dealSubset[i];
+      // Proxy carries id_lead for segment lookup + deal fields for amount calculation
+      proxies.push({
+        id_lead: deal.id_lead,
+        _deal: deal
+      });
+    }
+    return proxies;
+  };
+
+  var currentDealProxies = buildDealProxies_(currentDeals);
+  var previousDealProxies = buildDealProxies_(previousDeals);
+
+  var montosInversion = buildSegmentedAmountWithDelta_(currentDealProxies, previousDealProxies, calificacionIdx, function(proxy) {
+    return Number(proxy._deal.monto_proyeccion) || 0;
+  });
+
+  // --- 12. dealsCerrados ---
+  var currentVendidos = [];
+  var previousVendidos = [];
+  for (var v = 0; v < currentDeals.length; v++) {
+    if (String(currentDeals[v].status_venta || '').trim() === 'Vendido') {
+      currentVendidos.push({ id_lead: currentDeals[v].id_lead, _deal: currentDeals[v] });
+    }
+  }
+  for (var w = 0; w < previousDeals.length; w++) {
+    if (String(previousDeals[w].status_venta || '').trim() === 'Vendido') {
+      previousVendidos.push({ id_lead: previousDeals[w].id_lead, _deal: previousDeals[w] });
+    }
+  }
+
+  var dealsCerrados = buildSegmentedMetricWithDelta_(currentVendidos, previousVendidos, calificacionIdx, function(proxy) {
+    return true;
+  });
+
+  // --- 13. montoCierres ---
+  var montoCierres = buildSegmentedAmountWithDelta_(currentVendidos, previousVendidos, calificacionIdx, function(proxy) {
+    return Number(proxy._deal.monto_cierre) || 0;
+  });
+
+  return {
+    totalLeads: totalLeads,
+    contactables: contactables,
+    contactados: contactados,
+    conRespuesta: conRespuesta,
+    dialogoCompleto: dialogoCompleto,
+    dialogoIntermitente: dialogoIntermitente,
+    interes: interes,
+    descartados: descartados,
+    asignadosVentas: asignadosVentas,
+    carryOver: carryOver,
+    montosInversion: montosInversion,
+    dealsCerrados: dealsCerrados,
+    montoCierres: montoCierres
+  };
 }
 
 function calculateIncontactables_() {
@@ -307,8 +518,8 @@ function getSDRReport(dateIn, dateOut) {
     // Filter previous period leads
     var previousLeads = filterByDateRange_(allLeads, prevDateIn, prevDateOut);
 
-    // Call section calculators (all stubs for now)
-    var embudoGeneral = calculateEmbudoGeneral_();
+    // Call section calculators
+    var embudoGeneral = calculateEmbudoGeneral_(currentLeads, previousLeads, allLeads, contactosIdx, interaccionesIdx, calificacionIdx, allDeals, dateIn, dateOut, prevDateIn, prevDateOut);
     var incontactables = calculateIncontactables_();
     var crossSelling = calculateCrossSelling_();
     var semaforoContesto = calculateSemaforoContesto_();
