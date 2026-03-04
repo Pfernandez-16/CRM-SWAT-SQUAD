@@ -12,11 +12,11 @@
 
 ### Backend Analytics
 
-- [ ] **ANLYT-01**: Crear archivo Analytics.js separado con funciones de calculo de metricas
-- [ ] **ANLYT-02**: Funcion getSDRReport(dateIn, dateOut) que retorna todas las secciones del reporte como JSON
-- [ ] **ANLYT-03**: Filtrado por rango de fechas (fecha_ingreso) con parametros Day In / Day Out
-- [ ] **ANLYT-04**: Segmentacion por servicio_interes (Total / Manufacturers / Individuals)
-- [ ] **ANLYT-05**: Calculo de Delta% vs periodo anterior automatico
+- [x] **ANLYT-01**: Crear archivo Analytics.js separado con funciones de calculo de metricas
+- [x] **ANLYT-02**: Funcion getSDRReport(dateIn, dateOut) que retorna todas las secciones del reporte como JSON
+- [x] **ANLYT-03**: Filtrado por rango de fechas (fecha_ingreso) con parametros Day In / Day Out
+- [x] **ANLYT-04**: Segmentacion por servicio_interes (Total / Manufacturers / Individuals)
+- [x] **ANLYT-05**: Calculo de Delta% vs periodo anterior automatico
 - [ ] **ANLYT-06**: Seccion Embudo General (total leads, pruebas, contactables, contactados, con respuesta, dialogo completo/intermitente, interes, descartados, asignados a ventas, carry-over, montos inversion, deals cerrados, monto cierres)
 - [ ] **ANLYT-07**: Seccion Incontactables (Duplicado, Equivocado, SPAM)
 - [ ] **ANLYT-08**: Seccion Cross Selling
@@ -65,11 +65,11 @@
 |-------------|-------|--------|
 | BUG-01 | Phase 1 | Complete |
 | BUG-02 | Phase 1 | Complete |
-| ANLYT-01 | Phase 2 | Pending |
-| ANLYT-02 | Phase 2 | Pending |
-| ANLYT-03 | Phase 2 | Pending |
-| ANLYT-04 | Phase 2 | Pending |
-| ANLYT-05 | Phase 2 | Pending |
+| ANLYT-01 | Phase 2 | Complete |
+| ANLYT-02 | Phase 2 | Complete |
+| ANLYT-03 | Phase 2 | Complete |
+| ANLYT-04 | Phase 2 | Complete |
+| ANLYT-05 | Phase 2 | Complete |
 | ANLYT-06 | Phase 2 | Pending |
 | ANLYT-07 | Phase 2 | Pending |
 | ANLYT-08 | Phase 2 | Pending |

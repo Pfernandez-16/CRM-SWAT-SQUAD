@@ -38,7 +38,7 @@ Plans:
 **Plans:** 4 plans
 
 Plans:
-- [ ] 02-01-PLAN.md -- Core infrastructure + helpers + date filtering + segmentation (ANLYT-01 to ANLYT-05)
+- [x] 02-01-PLAN.md -- Core infrastructure + helpers + date filtering + segmentation (ANLYT-01 to ANLYT-05)
 - [ ] 02-02-PLAN.md -- Embudo General + Incontactables (ANLYT-06, ANLYT-07)
 - [ ] 02-03-PLAN.md -- Cross Selling + Semaforo Contesto/No Contesto + Sin Respuesta 6to Toque (ANLYT-08 to ANLYT-11)
 - [ ] 02-04-PLAN.md -- Razones No Paso a Ventas + Razones Perdio la Venta + deployment verification (ANLYT-12, ANLYT-13)
