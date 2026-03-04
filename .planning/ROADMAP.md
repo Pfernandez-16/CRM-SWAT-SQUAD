@@ -56,6 +56,14 @@ Plans:
 
 **Requirements:** UI-01 through UI-11
 
+**Plans:** 4 plans
+
+Plans:
+- [ ] 03-01-PLAN.md -- Reportes view scaffolding: nav item, Flatpickr date picker, loading/error states, accordion framework, quick-nav, CSS (UI-01, UI-02, UI-11)
+- [ ] 03-02-PLAN.md -- Embudo General + Incontactables + Cross Selling tables (UI-03, UI-04, UI-05)
+- [ ] 03-03-PLAN.md -- Semaforo grids + Sin Respuesta + Razones tables (UI-06, UI-07, UI-08, UI-09, UI-10)
+- [ ] 03-04-PLAN.md -- Human verification checkpoint (all UI-01 to UI-11)
+
 **Success Criteria:**
 1. "Reportes" nav item appears in sidebar only for ADMIN role
 2. Date range picker filters the report data and auto-calculates the comparison period
