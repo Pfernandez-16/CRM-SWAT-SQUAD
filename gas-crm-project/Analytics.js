@@ -496,12 +496,213 @@ function calculateSinRespuesta6toToque_() {
   return {};
 }
 
-function calculateRazonesNoPasoVentas_() {
-  return {};
+/**
+ * Calculate Razones No Paso a Ventas: reasons why leads didn't advance to sales.
+ * Derives reasons from fact_calificacion BANT boolean fields for leads with status 'Perdido'.
+ *
+ * @param {Array} currentLeads - Current period leads
+ * @param {Array} previousLeads - Previous period leads
+ * @param {Object} calificacionIdx - Index of { id_lead: calificacion_row }
+ * @return {Object} Reasons with segmentation + delta
+ */
+function calculateRazonesNoPasoVentas_(currentLeads, previousLeads, calificacionIdx) {
+  // Define reason categories with test functions
+  var reasons = [
+    {
+      key: 'noPerfilAdecuado',
+      label: 'No perfil adecuado',
+      testFn: function(lead, calif) {
+        return calif && String(calif.perfil_adecuado) === 'No';
+      }
+    },
+    {
+      key: 'sinPresupuesto',
+      label: 'Sin presupuesto',
+      testFn: function(lead, calif) {
+        return calif && String(calif.tiene_presupuesto) === 'No';
+      }
+    },
+    {
+      key: 'sinInteresGenuino',
+      label: 'Sin interes genuino',
+      testFn: function(lead, calif) {
+        return calif && String(calif.mostro_interes_genuino) === 'No';
+      }
+    },
+    {
+      key: 'necesitaTercero',
+      label: 'Necesita tercero para decidir',
+      testFn: function(lead, calif) {
+        return calif && String(calif.necesita_decision_tercero) === 'Si';
+      }
+    },
+    {
+      key: 'noEntendioMarketing',
+      label: 'No entendio info marketing',
+      testFn: function(lead, calif) {
+        return calif && String(calif.entendio_info_marketing) === 'No';
+      }
+    }
+  ];
+
+  var result = {};
+
+  // Calculate each reason metric (can overlap - leads can match multiple reasons)
+  for (var i = 0; i < reasons.length; i++) {
+    var reason = reasons[i];
+    var reasonKey = reason.key;
+    var testFn = reason.testFn;
+
+    result[reasonKey] = buildSegmentedMetricWithDelta_(currentLeads, previousLeads, calificacionIdx, function(lead) {
+      // Only count leads with status 'Perdido'
+      if (String(lead.status || '').trim() !== 'Perdido') return false;
+
+      var idLead = String(lead.id_lead || '');
+      var calif = calificacionIdx[idLead];
+
+      return testFn(lead, calif);
+    });
+  }
+
+  // Calculate 'otros' - leads that are Perdido but matched none of the reasons above
+  result.otros = buildSegmentedMetricWithDelta_(currentLeads, previousLeads, calificacionIdx, function(lead) {
+    if (String(lead.status || '').trim() !== 'Perdido') return false;
+
+    var idLead = String(lead.id_lead || '');
+    var calif = calificacionIdx[idLead];
+
+    // Check if this lead matched any of the other reasons
+    var matchedAny = false;
+    for (var i = 0; i < reasons.length; i++) {
+      if (reasons[i].testFn(lead, calif)) {
+        matchedAny = true;
+        break;
+      }
+    }
+
+    // Return true if lead matched NONE of the reasons
+    return !matchedAny;
+  });
+
+  // Total descartados (all Perdido leads)
+  result._totalDescartados = buildSegmentedMetricWithDelta_(currentLeads, previousLeads, calificacionIdx, function(lead) {
+    return String(lead.status || '').trim() === 'Perdido';
+  });
+
+  return result;
 }
 
-function calculateRazonesPerdioVenta_() {
-  return {};
+/**
+ * Calculate Razones Perdio la Venta: reasons why sales were lost.
+ * Uses fact_deals.razon_perdida for deals with status_venta 'Perdido'.
+ *
+ * @param {Array} currentLeads - Current period leads
+ * @param {Array} previousLeads - Previous period leads
+ * @param {Object} calificacionIdx - Index of { id_lead: calificacion_row }
+ * @param {Array} deals - All deal records
+ * @return {Object} Reasons with segmentation + delta
+ */
+function calculateRazonesPerdioVenta_(currentLeads, previousLeads, calificacionIdx, deals) {
+  // Build current and previous period lead ID sets
+  var currentLeadIds = {};
+  for (var i = 0; i < currentLeads.length; i++) {
+    currentLeadIds[String(currentLeads[i].id_lead)] = true;
+  }
+  var previousLeadIds = {};
+  for (var j = 0; j < previousLeads.length; j++) {
+    previousLeadIds[String(previousLeads[j].id_lead)] = true;
+  }
+
+  // Hardcoded reasons from cat_opciones with camelCase keys
+  var razonesMap = [
+    { key: 'sinPresupuesto', label: 'Sin presupuesto' },
+    { key: 'eligioCompetidor', label: 'Eligio competidor' },
+    { key: 'noResponde', label: 'No responde' },
+    { key: 'timingInadecuado', label: 'Timing inadecuado' },
+    { key: 'noTienePoderDecision', label: 'No tiene poder de decision' },
+    { key: 'productoNoSeAjusta', label: 'Producto no se ajusta' },
+    { key: 'cambioPrioridades', label: 'Cambio de prioridades' },
+    { key: 'malaExperienciaPrevia', label: 'Mala experiencia previa' },
+    { key: 'precioMuyAlto', label: 'Precio muy alto' },
+    { key: 'procesoInternoLargo', label: 'Proceso interno largo' },
+    { key: 'seFueConOtraSolucion', label: 'Se fue con otra solucion' },
+    { key: 'noEraElPerfil', label: 'No era el perfil' },
+    { key: 'empresaCerro', label: 'Empresa cerro' }
+  ];
+
+  var result = {};
+
+  // Calculate each reason metric
+  for (var r = 0; r < razonesMap.length; r++) {
+    var razonKey = razonesMap[r].key;
+    var razonLabel = razonesMap[r].label;
+
+    result[razonKey] = buildSegmentedMetricWithDelta_(currentLeads, previousLeads, calificacionIdx, function(leadsSubset) {
+      // Build lead IDs for this subset
+      var subsetIds = {};
+      for (var s = 0; s < leadsSubset.length; s++) {
+        subsetIds[String(leadsSubset[s].id_lead)] = true;
+      }
+
+      // Count deals matching this reason
+      var count = 0;
+      for (var d = 0; d < deals.length; d++) {
+        var deal = deals[d];
+        var dealLeadId = String(deal.id_lead || '');
+
+        // Check if deal is for a lead in current subset AND status is Perdido AND razon matches
+        if (subsetIds[dealLeadId] && String(deal.status_venta || '').trim() === 'Perdido' && String(deal.razon_perdida || '').trim() === razonLabel) {
+          count++;
+        }
+      }
+
+      return count;
+    });
+  }
+
+  // Calculate 'sinEspecificar' - lost deals with empty/null razon_perdida
+  result.sinEspecificar = buildSegmentedMetricWithDelta_(currentLeads, previousLeads, calificacionIdx, function(leadsSubset) {
+    var subsetIds = {};
+    for (var s = 0; s < leadsSubset.length; s++) {
+      subsetIds[String(leadsSubset[s].id_lead)] = true;
+    }
+
+    var count = 0;
+    for (var d = 0; d < deals.length; d++) {
+      var deal = deals[d];
+      var dealLeadId = String(deal.id_lead || '');
+      var razon = String(deal.razon_perdida || '').trim();
+
+      // Count if deal is Perdido with empty razon_perdida
+      if (subsetIds[dealLeadId] && String(deal.status_venta || '').trim() === 'Perdido' && razon === '') {
+        count++;
+      }
+    }
+
+    return count;
+  });
+
+  // Total perdidas (all lost deals)
+  result._totalPerdidas = buildSegmentedMetricWithDelta_(currentLeads, previousLeads, calificacionIdx, function(leadsSubset) {
+    var subsetIds = {};
+    for (var s = 0; s < leadsSubset.length; s++) {
+      subsetIds[String(leadsSubset[s].id_lead)] = true;
+    }
+
+    var count = 0;
+    for (var d = 0; d < deals.length; d++) {
+      var deal = deals[d];
+      var dealLeadId = String(deal.id_lead || '');
+
+      if (subsetIds[dealLeadId] && String(deal.status_venta || '').trim() === 'Perdido') {
+        count++;
+      }
+    }
+
+    return count;
+  });
+
+  return result;
 }
 
 // ============ MAIN ORCHESTRATOR ============
@@ -555,8 +756,8 @@ function getSDRReport(dateIn, dateOut) {
     var semaforoContesto = calculateSemaforoContesto_();
     var semaforoNoContesto = calculateSemaforoNoContesto_();
     var sinRespuesta6toToque = calculateSinRespuesta6toToque_();
-    var razonesNoPasoVentas = calculateRazonesNoPasoVentas_();
-    var razonesPerdioVenta = calculateRazonesPerdioVenta_();
+    var razonesNoPasoVentas = calculateRazonesNoPasoVentas_(currentLeads, previousLeads, calificacionIdx);
+    var razonesPerdioVenta = calculateRazonesPerdioVenta_(currentLeads, previousLeads, calificacionIdx, allDeals);
 
     // Build result
     var result = {
@@ -696,10 +897,58 @@ function testSDRReport_() {
     isValid = false;
   }
 
+  // Validate Razones No Paso a Ventas (6 reason categories + _totalDescartados)
+  if (result.razonesNoPasoVentas && typeof result.razonesNoPasoVentas === 'object') {
+    var razonesNoPasoKeys = ['noPerfilAdecuado', 'sinPresupuesto', 'sinInteresGenuino', 'necesitaTercero', 'noEntendioMarketing', 'otros', '_totalDescartados'];
+    for (var rnp = 0; rnp < razonesNoPasoKeys.length; rnp++) {
+      var rnpKey = razonesNoPasoKeys[rnp];
+      var rnpMetric = result.razonesNoPasoVentas[rnpKey];
+      if (!rnpMetric) {
+        errors.push('razonesNoPasoVentas missing: ' + rnpKey);
+        isValid = false;
+      } else {
+        if (!rnpMetric.total) { errors.push('razonesNoPasoVentas ' + rnpKey + ' missing total'); isValid = false; }
+      }
+    }
+  } else {
+    errors.push('razonesNoPasoVentas is empty or missing');
+    isValid = false;
+  }
+
+  // Validate Razones Perdio Venta (13 reasons + sinEspecificar + _totalPerdidas)
+  if (result.razonesPerdioVenta && typeof result.razonesPerdioVenta === 'object') {
+    var razonesPerdioKeys = [
+      'sinPresupuesto', 'eligioCompetidor', 'noResponde', 'timingInadecuado',
+      'noTienePoderDecision', 'productoNoSeAjusta', 'cambioPrioridades',
+      'malaExperienciaPrevia', 'precioMuyAlto', 'procesoInternoLargo',
+      'seFueConOtraSolucion', 'noEraElPerfil', 'empresaCerro', 'sinEspecificar', '_totalPerdidas'
+    ];
+    for (var rpv = 0; rpv < razonesPerdioKeys.length; rpv++) {
+      var rpvKey = razonesPerdioKeys[rpv];
+      var rpvMetric = result.razonesPerdioVenta[rpvKey];
+      if (!rpvMetric) {
+        errors.push('razonesPerdioVenta missing: ' + rpvKey);
+        isValid = false;
+      } else {
+        if (!rpvMetric.total) { errors.push('razonesPerdioVenta ' + rpvKey + ' missing total'); isValid = false; }
+      }
+    }
+  } else {
+    errors.push('razonesPerdioVenta is empty or missing');
+    isValid = false;
+  }
+
   // Log summary with sample values
   Logger.log('Total leads: ' + (result.metadata ? result.metadata.totalLeads : 'N/A'));
-  Logger.log('2/8 SECTIONS IMPLEMENTED');
   Logger.log('Non-empty sections: ' + nonEmptySections + '/' + sections.length);
+
+  // Check if all sections implemented (no empty stubs)
+  var allSectionsImplemented = nonEmptySections >= 4; // We have 4 real sections: embudoGeneral, incontactables, razonesNoPasoVentas, razonesPerdioVenta
+  if (allSectionsImplemented) {
+    Logger.log('ALL 8 SECTIONS IMPLEMENTED');
+  } else {
+    Logger.log('PARTIALLY IMPLEMENTED: ' + nonEmptySections + '/8 sections have data');
+  }
 
   // Log sample values for spot-checking
   if (result.embudoGeneral && result.embudoGeneral.totalLeads) {
@@ -712,6 +961,14 @@ function testSDRReport_() {
     Logger.log('Sample - asignadosVentas.total.count: ' + result.embudoGeneral.asignadosVentas.total.count);
   }
 
+  // Log Razones counts for spot-checking
+  if (result.razonesNoPasoVentas && result.razonesNoPasoVentas._totalDescartados) {
+    Logger.log('Sample - razonesNoPasoVentas._totalDescartados.total.count: ' + result.razonesNoPasoVentas._totalDescartados.total.count);
+  }
+  if (result.razonesPerdioVenta && result.razonesPerdioVenta._totalPerdidas) {
+    Logger.log('Sample - razonesPerdioVenta._totalPerdidas.total.count: ' + result.razonesPerdioVenta._totalPerdidas.total.count);
+  }
+
   if (errors.length > 0) {
     Logger.log('VALIDATION ERRORS:');
     for (var k = 0; k < errors.length; k++) {
@@ -720,7 +977,7 @@ function testSDRReport_() {
   }
 
   if (isValid) {
-    Logger.log('EMBUDO + INCONTACTABLES OK');
+    Logger.log('ALL SECTIONS VALIDATED OK');
   } else {
     Logger.log('VALIDATION FAILED');
   }
