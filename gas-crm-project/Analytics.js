@@ -446,8 +446,38 @@ function calculateEmbudoGeneral_(currentLeads, previousLeads, allLeads, contacto
   };
 }
 
-function calculateIncontactables_() {
-  return {};
+/**
+ * Calculate Incontactables section: leads that cannot be contacted.
+ * Three sub-metrics: Duplicado, Equivocado (mapped to Invalido), SPAM (zeroed).
+ *
+ * @param {Array} currentLeads - Current period leads
+ * @param {Array} previousLeads - Previous period leads
+ * @param {Object} calificacionIdx - Index of { id_lead: calificacion_row }
+ * @return {Object} { duplicado, equivocado, spam } with segmentation + delta
+ */
+function calculateIncontactables_(currentLeads, previousLeads, calificacionIdx) {
+  // Duplicado: leads with status 'Duplicado'
+  var duplicado = buildSegmentedMetricWithDelta_(currentLeads, previousLeads, calificacionIdx, function(lead) {
+    return String(lead.status || '').trim() === 'Duplicado';
+  });
+
+  // Equivocado: mapped to status 'Invalido' (closest match in data)
+  var equivocado = buildSegmentedMetricWithDelta_(currentLeads, previousLeads, calificacionIdx, function(lead) {
+    return String(lead.status || '').trim() === 'Invalido';
+  });
+
+  // SPAM: no data source exists, return zeroed structure
+  var spam = {
+    total: { count: 0, pct: '0.0', delta: '0.0' },
+    manufacturers: { count: 0, pct: '0.0', delta: '0.0' },
+    individuals: { count: 0, pct: '0.0', delta: '0.0' }
+  };
+
+  return {
+    duplicado: duplicado,
+    equivocado: equivocado,
+    spam: spam
+  };
 }
 
 function calculateCrossSelling_() {
@@ -520,7 +550,7 @@ function getSDRReport(dateIn, dateOut) {
 
     // Call section calculators
     var embudoGeneral = calculateEmbudoGeneral_(currentLeads, previousLeads, allLeads, contactosIdx, interaccionesIdx, calificacionIdx, allDeals, dateIn, dateOut, prevDateIn, prevDateOut);
-    var incontactables = calculateIncontactables_();
+    var incontactables = calculateIncontactables_(currentLeads, previousLeads, calificacionIdx);
     var crossSelling = calculateCrossSelling_();
     var semaforoContesto = calculateSemaforoContesto_();
     var semaforoNoContesto = calculateSemaforoNoContesto_();
@@ -619,9 +649,68 @@ function testSDRReport_() {
     }
   }
 
-  // Log summary
+  // Validate Embudo General (13 metrics)
+  var embudoMetrics = [
+    'totalLeads', 'contactables', 'contactados', 'conRespuesta',
+    'dialogoCompleto', 'dialogoIntermitente', 'interes', 'descartados',
+    'asignadosVentas', 'carryOver', 'montosInversion', 'dealsCerrados', 'montoCierres'
+  ];
+  if (result.embudoGeneral && typeof result.embudoGeneral === 'object') {
+    for (var em = 0; em < embudoMetrics.length; em++) {
+      var metricKey = embudoMetrics[em];
+      var metric = result.embudoGeneral[metricKey];
+      if (!metric) {
+        errors.push('Embudo missing metric: ' + metricKey);
+        isValid = false;
+      } else {
+        // Check segmentation keys
+        if (!metric.total) { errors.push('Embudo ' + metricKey + ' missing total'); isValid = false; }
+        if (!metric.manufacturers) { errors.push('Embudo ' + metricKey + ' missing manufacturers'); isValid = false; }
+        if (!metric.individuals) { errors.push('Embudo ' + metricKey + ' missing individuals'); isValid = false; }
+        // Check delta field exists
+        if (metric.total && metric.total.delta === undefined) { errors.push('Embudo ' + metricKey + '.total missing delta'); isValid = false; }
+      }
+    }
+  } else {
+    errors.push('embudoGeneral is empty or missing');
+    isValid = false;
+  }
+
+  // Validate Incontactables (3 sub-metrics)
+  var incontactablesKeys = ['duplicado', 'equivocado', 'spam'];
+  if (result.incontactables && typeof result.incontactables === 'object') {
+    for (var ic = 0; ic < incontactablesKeys.length; ic++) {
+      var icKey = incontactablesKeys[ic];
+      var icMetric = result.incontactables[icKey];
+      if (!icMetric) {
+        errors.push('Incontactables missing: ' + icKey);
+        isValid = false;
+      } else {
+        if (!icMetric.total) { errors.push('Incontactables ' + icKey + ' missing total'); isValid = false; }
+        if (!icMetric.manufacturers) { errors.push('Incontactables ' + icKey + ' missing manufacturers'); isValid = false; }
+        if (!icMetric.individuals) { errors.push('Incontactables ' + icKey + ' missing individuals'); isValid = false; }
+      }
+    }
+  } else {
+    errors.push('incontactables is empty or missing');
+    isValid = false;
+  }
+
+  // Log summary with sample values
   Logger.log('Total leads: ' + (result.metadata ? result.metadata.totalLeads : 'N/A'));
+  Logger.log('2/8 SECTIONS IMPLEMENTED');
   Logger.log('Non-empty sections: ' + nonEmptySections + '/' + sections.length);
+
+  // Log sample values for spot-checking
+  if (result.embudoGeneral && result.embudoGeneral.totalLeads) {
+    Logger.log('Sample - totalLeads.total.count: ' + result.embudoGeneral.totalLeads.total.count);
+  }
+  if (result.embudoGeneral && result.embudoGeneral.contactados) {
+    Logger.log('Sample - contactados.total.count: ' + result.embudoGeneral.contactados.total.count);
+  }
+  if (result.embudoGeneral && result.embudoGeneral.asignadosVentas) {
+    Logger.log('Sample - asignadosVentas.total.count: ' + result.embudoGeneral.asignadosVentas.total.count);
+  }
 
   if (errors.length > 0) {
     Logger.log('VALIDATION ERRORS:');
@@ -631,9 +720,9 @@ function testSDRReport_() {
   }
 
   if (isValid) {
-    Logger.log('INFRASTRUCTURE OK');
+    Logger.log('EMBUDO + INCONTACTABLES OK');
   } else {
-    Logger.log('INFRASTRUCTURE FAILED');
+    Logger.log('VALIDATION FAILED');
   }
 
   Logger.log('=== testSDRReport_ END ===');
