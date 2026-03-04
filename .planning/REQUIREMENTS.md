@@ -17,8 +17,8 @@
 - [x] **ANLYT-03**: Filtrado por rango de fechas (fecha_ingreso) con parametros Day In / Day Out
 - [x] **ANLYT-04**: Segmentacion por servicio_interes (Total / Manufacturers / Individuals)
 - [x] **ANLYT-05**: Calculo de Delta% vs periodo anterior automatico
-- [ ] **ANLYT-06**: Seccion Embudo General (total leads, pruebas, contactables, contactados, con respuesta, dialogo completo/intermitente, interes, descartados, asignados a ventas, carry-over, montos inversion, deals cerrados, monto cierres)
-- [ ] **ANLYT-07**: Seccion Incontactables (Duplicado, Equivocado, SPAM)
+- [x] **ANLYT-06**: Seccion Embudo General (total leads, pruebas, contactables, contactados, con respuesta, dialogo completo/intermitente, interes, descartados, asignados a ventas, carry-over, montos inversion, deals cerrados, monto cierres)
+- [x] **ANLYT-07**: Seccion Incontactables (Duplicado, Equivocado, SPAM)
 - [ ] **ANLYT-08**: Seccion Cross Selling
 - [ ] **ANLYT-09**: Seccion Semaforo Contesto (Telefono 1/2/3, WhatsApp 1/2/3, Correo 1/2/3/4)
 - [ ] **ANLYT-10**: Seccion Semaforo No Contesto (Telefono 1/2/3, WhatsApp 1/2/3)
@@ -70,8 +70,8 @@
 | ANLYT-03 | Phase 2 | Complete |
 | ANLYT-04 | Phase 2 | Complete |
 | ANLYT-05 | Phase 2 | Complete |
-| ANLYT-06 | Phase 2 | Pending |
-| ANLYT-07 | Phase 2 | Pending |
+| ANLYT-06 | Phase 2 | Complete |
+| ANLYT-07 | Phase 2 | Complete |
 | ANLYT-08 | Phase 2 | Pending |
 | ANLYT-09 | Phase 2 | Pending |
 | ANLYT-10 | Phase 2 | Pending |
