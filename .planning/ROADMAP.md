@@ -23,7 +23,7 @@
 **Plans:** 1 plan
 
 Plans:
-- [ ] 01-01-PLAN.md -- Fix LEAD_FIELD_MAP + calificacion routing + isDeal source-based detection
+- [x] 01-01-PLAN.md -- Fix LEAD_FIELD_MAP + calificacion routing + isDeal source-based detection
 
 **Success Criteria:**
 1. All qualification fields (Toques de Contactacion, En que toque va, BANT fields) are mapped in LEAD_FIELD_MAP and persist correctly when saving a lead
@@ -35,10 +35,17 @@ Plans:
 
 **Requirements:** ANLYT-01 through ANLYT-13
 
+**Plans:** 3 plans
+
+Plans:
+- [ ] 02-01-PLAN.md -- Core infrastructure + Embudo General + Incontactables (ANLYT-01 to ANLYT-07)
+- [ ] 02-02-PLAN.md -- Cross Selling + Semaforo Contesto/No Contesto + Sin Respuesta 6to Toque (ANLYT-08 to ANLYT-11)
+- [ ] 02-03-PLAN.md -- Razones No Paso a Ventas + Razones Perdio la Venta + deployment verification (ANLYT-12, ANLYT-13)
+
 **Success Criteria:**
-1. Analytics.js exists as a separate file deployed via clasp alongside Code.js
+1. Analytics.js exists as a separate file deployed via clasp alongside Codigo.js
 2. getSDRReport(dateIn, dateOut) returns JSON with all 8 sections, each containing Total/Manufacturers/Individuals breakdowns with count, percentage, and delta vs previous period
-3. Date filtering correctly uses fecha_ingreso and segmentation uses servicio_interes
+3. Date filtering correctly uses fecha_ingreso and segmentation uses tipo_membresia from fact_calificacion
 4. Carry-over calculation correctly identifies leads from previous periods that were assigned to sales in the current period
 5. Function executes within GAS 6-minute limit for up to 2000 leads
 
