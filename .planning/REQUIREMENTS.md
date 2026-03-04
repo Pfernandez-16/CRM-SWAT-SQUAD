@@ -28,8 +28,8 @@
 
 ### Frontend Reportes
 
-- [ ] **UI-01**: Nueva vista "Reportes" en sidebar con icono, visible solo para ADMIN
-- [ ] **UI-02**: Selector de rango de fechas (Day In / Day Out) con date pickers
+- [x] **UI-01**: Nueva vista "Reportes" en sidebar con icono, visible solo para ADMIN
+- [x] **UI-02**: Selector de rango de fechas (Day In / Day Out) con date pickers
 - [ ] **UI-03**: Tabla Embudo General con columnas Total|%|Delta por segmento
 - [ ] **UI-04**: Tabla Incontactables
 - [ ] **UI-05**: Tabla Cross Selling
@@ -38,7 +38,7 @@
 - [ ] **UI-08**: Tabla Sin Respuesta 6to Toque
 - [ ] **UI-09**: Tabla Por que no paso a Ventas
 - [ ] **UI-10**: Tabla Por que se perdio la venta
-- [ ] **UI-11**: Indicador de carga mientras se calculan metricas
+- [x] **UI-11**: Indicador de carga mientras se calculan metricas
 
 ## v2 Requirements
 
@@ -78,8 +78,8 @@
 | ANLYT-11 | Phase 2 | Complete |
 | ANLYT-12 | Phase 2 | Complete |
 | ANLYT-13 | Phase 2 | Complete |
-| UI-01 | Phase 3 | Pending |
-| UI-02 | Phase 3 | Pending |
+| UI-01 | Phase 3 | Complete |
+| UI-02 | Phase 3 | Complete |
 | UI-03 | Phase 3 | Pending |
 | UI-04 | Phase 3 | Pending |
 | UI-05 | Phase 3 | Pending |
@@ -88,7 +88,7 @@
 | UI-08 | Phase 3 | Pending |
 | UI-09 | Phase 3 | Pending |
 | UI-10 | Phase 3 | Pending |
-| UI-11 | Phase 3 | Pending |
+| UI-11 | Phase 3 | Complete |
 
 **Coverage:**
 - v1 requirements: 26 total
