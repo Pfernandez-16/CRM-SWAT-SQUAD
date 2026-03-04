@@ -93,6 +93,55 @@
                 { id: 'perdioVenta', label: 'Por que perdio la venta' }
             ];
 
+            // ── Report Data Arrays ──
+            const embudoRows = computed(() => {
+                if (!reportData.value || !reportData.value.embudoGeneral) return [];
+                const eg = reportData.value.embudoGeneral;
+                return [
+                    { label: 'Total Leads', metric: eg.totalLeads, type: 'count' },
+                    { label: 'Contactables', metric: eg.contactables, type: 'count' },
+                    { label: 'Contactados', metric: eg.contactados, type: 'count' },
+                    { label: 'Con Respuesta', metric: eg.conRespuesta, type: 'count' },
+                    { label: 'Dialogo Completo', metric: eg.dialogoCompleto, type: 'count' },
+                    { label: 'Dialogo Intermitente', metric: eg.dialogoIntermitente, type: 'count' },
+                    { label: 'Interes', metric: eg.interes, type: 'count' },
+                    { label: 'Descartados', metric: eg.descartados, type: 'count' },
+                    { label: 'Asignados a Ventas', metric: eg.asignadosVentas, type: 'count' },
+                    { label: 'Carry Over', metric: eg.carryOver, type: 'count' },
+                    { label: 'Monto Inversion', metric: eg.montosInversion, type: 'amount' },
+                    { label: 'Deals Cerrados', metric: eg.dealsCerrados, type: 'count' },
+                    { label: 'Monto Cierres', metric: eg.montoCierres, type: 'amount' }
+                ];
+            });
+
+            const incontactablesRows = computed(() => {
+                if (!reportData.value || !reportData.value.incontactables) return [];
+                const inc = reportData.value.incontactables;
+                return [
+                    { label: 'Duplicado', metric: inc.duplicado, type: 'count' },
+                    { label: 'Equivocado', metric: inc.equivocado, type: 'count' },
+                    { label: 'SPAM', metric: inc.spam, type: 'count' }
+                ];
+            });
+
+            const crossSellingRows = computed(() => {
+                if (!reportData.value || !reportData.value.crossSelling) return [];
+                const cs = reportData.value.crossSelling;
+                return [
+                    { label: 'Cross Sell Deals', metric: cs.crossSellDeals, type: 'count' }
+                ];
+            });
+
+            function getSegmentValue(metric, segment) {
+                if (!metric || !metric[segment]) return { count: 0, pct: '0.0', delta: '0.0' };
+                return metric[segment];
+            }
+
+            function formatAmount(val) {
+                if (!val && val !== 0) return '$0';
+                return '$' + Number(val).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+            }
+
             const toast = reactive({ show: false, message: '', type: 'info' });
 
             // ── Navigation ──
@@ -1232,6 +1281,8 @@
                 // Reportes
                 reportData, reportLoading, reportError, dateRange, comparisonRange,
                 openSections, reportSections,
+                embudoRows, incontactablesRows, crossSellingRows,
+                getSegmentValue, formatAmount,
                 // Computed
                 navItems, currentPageTitle, userInitials,
                 kanbanStatuses, filteredLeads, totalPages, paginatedLeads,
