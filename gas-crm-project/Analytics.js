@@ -346,3 +346,129 @@ function getSDRReport(dateIn, dateOut) {
     return JSON.stringify({ error: err.message, stack: err.stack });
   }
 }
+
+// ============ TEST FUNCTIONS (Development Only) ============
+
+/**
+ * Smoke test: Validates getSDRReport structure without needing real data.
+ * Runnable from GAS Script Editor via Run menu.
+ */
+function testSDRReport_() {
+  Logger.log('=== testSDRReport_ START ===');
+
+  var start = new Date();
+
+  // Call with broad date range
+  var resultJson = getSDRReport('2024-01-01', '2025-12-31');
+  var result = JSON.parse(resultJson);
+
+  var duration = new Date() - start;
+  Logger.log('Duration: ' + duration + 'ms');
+
+  // Validate structure
+  var isValid = true;
+  var errors = [];
+
+  // Check metadata
+  if (!result.metadata) {
+    errors.push('Missing metadata');
+    isValid = false;
+  } else {
+    if (!result.metadata.dateIn) errors.push('Missing metadata.dateIn');
+    if (!result.metadata.dateOut) errors.push('Missing metadata.dateOut');
+    if (!result.metadata.generatedAt) errors.push('Missing metadata.generatedAt');
+    if (result.metadata.totalLeads === undefined) errors.push('Missing metadata.totalLeads');
+  }
+
+  // Check all 8 section keys
+  var sections = [
+    'embudoGeneral',
+    'incontactables',
+    'crossSelling',
+    'semaforoContesto',
+    'semaforoNoContesto',
+    'sinRespuesta6toToque',
+    'razonesNoPasoVentas',
+    'razonesPerdioVenta'
+  ];
+
+  for (var i = 0; i < sections.length; i++) {
+    if (result[sections[i]] === undefined) {
+      errors.push('Missing section: ' + sections[i]);
+      isValid = false;
+    }
+  }
+
+  // Count non-empty sections
+  var nonEmptySections = 0;
+  for (var j = 0; j < sections.length; j++) {
+    var section = result[sections[j]];
+    if (section && typeof section === 'object' && Object.keys(section).length > 0) {
+      nonEmptySections++;
+    }
+  }
+
+  // Log summary
+  Logger.log('Total leads: ' + (result.metadata ? result.metadata.totalLeads : 'N/A'));
+  Logger.log('Non-empty sections: ' + nonEmptySections + '/' + sections.length);
+
+  if (errors.length > 0) {
+    Logger.log('VALIDATION ERRORS:');
+    for (var k = 0; k < errors.length; k++) {
+      Logger.log('  - ' + errors[k]);
+    }
+  }
+
+  if (isValid) {
+    Logger.log('INFRASTRUCTURE OK');
+  } else {
+    Logger.log('INFRASTRUCTURE FAILED');
+  }
+
+  Logger.log('=== testSDRReport_ END ===');
+}
+
+/**
+ * Performance benchmark: Runs getSDRReport 3 times and reports timing.
+ * Runnable from GAS Script Editor via Run menu.
+ */
+function testPerformance_() {
+  Logger.log('=== testPerformance_ START ===');
+
+  var dateIn = '2024-01-01';
+  var dateOut = '2025-12-31';
+  var runs = 3;
+  var times = [];
+
+  for (var i = 0; i < runs; i++) {
+    var start = new Date();
+    getSDRReport(dateIn, dateOut);
+    var duration = new Date() - start;
+    times.push(duration);
+    Logger.log('Run ' + (i + 1) + ': ' + duration + 'ms');
+  }
+
+  // Calculate average
+  var sum = 0;
+  for (var j = 0; j < times.length; j++) {
+    sum += times[j];
+  }
+  var average = sum / times.length;
+
+  Logger.log('Average execution time: ' + average.toFixed(0) + 'ms');
+
+  // Determine status
+  var status;
+  if (average < 30000) {
+    status = 'PASS';
+  } else if (average < 60000) {
+    status = 'WARNING';
+  } else {
+    status = 'FAIL';
+  }
+
+  Logger.log('Performance status: ' + status);
+  Logger.log('Thresholds: <30s PASS, <60s WARNING, >=60s FAIL');
+
+  Logger.log('=== testPerformance_ END ===');
+}
