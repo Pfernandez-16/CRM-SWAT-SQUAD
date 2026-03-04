@@ -33,11 +33,11 @@
 - [x] **UI-03**: Tabla Embudo General con columnas Total|%|Delta por segmento
 - [x] **UI-04**: Tabla Incontactables
 - [x] **UI-05**: Tabla Cross Selling
-- [ ] **UI-06**: Tabla Semaforo Contesto
-- [ ] **UI-07**: Tabla Semaforo No Contesto
-- [ ] **UI-08**: Tabla Sin Respuesta 6to Toque
-- [ ] **UI-09**: Tabla Por que no paso a Ventas
-- [ ] **UI-10**: Tabla Por que se perdio la venta
+- [x] **UI-06**: Tabla Semaforo Contesto
+- [x] **UI-07**: Tabla Semaforo No Contesto
+- [x] **UI-08**: Tabla Sin Respuesta 6to Toque
+- [x] **UI-09**: Tabla Por que no paso a Ventas
+- [x] **UI-10**: Tabla Por que se perdio la venta
 - [x] **UI-11**: Indicador de carga mientras se calculan metricas
 
 ## v2 Requirements
@@ -83,11 +83,11 @@
 | UI-03 | Phase 3 | Complete |
 | UI-04 | Phase 3 | Complete |
 | UI-05 | Phase 3 | Complete |
-| UI-06 | Phase 3 | Pending |
-| UI-07 | Phase 3 | Pending |
-| UI-08 | Phase 3 | Pending |
-| UI-09 | Phase 3 | Pending |
-| UI-10 | Phase 3 | Pending |
+| UI-06 | Phase 3 | Complete |
+| UI-07 | Phase 3 | Complete |
+| UI-08 | Phase 3 | Complete |
+| UI-09 | Phase 3 | Complete |
+| UI-10 | Phase 3 | Complete |
 | UI-11 | Phase 3 | Complete |
 
 **Coverage:**

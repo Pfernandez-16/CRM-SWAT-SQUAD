@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-last_updated: "2026-03-04T21:24:25Z"
+last_updated: "2026-03-04T21:31:14Z"
 progress:
   total_phases: 3
   completed_phases: 2
   total_plans: 9
-  completed_plans: 7
-  percent: 78
+  completed_plans: 8
+  percent: 89
 ---
 
 ---
@@ -81,7 +81,7 @@ See: .planning/PROJECT.md (updated 2026-03-03)
 
 **Phase:** 3 — Frontend Reportes View
 **Status:** In Progress
-**Plans:** 2/4 complete
+**Plans:** 3/4 complete
 
 ## Phase History
 
@@ -125,11 +125,16 @@ See: .planning/PROJECT.md (updated 2026-03-03)
   - Duration: 2 minutes
   - Commits: d8dd064, fb299b4
   - Three core report tables with grouped segmentation columns, inline percentage bars, and colored delta indicators
+- **Plan 03-03:** Remaining Report Tables ✅
+  - Completed: 2026-03-04
+  - Duration: 3 minutes
+  - Commits: 27f7d11, fee8ae6
+  - Implemented 5 remaining report tables: Semaforo Contesto/No Contesto grids with segment selector, Sin Respuesta, Razones No Paso a Ventas, and Razones Perdio la Venta with summary row styling
 
 ## Milestone
 
 **Version:** v1 — Reporteria SDR
-**Progress:** [███████░░░] 67%
+**Progress:** [████████░░] 78%
 
 ## Decisions
 
@@ -153,6 +158,10 @@ See: .planning/PROJECT.md (updated 2026-03-03)
 - [Phase 03-01]: Open embudoGeneral section by default in accordion
 - [Phase 03-02]: Used v-if conditions for section-specific rendering instead of component props (simpler for GAS HTML Service)
 - [Phase 03-02]: Amount-type rows display formatted currency with "--" for percentage column (percentages don't apply to monetary amounts)
+- [Phase 03-03]: Semaforo grids use segment selector dropdown (shared between Contesto and No Contesto)
+- [Phase 03-03]: Empty toque cells in semaforo grids display "--" for visual clarity
+- [Phase 03-03]: Summary rows use bold font and surface background for visual distinction
+- [Phase 03-03]: Semaforo cells show count + delta only (simplified from full segment breakdown per cell)
 
 ## Performance Metrics
 
@@ -164,7 +173,8 @@ See: .planning/PROJECT.md (updated 2026-03-03)
 | 02 | 04 | 3 min | 2 | 1 | 2026-03-04 |
 | 03 | 01 | 3 min | 2 | 3 | 2026-03-04 |
 | 03 | 02 | 2 min | 2 | 2 | 2026-03-04 |
+| 03 | 03 | 3 min | 2 | 2 | 2026-03-04 |
 
 ---
-*Last updated: 2026-03-04T21:24:25Z*
+*Last updated: 2026-03-04T21:31:14Z*
 
