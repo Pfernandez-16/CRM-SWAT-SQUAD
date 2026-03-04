@@ -73,6 +73,26 @@
 
             const calendarDate = ref(new Date());
 
+            // ── Reportes State ──
+            const reportData = ref(null);
+            const reportLoading = ref(false);
+            const reportError = ref(null);
+            const dateRange = ref({ start: null, end: null });
+            const comparisonRange = ref({ start: null, end: null });
+            const openSections = ref(['embudoGeneral']); // Embudo opens by default
+            let flatpickrInstance = null;
+
+            const reportSections = [
+                { id: 'embudoGeneral', label: 'Embudo General' },
+                { id: 'incontactables', label: 'Incontactables' },
+                { id: 'crossSelling', label: 'Cross Selling' },
+                { id: 'semaforoContesto', label: 'Semaforo Contesto' },
+                { id: 'semaforoNoContesto', label: 'Semaforo No Contesto' },
+                { id: 'sinRespuesta', label: 'Sin Respuesta 6to Toque' },
+                { id: 'noPasoVentas', label: 'Por que no paso a Ventas' },
+                { id: 'perdioVenta', label: 'Por que perdio la venta' }
+            ];
+
             const toast = reactive({ show: false, message: '', type: 'info' });
 
             // ── Navigation ──
@@ -80,6 +100,7 @@
                 { id: 'dashboard', icon: 'dashboard', label: 'Dashboard' },
                 { id: 'leads', icon: 'list_alt', label: 'Prospectos', badge: leads.value.length || null },
                 { id: 'negociaciones', icon: 'handshake', label: 'Negociaciones', badge: deals.value.length || null },
+                { id: 'reportes', icon: 'assessment', label: 'Reportes' },
                 { id: 'calendar', icon: 'calendar_month', label: 'Calendario' },
                 { id: 'config', icon: 'settings', label: 'Configuración' },
                 { id: 'account', icon: 'person', label: 'Cuenta' },
@@ -88,7 +109,7 @@
             const currentPageTitle = computed(() => {
                 const titles = {
                     dashboard: 'Dashboard', leads: 'Prospectos', negociaciones: 'Negociaciones',
-                    calendar: 'Calendario', config: 'Configuración', account: 'Cuenta'
+                    reportes: 'Reportes', calendar: 'Calendario', config: 'Configuración', account: 'Cuenta'
                 };
                 return titles[currentView.value] || '';
             });
@@ -231,6 +252,12 @@
                 return match || null;
             });
 
+            const comparisonLabel = computed(() => {
+                if (!comparisonRange.value.start || !comparisonRange.value.end) return '';
+                const fmt = (d) => d.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' });
+                return 'Comparando vs: ' + fmt(comparisonRange.value.start) + ' - ' + fmt(comparisonRange.value.end);
+            });
+
             // ── Catalog Names ──
             const catalogNames = computed(() => Object.keys(catalogs.value).filter(k => k.trim()));
 
@@ -329,6 +356,80 @@
                 const d = new Date(calendarDate.value);
                 d.setMonth(d.getMonth() + 1);
                 calendarDate.value = d;
+            }
+
+            // ── Report Functions ──
+            function formatDateYMD(date) {
+                if (!date) return '';
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                return year + '-' + month + '-' + day;
+            }
+
+            let reportAbortController = null;
+
+            function generateReport() {
+                if (!dateRange.value.start || !dateRange.value.end) return;
+                reportLoading.value = true;
+                reportError.value = null;
+                reportAbortController = new AbortController();
+
+                const dateIn = formatDateYMD(dateRange.value.start);
+                const dateOut = formatDateYMD(dateRange.value.end);
+
+                google.script.run
+                    .withSuccessHandler(function(jsonString) {
+                        if (reportAbortController && reportAbortController.signal.aborted) return;
+                        try {
+                            const data = typeof jsonString === 'string' ? JSON.parse(jsonString) : jsonString;
+                            if (data.error) {
+                                reportError.value = data.error;
+                                reportData.value = null;
+                            } else if (data.metadata && data.metadata.totalLeads === 0) {
+                                reportData.value = { _empty: true };
+                            } else {
+                                reportData.value = data;
+                            }
+                        } catch (e) {
+                            reportError.value = 'Error al procesar la respuesta: ' + e.message;
+                            reportData.value = null;
+                        }
+                        reportLoading.value = false;
+                    })
+                    .withFailureHandler(function(error) {
+                        if (reportAbortController && reportAbortController.signal.aborted) return;
+                        reportError.value = error.message || 'Error desconocido al generar el reporte';
+                        reportData.value = null;
+                        reportLoading.value = false;
+                    })
+                    .getSDRReport(dateIn, dateOut);
+            }
+
+            function cancelReport() {
+                if (reportAbortController) {
+                    reportAbortController.abort();
+                }
+                reportLoading.value = false;
+            }
+
+            function toggleSection(sectionId) {
+                const idx = openSections.value.indexOf(sectionId);
+                if (idx > -1) {
+                    openSections.value.splice(idx, 1);
+                } else {
+                    openSections.value.push(sectionId);
+                }
+            }
+
+            function scrollToSection(sectionId) {
+                if (!openSections.value.includes(sectionId)) {
+                    openSections.value.push(sectionId);
+                }
+                nextTick(() => {
+                    const el = document.getElementById('section-' + sectionId);
+                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                });
             }
 
             // ── Theme ──
@@ -1025,7 +1126,7 @@
             }
 
             // Watch for view/mode changes to re-init kanban
-            watch(currentView, (newView) => {
+            watch(currentView, (newView, oldView) => {
                 if (viewMode.value === 'kanban') {
                     nextTick(() => initKanbanDragDrop());
                 }
@@ -1034,6 +1135,45 @@
                 if (newView === 'config' && userRole.value === 'ADMIN') {
                     loadHMN();
                     loadAllUsers();
+                }
+                if (newView === 'reportes') {
+                    nextTick(() => {
+                        const now = new Date();
+                        const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+                        const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+                        if (flatpickrInstance) { flatpickrInstance.destroy(); flatpickrInstance = null; }
+
+                        flatpickrInstance = flatpickr('.date-range-picker', {
+                            mode: 'range',
+                            dateFormat: 'Y-m-d',
+                            defaultDate: [firstDay, lastDay],
+                            locale: { firstDayOfWeek: 1, rangeSeparator: ' a ' },
+                            onChange: function(selectedDates) {
+                                if (selectedDates.length === 2) {
+                                    dateRange.value = { start: selectedDates[0], end: selectedDates[1] };
+                                    const diffMs = selectedDates[1].getTime() - selectedDates[0].getTime();
+                                    const compEnd = new Date(selectedDates[0].getTime() - 86400000);
+                                    const compStart = new Date(compEnd.getTime() - diffMs);
+                                    comparisonRange.value = { start: compStart, end: compEnd };
+                                }
+                            }
+                        });
+
+                        // Set initial date range
+                        dateRange.value = { start: firstDay, end: lastDay };
+                        const diffMs = lastDay.getTime() - firstDay.getTime();
+                        const compEnd = new Date(firstDay.getTime() - 86400000);
+                        const compStart = new Date(compEnd.getTime() - diffMs);
+                        comparisonRange.value = { start: compStart, end: compEnd };
+
+                        // Auto-load current month report
+                        generateReport();
+                    });
+                }
+                if (oldView === 'reportes' && flatpickrInstance) {
+                    flatpickrInstance.destroy();
+                    flatpickrInstance = null;
                 }
             });
 
@@ -1089,13 +1229,16 @@
                 showHandoffModal, handoffLead, handoffData,
                 // HMN & Users
                 hmnVariables, allUsers, newUserEmail, newUserNombre, newUserRol,
+                // Reportes
+                reportData, reportLoading, reportError, dateRange, comparisonRange,
+                openSections, reportSections,
                 // Computed
                 navItems, currentPageTitle, userInitials,
                 kanbanStatuses, filteredLeads, totalPages, paginatedLeads,
                 filteredDeals, totalDealPages, paginatedDeals,
                 catalogNames, filteredCatalogNames, configCategories,
                 uniqueRegions, uniqueMembershipTypes, uniqueAttractions,
-                computedPricing, calendarYear, calendarMonthName, calendarDays,
+                computedPricing, comparisonLabel, calendarYear, calendarMonthName, calendarDays,
                 // Methods
                 getLeadsByStatus, getFilteredLeadsByStatus, getStatusColor,
                 toggleTheme, setTheme,
@@ -1110,6 +1253,8 @@
                 openHandoffModal, cancelHandoff, submitHandoff,
                 // HMN & User methods
                 loadHMN, saveHMN, loadAllUsers, addUser, toggleUserActive, updateUserRole,
+                // Report methods
+                generateReport, cancelReport, toggleSection, scrollToSection, formatDateYMD,
             };
         }
     });

@@ -12,6 +12,8 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
     rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <?!= include('Styles') ?>
 </head>
 
@@ -374,6 +376,77 @@
             <span v-if="day.events.length > 3" class="cal-more">+{{ day.events.length - 3 }} más</span>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- REPORTES (ADMIN) -->
+    <div v-if="currentView === 'reportes'" class="view reportes-view">
+      <!-- Loading overlay -->
+      <div v-if="reportLoading" class="report-loading-overlay">
+        <div class="loader-container">
+          <div class="loader-ring"></div>
+          <p class="loader-text">Generando reporte...</p>
+          <button class="btn btn-secondary" @click="cancelReport" style="margin-top: 1rem;">Cancelar</button>
+        </div>
+      </div>
+
+      <!-- Sticky date controls bar -->
+      <div class="report-controls-bar">
+        <div class="report-controls-left">
+          <input type="text" class="date-range-picker" placeholder="Seleccionar rango de fechas..." readonly>
+          <span class="comparison-label" v-if="comparisonLabel">{{ comparisonLabel }}</span>
+        </div>
+        <div class="report-controls-right">
+          <button class="btn btn-primary" @click="generateReport" :disabled="reportLoading || !dateRange.start">
+            <span class="material-symbols-outlined" style="font-size:1.1rem; vertical-align:middle; margin-right:0.25rem;">assessment</span>
+            Generar Reporte
+          </button>
+        </div>
+      </div>
+
+      <!-- Error state -->
+      <div v-if="reportError" class="report-error-card">
+        <span class="material-symbols-outlined" style="font-size:2rem; color:var(--accent-danger);">error</span>
+        <p>{{ reportError }}</p>
+        <button class="btn btn-primary" @click="generateReport">Reintentar</button>
+      </div>
+
+      <!-- Empty data state -->
+      <div v-else-if="reportData && reportData._empty" class="report-empty-state">
+        <span class="material-symbols-outlined" style="font-size:3rem; opacity:0.4;">analytics</span>
+        <p>No hay datos para el rango seleccionado. Intenta con otras fechas.</p>
+      </div>
+
+      <!-- Report content -->
+      <div v-else-if="reportData" class="report-content">
+        <!-- Quick-nav -->
+        <div class="quick-nav">
+          <button v-for="section in reportSections" :key="section.id" class="quick-nav-btn"
+            :class="{ active: openSections.includes(section.id) }"
+            @click="scrollToSection(section.id)">
+            {{ section.label }}
+          </button>
+        </div>
+
+        <!-- Accordion sections (8 report sections) -->
+        <div v-for="section in reportSections" :key="section.id" :id="'section-' + section.id" class="report-section">
+          <div class="section-header" @click="toggleSection(section.id)">
+            <span class="material-symbols-outlined section-chevron">
+              {{ openSections.includes(section.id) ? 'expand_more' : 'chevron_right' }}
+            </span>
+            <h3 class="chart-title">{{ section.label }}</h3>
+          </div>
+          <div v-show="openSections.includes(section.id)" class="section-body">
+            <!-- Table content will be added in Plans 02 and 03 -->
+            <p v-if="!section.component" style="color: var(--text-muted); padding: 1rem;">Seccion en construccion...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Initial state (no report generated yet, no error) -->
+      <div v-else class="report-initial-state">
+        <span class="material-symbols-outlined" style="font-size:3rem; opacity:0.4;">assessment</span>
+        <p style="color: var(--text-secondary); margin-top: 0.5rem;">Selecciona un rango de fechas y haz clic en "Generar Reporte"</p>
       </div>
     </div>
 
