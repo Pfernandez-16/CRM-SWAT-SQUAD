@@ -78,11 +78,11 @@ Plans:
   3. User can see the Deals funnel table (Contactado through Fondeo) with Si/No counts per stage
   4. User can see monto cotizado and monto de cierre on the relevant funnel stages
   5. User can see deal loss reasons with counts
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 04-01: fact_deals schema update and calculateDealsReport_() backend function
-- [ ] 04-02: Deals frontend table integrated with getSDRReport response
+- [ ] 04-01-PLAN.md — fact_deals schema update (5 checkbox columns) + calculateDealsReport_() backend function + wire into getSDRReport()
+- [ ] 04-02-PLAN.md — Deals frontend: dealsReportRows + dealsLossRows computeds in App.html + two new table blocks in Index.html
 
 ## Progress
 
@@ -93,5 +93,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 |-------|----------------|--------|-----------|
 | 1. Scaffolding | 2/2 | Complete    | 2026-03-11 |
 | 2. Funnel + Incontactables + Cross-Selling | 2/2 | Complete    | 2026-03-11 |
-| 3. Toques + Semáforos + Razones | 3/3 | Complete   | 2026-03-11 |
+| 3. Toques + Semáforos + Razones | 3/3 | Complete    | 2026-03-11 |
 | 4. Deals Backend + Frontend | 0/2 | Not started | - |
