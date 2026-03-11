@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: in_progress
-stopped_at: Completed 05-01-PLAN.md — custom date comparison and calculateSDRRankingReport_() added to Analytics.js
-last_updated: "2026-03-11T21:51:53.368Z"
+stopped_at: Completed 05-02-PLAN.md — custom date frontend and Ranking SDRs table added to App.html and Index.html; clasp push complete
+last_updated: "2026-03-11T21:59:35.609Z"
 last_activity: "2026-03-11 — Completed 03-01: Toques/Semaforos/SinRespuesta code audit (read-only)"
 progress:
   total_phases: 6
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 13
-  completed_plans: 10
+  completed_plans: 11
   percent: 86
 ---
 
@@ -75,6 +75,7 @@ Progress: [███████---] 71%
 | Phase 03-toques-semaforos-razones P03 | 5 | 3 tasks | 2 files |
 | Phase 04-deals-backend-+-frontend P01 | 10min | 2 tasks | 1 files |
 | Phase 05-comparativa-personalizada-+-ranking-sdrs P01 | 2 | 2 tasks | 1 files |
+| Phase 05-comparativa-personalizada-+-ranking-sdrs P02 | 5min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -102,6 +103,8 @@ Recent decisions affecting current work:
 - [Phase 04-deals-backend-+-frontend]: calculateDealsReport_ placed before MAIN ORCHESTRATOR; contactado stage si=totalDeals by definition; empty razon_perdida normalized to 'Sin razon'
 - [Phase 05-01]: compareType normalization changed from ternary to if-guard to allow 'custom' through without becoming 'prev_period'
 - [Phase 05-01]: calculateSDRRankingReport_ builds union of current+previous SDR IDs so SDRs with only previous-period leads still appear
+- [Phase 05-02]: Custom pickers placed inline after select using template v-if; watch(compareType) does NOT auto-call generateReport() when switching to custom mode — user picks dates first
+- [Phase 05-02]: sdrRankingRows and customPrevRange added to setup() return for template access
 
 ### Pending Todos
 
@@ -114,6 +117,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-11T21:51:53.354Z
-Stopped at: Completed 05-01-PLAN.md — custom date comparison and calculateSDRRankingReport_() added to Analytics.js
+Last session: 2026-03-11T21:59:35.599Z
+Stopped at: Completed 05-02-PLAN.md — custom date frontend and Ranking SDRs table added to App.html and Index.html; clasp push complete
 Resume file: None
