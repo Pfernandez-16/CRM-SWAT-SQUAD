@@ -200,7 +200,12 @@
                     if (i === 0 || rawRows[i].type === 'amount') {
                         rawRows[i].cvrInterEtapa = null; // no CVR for top-of-funnel or amounts
                     } else {
-                        const prevCount = rawRows[i - 1].metric?.total?.count || 0;
+                        // Walk backwards past amount rows to find the nearest count row
+                        var prevCountRow = null;
+                        for (var j = i - 1; j >= 0; j--) {
+                            if (rawRows[j].type !== 'amount') { prevCountRow = rawRows[j]; break; }
+                        }
+                        const prevCount = prevCountRow ? (prevCountRow.metric?.total?.count || 0) : 0;
                         const currCount = rawRows[i].metric?.total?.count || 0;
                         rawRows[i].cvrInterEtapa = prevCount > 0
                             ? (currCount / prevCount * 100).toFixed(1)
