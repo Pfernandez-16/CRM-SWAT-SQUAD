@@ -442,6 +442,10 @@
                 <div v-show="openSections.includes(section.id)" class="section-body">
                   <!-- Embudo General Table -->
                   <div v-if="section.id === 'embudoGeneral'" class="report-table-wrapper">
+                    <!-- Embudo Funnel Chart (CHART-01) -->
+                    <div style="max-width:600px; margin-bottom:1.5rem;">
+                      <canvas id="embudoChart" height="220"></canvas>
+                    </div>
                     <table class="report-table">
                       <thead>
                         <tr>
@@ -1341,6 +1345,27 @@
 
                   <!-- Deals / Negociaciones Funnel Table -->
                   <div v-else-if="section.id === 'deals'" class="report-table-wrapper">
+                    <!-- Velocity stat (VELOCITY-01) -->
+                    <div v-if="dealsVelocity" class="velocity-stat" style="margin-bottom:1rem; padding:0.75rem 1rem; background:var(--bg-card); border-radius:6px; display:inline-flex; align-items:center; gap:1rem;">
+                      <span style="font-weight:600; color:var(--text-primary);">
+                        Velocidad de Cierre:
+                        <strong>{{ dealsVelocity.current }} dias</strong>
+                      </span>
+                      <span v-if="Number(dealsVelocity.delta) > 0"
+                        :class="['delta-positive', Math.abs(Number(dealsVelocity.delta)) >= 20 ? 'delta-alert' : '']">
+                        <span class="material-symbols-outlined">arrow_upward</span>
+                        +{{ dealsVelocity.delta }}%
+                      </span>
+                      <span v-else-if="Number(dealsVelocity.delta) < 0"
+                        :class="['delta-negative', Math.abs(Number(dealsVelocity.delta)) >= 20 ? 'delta-alert' : '']">
+                        <span class="material-symbols-outlined">arrow_downward</span>
+                        {{ dealsVelocity.delta }}%
+                      </span>
+                      <span v-else class="delta-neutral">
+                        <span class="material-symbols-outlined">remove</span>
+                        0%
+                      </span>
+                    </div>
                     <table class="report-table">
                       <thead>
                         <tr>
@@ -3127,6 +3152,7 @@
   <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
   <?!= include('App') ?>
 </body>
