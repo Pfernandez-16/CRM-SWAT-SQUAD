@@ -108,11 +108,11 @@ Plans:
   1. La sección Embudo General incluye una gráfica de embudo (Chart.js CDN) que muestra el volumen por etapa visualmente
   2. Todas las tablas con delta destacan visualmente (color distinto) cuando la variación es ≥ ±20%
   3. La sección Deals muestra velocidad de cierre promedio en días con delta vs período anterior
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 06-01-PLAN.md — Backend: añadir avgDaysToClose a calculateDealsReport_() + Frontend: ALERT-01 delta styling global
-- [ ] 06-02-PLAN.md — Frontend: Chart.js funnel chart para Embudo General + velocity display en Deals
+- [ ] 06-01-PLAN.md — Analytics.js avgDaysToClose + Styles.html .delta-alert CSS + Index.html delta-alert class binding on all delta spans
+- [ ] 06-02-PLAN.md — Chart.js CDN + canvas#embudoChart + App.html watch(embudoRows) funnel chart + dealsVelocity computed + clasp deploy
 
 ## Progress
 
