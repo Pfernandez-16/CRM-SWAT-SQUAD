@@ -76,7 +76,7 @@
 
 ### Visual Intelligence
 
-- [ ] **CHART-01**: Sección Embudo General incluye gráfica de embudo (Chart.js CDN) además de la tabla, mostrando volumen por etapa visualmente
+- [x] **CHART-01**: Sección Embudo General incluye gráfica de embudo (Chart.js CDN) además de la tabla, mostrando volumen por etapa visualmente
 - [x] **ALERT-01**: Deltas con variación ≥ ±20% se destacan visualmente (color/icono distinto) en todas las tablas de reportes
 - [x] **VELOCITY-01**: Sección Deals muestra velocidad de cierre promedio (días desde fecha_pase_ventas hasta fondeo=TRUE) con delta vs período anterior
 
@@ -148,7 +148,7 @@
 | SDR-01 | Phase 5 | Complete |
 | SDR-02 | Phase 5 | Complete |
 | SDR-03 | Phase 5 | Complete |
-| CHART-01 | Phase 6 | Pending |
+| CHART-01 | Phase 6 | Complete |
 | ALERT-01 | Phase 6 | Complete |
 | VELOCITY-01 | Phase 6 | Complete |
 
