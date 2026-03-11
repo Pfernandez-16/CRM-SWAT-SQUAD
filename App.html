@@ -740,6 +740,12 @@
                                 reportData.value = { _empty: true };
                             } else {
                                 reportData.value = data;
+                                if (data.metadata && data.metadata.previousDateIn && data.metadata.previousDateOut) {
+                                    comparisonRange.value = {
+                                        start: new Date(data.metadata.previousDateIn),
+                                        end: new Date(data.metadata.previousDateOut)
+                                    };
+                                }
                             }
                         } catch (e) {
                             reportError.value = 'Error al procesar la respuesta: ' + e.message;
