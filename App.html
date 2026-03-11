@@ -171,7 +171,9 @@
                 { id: 'semaforoNoContesto', label: 'Semáforo No Contestó' },
                 { id: 'sinRespuesta', label: 'Sin Respuesta 6to Toque' },
                 { id: 'noPasoVentas', label: 'Por qué no pasó a Ventas' },
-                { id: 'perdioVenta', label: 'Por qué perdió la venta' }
+                { id: 'perdioVenta', label: 'Por qué perdió la venta' },
+                { id: 'deals', label: 'Deals / Negociaciones' },
+                { id: 'dealsLoss', label: 'Deals - Razones de Perdida' }
             ];
 
             const matrizPivotMode = ref('product'); // 'product' | 'country'
@@ -302,6 +304,33 @@
                     { label: 'Sin especificar', metric: rpv.sinEspecificar, type: 'count', mixPct: calcMix(rpv.sinEspecificar) },
                     { label: 'Total Perdidas', metric: rpv._totalPerdidas, type: 'count', isSummary: true, mixPct: '100.0' }
                 ];
+            });
+
+            const dealsReportRows = computed(() => {
+                if (!reportData.value || !reportData.value.dealsReport) return [];
+                const dr = reportData.value.dealsReport;
+                const s = dr.stages || {};
+                return [
+                    { label: 'Contactado',     stage: s.contactado,      type: 'count', monto: null },
+                    { label: 'Cotizado',       stage: s.cotizado,        type: 'count', monto: dr.montoCotizacion },
+                    { label: 'En Negociacion', stage: s.en_negociacion,  type: 'count', monto: null },
+                    { label: 'Asistio Demo',   stage: s.asistio_demo,    type: 'count', monto: null },
+                    { label: 'Firmo Contrato', stage: s.firmo_contrato,  type: 'count', monto: null },
+                    { label: 'Fondeo',         stage: s.fondeo,          type: 'count', monto: dr.montoCierre }
+                ];
+            });
+
+            const dealsLossRows = computed(() => {
+                if (!reportData.value || !reportData.value.dealsReport) return [];
+                const rp = reportData.value.dealsReport.razonesPerdida || {};
+                return Object.keys(rp).map(function(key) {
+                    return {
+                        label: key || 'Sin especificar',
+                        current: rp[key].current || 0,
+                        previous: rp[key].previous || 0,
+                        delta: rp[key].delta || '0.0'
+                    };
+                });
             });
 
             const semaforoSegment = ref('total');
@@ -2041,7 +2070,7 @@
                 openSections, reportSections,
                 embudoRows, incontactablesRows, crossSellingRows,
                 semaforoContestoGrid, semaforoNoContestoGrid, maxToquesContesto, maxToquesNoContesto,
-                sinRespuestaRows, razonesNoPasoRows, razonesPerdioRows,
+                sinRespuestaRows, razonesNoPasoRows, razonesPerdioRows, dealsReportRows, dealsLossRows,
                 semaforoSegment,
                 matrizPivotMode,
                 getSegmentValue, formatAmount,
