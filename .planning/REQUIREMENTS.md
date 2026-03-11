@@ -34,11 +34,11 @@
 
 ### Toques / Contactabilidad (Matriz Vertical)
 
-- [ ] **TOQUES-01**: Tabla de contactabilidad muestra toques como FILAS (Toque 1 al 10) y productos/países como COLUMNAS
-- [ ] **TOQUES-02**: Cada celda muestra cuántos leads llegaron a ese toque en ese producto/país
-- [ ] **TOQUES-03**: Semáforo Contesto: grid canal (Teléfono/WhatsApp/Correo) × toque con resultado "Contesto"
-- [ ] **TOQUES-04**: Semáforo No Contesto: grid canal × toque con resultado "No Contesto"
-- [ ] **TOQUES-05**: Indicador de Sin Respuesta al 6to toque (leads con 6+ toques sin contacto)
+- [x] **TOQUES-01**: Tabla de contactabilidad muestra toques como FILAS (Toque 1 al 10) y productos/países como COLUMNAS
+- [x] **TOQUES-02**: Cada celda muestra cuántos leads llegaron a ese toque en ese producto/país
+- [x] **TOQUES-03**: Semáforo Contesto: grid canal (Teléfono/WhatsApp/Correo) × toque con resultado "Contesto"
+- [x] **TOQUES-04**: Semáforo No Contesto: grid canal × toque con resultado "No Contesto"
+- [x] **TOQUES-05**: Indicador de Sin Respuesta al 6to toque (leads con 6+ toques sin contacto)
 
 ### Razones No Pasó a Ventas
 
@@ -106,11 +106,11 @@
 | INCONT-02 | Phase 2 | Complete |
 | INCONT-03 | Phase 2 | Complete |
 | CROSS-01 | Phase 2 | Complete |
-| TOQUES-01 | Phase 3 | Pending |
-| TOQUES-02 | Phase 3 | Pending |
-| TOQUES-03 | Phase 3 | Pending |
-| TOQUES-04 | Phase 3 | Pending |
-| TOQUES-05 | Phase 3 | Pending |
+| TOQUES-01 | Phase 3 | Complete |
+| TOQUES-02 | Phase 3 | Complete |
+| TOQUES-03 | Phase 3 | Complete |
+| TOQUES-04 | Phase 3 | Complete |
+| TOQUES-05 | Phase 3 | Complete |
 | RAZNES-01 | Phase 3 | Complete |
 | RAZNES-02 | Phase 3 | Complete |
 | RAZNES-03 | Phase 3 | Complete |
