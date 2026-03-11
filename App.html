@@ -158,9 +158,11 @@
             const reportError = ref(null);
             const dateRange = ref({ start: null, end: null });
             const comparisonRange = ref({ start: null, end: null });
-            const compareType = ref('prev_period'); // 'prev_period' | 'yoy'
+            const compareType = ref('prev_period'); // 'prev_period' | 'yoy' | 'custom'
             const openSections = ref(['embudoGeneral']); // Embudo opens by default
             let flatpickrInstance = null;
+            const customPrevRange = ref({ start: null, end: null });
+            let customPrevFlatpickrInstance = null;
 
             const reportSections = [
                 { id: 'embudoGeneral', label: 'Embudo General' },
@@ -173,7 +175,8 @@
                 { id: 'noPasoVentas', label: 'Por qué no pasó a Ventas' },
                 { id: 'perdioVenta', label: 'Por qué perdió la venta' },
                 { id: 'deals', label: 'Deals / Negociaciones' },
-                { id: 'dealsLoss', label: 'Deals - Razones de Perdida' }
+                { id: 'dealsLoss', label: 'Deals - Razones de Perdida' },
+                { id: 'rankingSDRs', label: 'Ranking SDRs' }
             ];
 
             const matrizPivotMode = ref('product'); // 'product' | 'country'
@@ -331,6 +334,11 @@
                         delta: rp[key].delta || '0.0'
                     };
                 });
+            });
+
+            const sdrRankingRows = computed(() => {
+                if (!reportData.value || !reportData.value.sdrRanking) return [];
+                return reportData.value.sdrRanking; // already sorted by cvrCurrent desc from backend
             });
 
             const semaforoSegment = ref('total');
@@ -793,7 +801,13 @@
                         reportData.value = null;
                         reportLoading.value = false;
                     })
-                    .getSDRReport(dateIn, dateOut, compareType.value);
+                    .getSDRReport(
+                        dateIn,
+                        dateOut,
+                        compareType.value,
+                        compareType.value === 'custom' ? formatDateYMD(customPrevRange.value.start) : null,
+                        compareType.value === 'custom' ? formatDateYMD(customPrevRange.value.end)   : null
+                    );
             }
 
             function cancelReport() {
@@ -2011,8 +2025,31 @@
             });
 
             // Auto-trigger report when compareType changes (PERIOD-03)
-            watch(compareType, function () {
-                generateReport();
+            watch(compareType, function (newType) {
+                if (newType === 'custom') {
+                    nextTick(function () {
+                        if (customPrevFlatpickrInstance) {
+                            customPrevFlatpickrInstance.destroy();
+                            customPrevFlatpickrInstance = null;
+                        }
+                        customPrevFlatpickrInstance = flatpickr('.custom-prev-picker', {
+                            mode: 'range',
+                            dateFormat: 'Y-m-d',
+                            locale: { firstDayOfWeek: 1, rangeSeparator: ' a ' },
+                            onChange: function (selectedDates) {
+                                if (selectedDates.length === 2) {
+                                    customPrevRange.value = { start: selectedDates[0], end: selectedDates[1] };
+                                }
+                            }
+                        });
+                    });
+                } else {
+                    if (customPrevFlatpickrInstance) {
+                        customPrevFlatpickrInstance.destroy();
+                        customPrevFlatpickrInstance = null;
+                    }
+                    generateReport();
+                }
             });
 
             // ── Init ──
@@ -2070,7 +2107,8 @@
                 openSections, reportSections,
                 embudoRows, incontactablesRows, crossSellingRows,
                 semaforoContestoGrid, semaforoNoContestoGrid, maxToquesContesto, maxToquesNoContesto,
-                sinRespuestaRows, razonesNoPasoRows, razonesPerdioRows, dealsReportRows, dealsLossRows,
+                sinRespuestaRows, razonesNoPasoRows, razonesPerdioRows, dealsReportRows, dealsLossRows, sdrRankingRows,
+                customPrevRange,
                 semaforoSegment,
                 matrizPivotMode,
                 getSegmentValue, formatAmount,
