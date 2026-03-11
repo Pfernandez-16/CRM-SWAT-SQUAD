@@ -143,18 +143,31 @@ function calcBANTScore_(calSheet, idLead) {
   }
   if (!calif) return '';
 
-  var score = 0;
-  var perfilCol    = calColMap['perfil_adecuado'];
-  var presupCol    = calColMap['tiene_presupuesto'];
-  var interesCol   = calColMap['mostro_interes_genuino'];
-  var entendioCol  = calColMap['entendio_info_marketing'];
-  var terceroCol   = calColMap['necesita_decision_tercero'];
+  // Robust check — handles boolean true, 'TRUE', 'true', 'Si', 'Sí', 'Yes', 1
+  function isYes(val) {
+    if (val === true || val === 1) return true;
+    var s = String(val || '').trim().toLowerCase();
+    return s === 'true' || s === 'si' || s === 'sí' || s === 'yes';
+  }
+  // Inverse: no necesitar tercero para decidir = positivo
+  function isNo(val) {
+    if (val === false || val === 0 || val === '') return true;
+    var s = String(val || '').trim().toLowerCase();
+    return s === 'false' || s === 'no';
+  }
 
-  if (perfilCol   && calif[perfilCol   - 1] === true) score++;
-  if (presupCol   && calif[presupCol   - 1] === true) score++;
-  if (interesCol  && calif[interesCol  - 1] === true) score++;
-  if (entendioCol && calif[entendioCol - 1] === true) score++;
-  if (terceroCol  && calif[terceroCol  - 1] === false) score++; // no necesitar tercero = positivo
+  var score = 0;
+  var perfilCol   = calColMap['perfil_adecuado'];
+  var presupCol   = calColMap['tiene_presupuesto'];
+  var interesCol  = calColMap['mostro_interes_genuino'];
+  var entendioCol = calColMap['entendio_info_marketing'];
+  var terceroCol  = calColMap['necesita_decision_tercero'];
+
+  if (perfilCol   && isYes(calif[perfilCol   - 1])) score++;
+  if (presupCol   && isYes(calif[presupCol   - 1])) score++;
+  if (interesCol  && isYes(calif[interesCol  - 1])) score++;
+  if (entendioCol && isYes(calif[entendioCol - 1])) score++;
+  if (terceroCol  && isNo(calif[terceroCol   - 1])) score++;
 
   if (score >= 5) return 'Alto';
   if (score >= 3) return 'Medio';
