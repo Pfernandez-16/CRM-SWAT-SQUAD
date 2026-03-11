@@ -1778,8 +1778,15 @@
               {{ selectedLead._source === 'deal' || selectedLead._source === 'cross_deal' ? 'Deal' : 'Lead' }}
               #{{ selectedLead._id }} — {{ selectedLead._name }}
             </h2>
-            <span class="status-badge" :style="{ background: getStatusColor(editLead['Status']) }">{{ editLead['Status']
-              }}</span>
+            <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap; margin-top:4px;">
+              <span class="status-badge" :style="{ background: getStatusColor(editLead['Status']) }">{{ editLead['Status'] }}</span>
+              <span v-if="editLead['Calidad de Contacto']"
+                class="card-calidad"
+                :class="'calidad-' + (editLead['Calidad de Contacto'] || '').toLowerCase().replace(' ', '-')"
+                style="font-size:0.75rem; padding:3px 10px; font-weight:600;">
+                ⭐ {{ editLead['Calidad de Contacto'] }}
+              </span>
+            </div>
           </div>
           <button class="btn-icon" @click="closeLeadModal"><span class="material-symbols-outlined">close</span></button>
         </div>
@@ -1960,11 +1967,16 @@
                 </select>
               </div>
               <div class="form-group">
-                <label>Calidad de Contacto</label>
-                <select v-model="editLead['Calidad de Contacto']" class="form-select" :disabled="isReadOnlySdrFields">
-                  <option value="">— Seleccionar —</option>
-                  <option v-for="s in (catalogs['Calidad de Contacto'] || [])" :key="s" :value="s">{{ s }}</option>
-                </select>
+                <label>Calidad de Contacto <span style="font-size:0.7rem; color:var(--text-muted); font-weight:400;">(auto-calculado del BANT)</span></label>
+                <div style="padding: 6px 0;">
+                  <span v-if="editLead['Calidad de Contacto']"
+                    class="card-calidad"
+                    :class="'calidad-' + (editLead['Calidad de Contacto'] || '').toLowerCase().replace(' ', '-')"
+                    style="font-size:0.85rem; padding:4px 12px; font-weight:600;">
+                    ⭐ {{ editLead['Calidad de Contacto'] }}
+                  </span>
+                  <span v-else style="color:var(--text-muted); font-size:0.85rem; font-style:italic;">Sin calificar — completa el BANT</span>
+                </div>
               </div>
               <div class="form-group">
                 <label>Toque Actual (1-10)</label>
