@@ -1119,13 +1119,15 @@ function calculateDealsReport_(allDeals, dateIn, dateOut, prevDateIn, prevDateOu
  * Generate SDR Report for a date range.
  * @param {string} dateIn - Start date (YYYY-MM-DD)
  * @param {string} dateOut - End date (YYYY-MM-DD)
- * @param {string} [compareType] - 'prev_period' (default) or 'yoy' (same period last year)
+ * @param {string} [compareType] - 'prev_period' (default), 'yoy' (same period last year), or 'custom'
+ * @param {string} [customPrevDateIn] - Custom previous period start (YYYY-MM-DD), used when compareType='custom'
+ * @param {string} [customPrevDateOut] - Custom previous period end (YYYY-MM-DD), used when compareType='custom'
  * @return {string} JSON string with report data
  */
-function getSDRReport(dateIn, dateOut, compareType) {
+function getSDRReport(dateIn, dateOut, compareType, customPrevDateIn, customPrevDateOut) {
   try {
     // Normalize compareType
-    compareType = (compareType === 'yoy') ? 'yoy' : 'prev_period';
+    if (compareType !== 'yoy' && compareType !== 'custom') { compareType = 'prev_period'; }
 
     // Parse dates for current period
     var dateInMs = new Date(dateIn).getTime();
@@ -1161,6 +1163,9 @@ function getSDRReport(dateIn, dateOut, compareType) {
       dOut.setFullYear(dOut.getFullYear() - 1);
       prevDateIn = dIn.toISOString().split('T')[0];
       prevDateOut = dOut.toISOString().split('T')[0];
+    } else if (compareType === 'custom' && customPrevDateIn && customPrevDateOut) {
+      prevDateIn  = customPrevDateIn;
+      prevDateOut = customPrevDateOut;
     } else {
       // prev_period: same duration, shifted back
       var durationMs = dateOutMs - dateInMs;
