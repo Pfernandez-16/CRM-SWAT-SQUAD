@@ -993,6 +993,126 @@ function calculateMatrizContactabilidad_(currentLeads, interaccionesIdx, contact
   };
 }
 
+// ============ DEALS REPORT ============
+
+/**
+ * Calculate deals funnel report for a date range.
+ * Filters allDeals by fecha_pase_ventas (inclusive).
+ * @param {Array} allDeals - Full deals table from readTable_(T_DEALS)
+ * @param {string} dateIn - Current period start (YYYY-MM-DD)
+ * @param {string} dateOut - Current period end (YYYY-MM-DD)
+ * @param {string} prevDateIn - Previous period start (YYYY-MM-DD)
+ * @param {string} prevDateOut - Previous period end (YYYY-MM-DD)
+ * @return {Object} { totalDeals, stages, montoCotizacion, montoCierre, razonesPerdida }
+ */
+function calculateDealsReport_(allDeals, dateIn, dateOut, prevDateIn, prevDateOut) {
+  var dateInMs    = new Date(dateIn).getTime();
+  var dateOutMs   = new Date(dateOut).getTime();
+  var prevInMs    = new Date(prevDateIn).getTime();
+  var prevOutMs   = new Date(prevDateOut).getTime();
+
+  // Step 1 — filter current period
+  var currentDeals = [];
+  for (var i = 0; i < allDeals.length; i++) {
+    var deal = allDeals[i];
+    var fechaMs = new Date(deal.fecha_pase_ventas || '').getTime();
+    if (isNaN(fechaMs)) continue;
+    if (fechaMs >= dateInMs && fechaMs <= dateOutMs) {
+      currentDeals.push(deal);
+    }
+  }
+
+  // Step 2 — filter previous period
+  var previousDeals = [];
+  for (var j = 0; j < allDeals.length; j++) {
+    var pdeal = allDeals[j];
+    var pfechaMs = new Date(pdeal.fecha_pase_ventas || '').getTime();
+    if (isNaN(pfechaMs)) continue;
+    if (pfechaMs >= prevInMs && pfechaMs <= prevOutMs) {
+      previousDeals.push(pdeal);
+    }
+  }
+
+  // Step 3 — count Si/No per funnel stage for current period
+  var cotizadoSi   = 0;
+  var negociacionSi = 0;
+  var demoSi       = 0;
+  var firmoSi      = 0;
+  var fondeoSi     = 0;
+  var montoCotizacion = 0;
+  var montoCierre     = 0;
+
+  for (var c = 0; c < currentDeals.length; c++) {
+    var cd = currentDeals[c];
+    if (cd.cotizo)         cotizadoSi++;
+    if (cd.en_negociacion) negociacionSi++;
+    if (cd.asistio_demo)   demoSi++;
+    if (cd.firmo_contrato) firmoSi++;
+    if (cd.fondeo)         fondeoSi++;
+
+    // Step 4 — amounts
+    if (cd.cotizo)         montoCotizacion += (Number(cd.monto_cotizacion) || 0);
+    if (cd.firmo_contrato) montoCierre     += (Number(cd.monto_cierre)     || 0);
+  }
+
+  var total = currentDeals.length;
+
+  var stages = {
+    contactado:     { si: total,         no: 0 },
+    cotizado:       { si: cotizadoSi,    no: total - cotizadoSi },
+    en_negociacion: { si: negociacionSi, no: total - negociacionSi },
+    asistio_demo:   { si: demoSi,        no: total - demoSi },
+    firmo_contrato: { si: firmoSi,       no: total - firmoSi },
+    fondeo:         { si: fondeoSi,      no: total - fondeoSi }
+  };
+
+  // Step 5 — loss reasons current period
+  var currentLoss = {};
+  for (var cr = 0; cr < currentDeals.length; cr++) {
+    var crd = currentDeals[cr];
+    if (String(crd.status_venta || '').trim() === 'Perdido') {
+      var razon = String(crd.razon_perdida || '').trim();
+      if (!razon) razon = 'Sin razon';
+      currentLoss[razon] = (currentLoss[razon] || 0) + 1;
+    }
+  }
+
+  // Loss reasons previous period
+  var previousLoss = {};
+  for (var pr = 0; pr < previousDeals.length; pr++) {
+    var prd = previousDeals[pr];
+    if (String(prd.status_venta || '').trim() === 'Perdido') {
+      var prazon = String(prd.razon_perdida || '').trim();
+      if (!prazon) prazon = 'Sin razon';
+      previousLoss[prazon] = (previousLoss[prazon] || 0) + 1;
+    }
+  }
+
+  // Merge all reason keys
+  var allReasons = {};
+  for (var rk in currentLoss)  { allReasons[rk] = true; }
+  for (var rk2 in previousLoss) { allReasons[rk2] = true; }
+
+  var razonesPerdida = {};
+  for (var reason in allReasons) {
+    var curN  = currentLoss[reason]  || 0;
+    var prevN = previousLoss[reason] || 0;
+    razonesPerdida[reason] = {
+      current:  curN,
+      previous: prevN,
+      delta:    calcDelta_(curN, prevN)
+    };
+  }
+
+  return {
+    totalDeals:      total,
+    stages:          stages,
+    montoCotizacion: montoCotizacion,
+    montoCierre:     montoCierre,
+    razonesPerdida:  razonesPerdida
+  };
+}
+
 // ============ MAIN ORCHESTRATOR ============
 
 /**
@@ -1063,6 +1183,7 @@ function getSDRReport(dateIn, dateOut, compareType) {
     var razonesNoPasoVentas = calculateRazonesNoPasoVentas_(currentLeads, previousLeads, calificacionIdx);
     var razonesPerdioVenta = calculateRazonesPerdioVenta_(currentLeads, previousLeads, calificacionIdx, allDeals);
     var matrizContactabilidad = calculateMatrizContactabilidad_(currentLeads, interaccionesIdx, contactosIdx);
+    var dealsReport = calculateDealsReport_(allDeals, dateIn, dateOut, prevDateIn, prevDateOut);
 
     // Build result
     var result = {
@@ -1084,7 +1205,8 @@ function getSDRReport(dateIn, dateOut, compareType) {
       sinRespuesta6toToque: sinRespuesta6toToque,
       razonesNoPasoVentas: razonesNoPasoVentas,
       razonesPerdioVenta: razonesPerdioVenta,
-      matrizContactabilidad: matrizContactabilidad
+      matrizContactabilidad: matrizContactabilidad,
+      dealsReport: dealsReport
     };
 
     return JSON.stringify(result);
