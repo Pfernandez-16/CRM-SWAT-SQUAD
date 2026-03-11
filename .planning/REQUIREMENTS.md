@@ -119,9 +119,9 @@
 | RAZPERD-03 | Phase 3 | Complete |
 | DEALS-01 | Phase 4 | Complete |
 | DEALS-02 | Phase 4 | Complete |
-| DEALS-03 | Phase 4 | Pending |
-| DEALS-04 | Phase 4 | Pending |
-| DEALS-05 | Phase 4 | Pending |
+| DEALS-03 | Phase 4 | Complete |
+| DEALS-04 | Phase 4 | Complete |
+| DEALS-05 | Phase 4 | Complete |
 
 **Coverage:**
 - v1 requirements: 30 total
