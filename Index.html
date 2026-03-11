@@ -1321,6 +1321,73 @@
                     </table>
                   </div>
 
+                  <!-- Deals / Negociaciones Funnel Table -->
+                  <div v-else-if="section.id === 'deals'" class="report-table-wrapper">
+                    <table class="report-table">
+                      <thead>
+                        <tr>
+                          <th style="min-width:160px;">Etapa</th>
+                          <th>Si</th>
+                          <th>No</th>
+                          <th data-tooltip="Monto donde aplica (Cotizacion o Cierre)">Monto</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr v-for="row in dealsReportRows" :key="row.label">
+                          <td class="col-metric">{{ row.label }}</td>
+                          <td class="col-count">{{ (row.stage && row.stage.si) || 0 }}</td>
+                          <td class="col-count">{{ (row.stage && row.stage.no) || 0 }}</td>
+                          <td class="col-count">
+                            <span v-if="row.monto !== null && row.monto !== undefined">
+                              {{ formatAmount(row.monto) }}
+                            </span>
+                            <span v-else style="color:var(--text-muted);">--</span>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <!-- Deals - Razones de Perdida Table -->
+                  <div v-else-if="section.id === 'dealsLoss'" class="report-table-wrapper">
+                    <table class="report-table">
+                      <thead>
+                        <tr>
+                          <th style="min-width:160px;">Razon de Perdida</th>
+                          <th>Periodo Actual</th>
+                          <th>Periodo Anterior</th>
+                          <th data-tooltip="Cambio porcentual vs periodo anterior">Delta%</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr v-for="row in dealsLossRows" :key="row.label">
+                          <td class="col-metric">{{ row.label }}</td>
+                          <td class="col-count">{{ row.current }}</td>
+                          <td class="col-count">{{ row.previous }}</td>
+                          <td class="col-delta">
+                            <span v-if="Number(row.delta) > 0" class="delta-positive">
+                              <span class="material-symbols-outlined">arrow_upward</span>
+                              +{{ row.delta }}%
+                            </span>
+                            <span v-else-if="Number(row.delta) < 0" class="delta-negative">
+                              <span class="material-symbols-outlined">arrow_downward</span>
+                              {{ row.delta }}%
+                            </span>
+                            <span v-else class="delta-neutral">
+                              <span class="material-symbols-outlined">remove</span>
+                              0%
+                            </span>
+                          </td>
+                        </tr>
+                        <tr v-if="!dealsLossRows.length">
+                          <td colspan="4" style="color:var(--text-muted); text-align:center; padding:1rem;">
+                            Sin razones de perdida en el periodo
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
                   <!-- Placeholder for other sections -->
                   <p v-else style="color: var(--text-muted); padding: 1rem;">Seccion en construccion...</p>
                 </div>
