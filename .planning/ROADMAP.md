@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Scaffolding** - Reportes view skeleton, period selector, and getSDRReport API wiring with live data flowing into Vue state (completed 2026-03-11)
 - [x] **Phase 2: Funnel + Incontactables + Cross-Selling** - First three report tables rendered with deltas and Mfg/Ind breakdowns (completed 2026-03-11)
 - [x] **Phase 3: Toques + Semáforos + Razones** - Vertical contactability matrix, semaphore grids, and loss-reason tables (completed 2026-03-11)
-- [x] **Phase 4: Deals Backend + Frontend** - New Analytics function for Deals report, schema update, and full Deals table in the UI (completed 2026-03-11)
+- [x] **Phase 4: Deals Backend + Frontend** - New Analytics function for Deals report, schema update, and full Deals table in the UI (completed 2026-03-11)
 
 ## Phase Details
 
@@ -94,7 +94,7 @@ Plans:
   3. Todas las tablas existentes muestran deltas correctos contra el período personalizado
   4. La sección "Ranking SDRs" muestra tabla con nombre SDR, total leads, CVR actual, CVR anterior y delta, ordenada por CVR descendente
   5. El ranking se actualiza al cambiar el período
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
 - [ ] 05-01-PLAN.md — Backend: extender getSDRReport() para fechas custom + calculateSDRRankingReport_()
