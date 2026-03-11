@@ -14,7 +14,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Scaffolding** - Reportes view skeleton, period selector, and getSDRReport API wiring with live data flowing into Vue state (completed 2026-03-11)
 - [x] **Phase 2: Funnel + Incontactables + Cross-Selling** - First three report tables rendered with deltas and Mfg/Ind breakdowns (completed 2026-03-11)
-- [ ] **Phase 3: Toques + Semáforos + Razones** - Vertical contactability matrix, semaphore grids, and loss-reason tables
+- [x] **Phase 3: Toques + Semáforos + Razones** - Vertical contactability matrix, semaphore grids, and loss-reason tables (completed 2026-03-11)
 - [ ] **Phase 4: Deals Backend + Frontend** - New Analytics function for Deals report, schema update, and full Deals table in the UI
 
 ## Phase Details
@@ -65,8 +65,8 @@ Plans:
 
 Plans:
 - [x] 03-01-PLAN.md — Audit matrizContactabilidad, semaforoContesto, semaforoNoContesto, sinRespuesta sections (TOQUES-01..05)
-- [ ] 03-02-PLAN.md — Audit razones tables + apply mixPct bar cap fix (RAZNES-01..03, RAZPERD-01..03)
-- [ ] 03-03-PLAN.md — Deploy, cross-section integration verify, and Phase 3 sign-off (all 11 requirements)
+- [x] 03-02-PLAN.md — Audit razones tables + apply mixPct bar cap fix (RAZNES-01..03, RAZPERD-01..03)
+- [x] 03-03-PLAN.md — Deploy, cross-section integration verify, and Phase 3 sign-off (all 11 requirements)
 
 ### Phase 4: Deals Backend + Frontend
 **Goal**: The Deals/Negociaciones report exists end-to-end: schema updated, backend calculating, frontend displaying the full funnel with Si/No counts and amounts
@@ -93,5 +93,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 |-------|----------------|--------|-----------|
 | 1. Scaffolding | 2/2 | Complete    | 2026-03-11 |
 | 2. Funnel + Incontactables + Cross-Selling | 2/2 | Complete    | 2026-03-11 |
-| 3. Toques + Semáforos + Razones | 0/3 | Not started | - |
+| 3. Toques + Semáforos + Razones | 3/3 | Complete    | 2026-03-11 |
 | 4. Deals Backend + Frontend | 0/2 | Not started | - |
