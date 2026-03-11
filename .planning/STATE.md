@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: in_progress
-stopped_at: Completed 05-02-PLAN.md — custom date frontend and Ranking SDRs table added to App.html and Index.html; clasp push complete
-last_updated: "2026-03-11T21:59:35.609Z"
+stopped_at: Completed 06-01-PLAN.md — avgDaysToClose added to Analytics.js; delta-alert CSS and bindings applied across all 9 report sections
+last_updated: "2026-03-11T22:15:21.902Z"
 last_activity: "2026-03-11 — Completed 03-01: Toques/Semaforos/SinRespuesta code audit (read-only)"
 progress:
   total_phases: 6
   completed_phases: 5
   total_plans: 13
-  completed_plans: 11
+  completed_plans: 12
   percent: 86
 ---
 
@@ -76,6 +76,7 @@ Progress: [███████---] 71%
 | Phase 04-deals-backend-+-frontend P01 | 10min | 2 tasks | 1 files |
 | Phase 05-comparativa-personalizada-+-ranking-sdrs P01 | 2 | 2 tasks | 1 files |
 | Phase 05-comparativa-personalizada-+-ranking-sdrs P02 | 5min | 2 tasks | 2 files |
+| Phase 06-visual-intelligence P01 | 5min | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -105,6 +106,8 @@ Recent decisions affecting current work:
 - [Phase 05-01]: calculateSDRRankingReport_ builds union of current+previous SDR IDs so SDRs with only previous-period leads still appear
 - [Phase 05-02]: Custom pickers placed inline after select using template v-if; watch(compareType) does NOT auto-call generateReport() when switching to custom mode — user picks dates first
 - [Phase 05-02]: sdrRankingRows and customPrevRange added to setup() return for template access
+- [Phase 06-visual-intelligence]: avgDaysToClose measures days from fecha_pase_ventas to today (not period end) — reflects real deal velocity
+- [Phase 06-visual-intelligence]: delta-alert CSS uses rgba(255,193,7,0.18) amber background overlay — works on dark glassmorphism without overriding text color direction
 
 ### Pending Todos
 
@@ -117,6 +120,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-11T21:59:35.599Z
-Stopped at: Completed 05-02-PLAN.md — custom date frontend and Ranking SDRs table added to App.html and Index.html; clasp push complete
+Last session: 2026-03-11T22:15:21.895Z
+Stopped at: Completed 06-01-PLAN.md — avgDaysToClose added to Analytics.js; delta-alert CSS and bindings applied across all 9 report sections
 Resume file: None

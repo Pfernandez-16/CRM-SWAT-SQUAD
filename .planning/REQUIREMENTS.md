@@ -77,8 +77,8 @@
 ### Visual Intelligence
 
 - [ ] **CHART-01**: Sección Embudo General incluye gráfica de embudo (Chart.js CDN) además de la tabla, mostrando volumen por etapa visualmente
-- [ ] **ALERT-01**: Deltas con variación ≥ ±20% se destacan visualmente (color/icono distinto) en todas las tablas de reportes
-- [ ] **VELOCITY-01**: Sección Deals muestra velocidad de cierre promedio (días desde fecha_pase_ventas hasta fondeo=TRUE) con delta vs período anterior
+- [x] **ALERT-01**: Deltas con variación ≥ ±20% se destacan visualmente (color/icono distinto) en todas las tablas de reportes
+- [x] **VELOCITY-01**: Sección Deals muestra velocidad de cierre promedio (días desde fecha_pase_ventas hasta fondeo=TRUE) con delta vs período anterior
 
 ## v2 Requirements
 
@@ -149,8 +149,8 @@
 | SDR-02 | Phase 5 | Complete |
 | SDR-03 | Phase 5 | Complete |
 | CHART-01 | Phase 6 | Pending |
-| ALERT-01 | Phase 6 | Pending |
-| VELOCITY-01 | Phase 6 | Pending |
+| ALERT-01 | Phase 6 | Complete |
+| VELOCITY-01 | Phase 6 | Complete |
 
 **Coverage:**
 - v1 requirements: 30 total (complete)
