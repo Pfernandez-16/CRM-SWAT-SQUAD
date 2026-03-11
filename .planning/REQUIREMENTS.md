@@ -7,8 +7,8 @@
 
 ### Selector de Período
 
-- [ ] **PERIOD-01**: Usuario puede seleccionar fecha de inicio y fecha de fin del período a analizar
-- [ ] **PERIOD-02**: Usuario puede elegir tipo de comparación: "vs período anterior" o "vs año anterior"
+- [x] **PERIOD-01**: Usuario puede seleccionar fecha de inicio y fecha de fin del período a analizar
+- [x] **PERIOD-02**: Usuario puede elegir tipo de comparación: "vs período anterior" o "vs año anterior"
 - [ ] **PERIOD-03**: Al cambiar el período, todos los reportes se actualizan con los nuevos datos
 
 ### Embudo General
@@ -91,8 +91,8 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PERIOD-01 | Phase 1 | Pending |
-| PERIOD-02 | Phase 1 | Pending |
+| PERIOD-01 | Phase 1 | Complete |
+| PERIOD-02 | Phase 1 | Complete |
 | PERIOD-03 | Phase 1 | Pending |
 | FUNNEL-01 | Phase 2 | Pending |
 | FUNNEL-02 | Phase 2 | Pending |
