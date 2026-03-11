@@ -1,0 +1,791 @@
+id_log	timestamp	entidad	id_entidad	usuario	campo_modificado	valor_anterior	valor_nuevo
+1	2026-02-01 22:53:03	Lead	1	sofia.martinez@swatsquad.com	Status	Nuevo	Duplicado
+2	2026-01-08 13:16:18	Lead	2	sofia.martinez@swatsquad.com	Status	Nuevo	Contactado
+3	2026-01-10 00:16:18	Lead	2	maria.torres@swatsquad.com	Status	Contactado	En Seguimiento
+4	2026-01-02 19:17:48	Lead	3	lucia.herrera@swatsquad.com	Status	Nuevo	Contactado
+5	2026-01-05 13:17:48	Lead	3	carlos.lopez@swatsquad.com	Status	Contactado	En Seguimiento
+6	2026-01-28 08:09:38	Lead	4	maria.torres@swatsquad.com	Status	Nuevo	Contactado
+7	2026-01-29 23:09:38	Lead	4	maria.torres@swatsquad.com	Status	Contactado	Perdido
+8	2026-01-31 19:09:38	Lead	4	maria.torres@swatsquad.com	Calidad de Contacto	Sin Calificar	Regular
+9	2026-01-24 16:43:48	Lead	5	pedro.mendez@swatsquad.com	Status	Nuevo	Contactado
+10	2026-01-26 16:43:48	Lead	5	sofia.martinez@swatsquad.com	Status	Contactado	Perdido
+11	2026-01-30 22:43:48	Lead	5	pedro.mendez@swatsquad.com	Calidad de Contacto	Sin Calificar	Malo
+12	2026-01-29 18:13:45	Lead	6	sofia.martinez@swatsquad.com	Status	Nuevo	Contactado
+13	2026-02-02 01:13:45	Lead	6	ana.garcia@swatsquad.com	Status	Contactado	Perdido
+14	2026-01-15 20:21:52	Lead	7	ana.garcia@swatsquad.com	Status	Nuevo	Contactado
+15	2026-01-17 12:21:52	Lead	7	ana.garcia@swatsquad.com	Status	Contactado	En Seguimiento
+16	2026-01-29 06:36:26	Lead	9	ana.garcia@swatsquad.com	Status	Nuevo	Contactado
+17	2026-01-28 16:36:26	Lead	9	roberto.silva@swatsquad.com	Status	Contactado	En Seguimiento
+18	2026-01-28 18:36:26	Lead	9	ana.garcia@swatsquad.com	Status	En Seguimiento	Calificado
+19	2026-01-30 14:23:29	Lead	10	pedro.mendez@swatsquad.com	Status	Nuevo	Contactado
+20	2026-02-01 23:23:29	Lead	10	pedro.mendez@swatsquad.com	Status	Contactado	Perdido
+21	2026-01-12 23:42:10	Lead	11	ana.garcia@swatsquad.com	Status	Nuevo	Contactado
+22	2026-01-14 13:42:10	Lead	11	pedro.mendez@swatsquad.com	Status	Contactado	Perdido
+23	2026-01-05 17:38:45	Lead	12	ana.garcia@swatsquad.com	Status	Nuevo	Contactado
+24	2026-01-08 06:38:45	Lead	12	pedro.mendez@swatsquad.com	Status	Contactado	Perdido
+25	2026-01-19 12:03:15	Lead	13	sofia.martinez@swatsquad.com	Status	Nuevo	Contactado
+26	2026-01-20 12:03:15	Lead	13	carlos.lopez@swatsquad.com	Status	Contactado	En Seguimiento
+27	2026-01-22 03:03:15	Lead	13	sofia.martinez@swatsquad.com	Status	En Seguimiento	Calificado
+28	2026-01-22 00:03:15	Lead	13	lucia.herrera@swatsquad.com	Calidad de Contacto	Sin Calificar	Excelente
+29	2026-01-10 23:12:20	Lead	14	carlos.lopez@swatsquad.com	Status	Nuevo	Contactado
+30	2026-01-12 16:12:20	Lead	14	sofia.martinez@swatsquad.com	Status	Contactado	En Seguimiento
+31	2026-01-14 12:54:58	Lead	15	carlos.lopez@swatsquad.com	Status	Nuevo	Contactado
+32	2026-01-15 13:54:58	Lead	15	roberto.silva@swatsquad.com	Status	Contactado	Perdido
+33	2026-01-16 05:54:58	Lead	15	ana.garcia@swatsquad.com	Calidad de Contacto	Sin Calificar	Regular
+34	2026-01-22 04:23:04	Lead	16	carlos.lopez@swatsquad.com	Status	Nuevo	Contactado
+35	2026-01-22 16:23:04	Lead	16	lucia.herrera@swatsquad.com	Status	Contactado	Perdido
+36	2026-01-17 10:09:17	Lead	17	roberto.silva@swatsquad.com	Status	Nuevo	Contactado
+37	2026-01-16 16:09:17	Lead	17	sofia.martinez@swatsquad.com	Status	Contactado	Perdido
+38	2026-01-26 15:14:04	Lead	18	sofia.martinez@swatsquad.com	Status	Nuevo	Contactado
+39	2026-01-26 16:14:04	Lead	18	carlos.lopez@swatsquad.com	Status	Contactado	En Seguimiento
+40	2026-01-26 22:14:04	Lead	18	sofia.martinez@swatsquad.com	Status	En Seguimiento	Calificado
+41	2026-01-28 23:08:20	Lead	19	lucia.herrera@swatsquad.com	Status	Nuevo	Contactado
+42	2026-02-03 00:08:20	Lead	19	lucia.herrera@swatsquad.com	Status	Contactado	En Seguimiento
+43	2026-02-06 08:08:20	Lead	19	maria.torres@swatsquad.com	Calidad de Contacto	Sin Calificar	Regular
+44	2026-01-05 12:42:23	Lead	20	ana.garcia@swatsquad.com	Status	Nuevo	Contactado
+45	2026-01-07 10:42:23	Lead	20	pedro.mendez@swatsquad.com	Status	Contactado	Perdido
+46	2026-01-13 22:14:27	Lead	21	carlos.lopez@swatsquad.com	Status	Nuevo	Contactado
+47	2026-01-15 11:14:27	Lead	21	ana.garcia@swatsquad.com	Status	Contactado	No Calificado
+48	2026-01-14 13:29:45	Lead	22	sofia.martinez@swatsquad.com	Status	Nuevo	Contactado
+49	2026-01-19 05:29:45	Lead	22	lucia.herrera@swatsquad.com	Status	Contactado	No Calificado
+50	2026-02-02 01:43:03	Lead	23	sofia.martinez@swatsquad.com	Status	Nuevo	Contactado
+51	2026-02-02 20:43:03	Lead	23	carlos.lopez@swatsquad.com	Status	Contactado	En Seguimiento
+52	2026-01-04 17:14:24	Lead	24	ana.garcia@swatsquad.com	Status	Nuevo	Contactado
+53	2026-01-07 17:14:24	Lead	24	lucia.herrera@swatsquad.com	Status	Contactado	En Seguimiento
+54	2026-01-06 16:14:24	Lead	24	lucia.herrera@swatsquad.com	Status	En Seguimiento	Calificado
+55	2026-01-10 01:14:24	Lead	24	sofia.martinez@swatsquad.com	Status	Calificado	Paso a Ventas
+56	2026-01-12 01:14:24	Lead	24	ana.garcia@swatsquad.com	Calidad de Contacto	Sin Calificar	Malo
+57	2026-01-16 06:32:03	Lead	25	ana.garcia@swatsquad.com	Status	Nuevo	Contactado
+58	2026-01-15 16:32:03	Lead	25	lucia.herrera@swatsquad.com	Status	Contactado	No Calificado
+59	2026-01-19 15:37:15	Lead	26	sofia.martinez@swatsquad.com	Status	Nuevo	Contactado
+60	2026-01-20 00:37:15	Lead	26	maria.torres@swatsquad.com	Status	Contactado	No Calificado
+61	2026-01-24 16:09:25	Lead	28	carlos.lopez@swatsquad.com	Status	Nuevo	Contactado
+62	2026-01-28 17:09:25	Lead	28	carlos.lopez@swatsquad.com	Status	Contactado	En Seguimiento
+63	2026-01-12 01:35:10	Lead	29	pedro.mendez@swatsquad.com	Status	Nuevo	Contactado
+64	2026-01-12 03:35:10	Lead	29	lucia.herrera@swatsquad.com	Status	Contactado	En Seguimiento
+65	2026-01-16 11:35:10	Lead	29	maria.torres@swatsquad.com	Status	En Seguimiento	Calificado
+66	2026-01-10 17:14:10	Lead	30	sofia.martinez@swatsquad.com	Status	Nuevo	Contactado
+67	2026-01-09 08:14:10	Lead	30	pedro.mendez@swatsquad.com	Status	Contactado	Perdido
+68	2026-01-18 09:33:54	Lead	31	pedro.mendez@swatsquad.com	Status	Nuevo	Contactado
+69	2026-01-17 19:33:54	Lead	31	carlos.lopez@swatsquad.com	Status	Contactado	No Calificado
+70	2026-01-20 13:33:54	Lead	31	lucia.herrera@swatsquad.com	Calidad de Contacto	Sin Calificar	Regular
+71	2026-01-19 11:54:11	Lead	32	maria.torres@swatsquad.com	Status	Nuevo	Contactado
+72	2026-01-22 17:54:11	Lead	32	maria.torres@swatsquad.com	Status	Contactado	No Calificado
+73	2026-02-02 08:32:49	Lead	33	maria.torres@swatsquad.com	Status	Nuevo	Contactado
+74	2026-02-05 05:32:49	Lead	33	ana.garcia@swatsquad.com	Status	Contactado	En Seguimiento
+75	2026-02-05 21:32:49	Lead	33	sofia.martinez@swatsquad.com	Status	En Seguimiento	Calificado
+76	2026-01-19 23:58:47	Lead	34	ana.garcia@swatsquad.com	Status	Nuevo	Contactado
+77	2026-01-20 13:58:47	Lead	34	carlos.lopez@swatsquad.com	Status	Contactado	No Calificado
+78	2026-01-07 00:07:18	Lead	35	maria.torres@swatsquad.com	Status	Nuevo	Contactado
+79	2026-01-07 15:07:18	Lead	35	maria.torres@swatsquad.com	Status	Contactado	En Seguimiento
+80	2026-01-08 14:07:18	Lead	35	pedro.mendez@swatsquad.com	Status	En Seguimiento	Calificado
+81	2026-01-15 03:01:36	Lead	36	pedro.mendez@swatsquad.com	Status	Nuevo	Contactado
+82	2026-01-19 00:01:36	Lead	36	carlos.lopez@swatsquad.com	Status	Contactado	Perdido
+83	2026-01-14 00:21:37	Lead	37	carlos.lopez@swatsquad.com	Status	Nuevo	Contactado
+84	2026-01-17 01:21:37	Lead	37	lucia.herrera@swatsquad.com	Status	Contactado	En Seguimiento
+85	2026-01-17 09:21:37	Lead	37	roberto.silva@swatsquad.com	Calidad de Contacto	Sin Calificar	Excelente
+86	2026-01-03 19:43:02	Lead	38	roberto.silva@swatsquad.com	Status	Nuevo	Duplicado
+87	2026-01-24 14:19:09	Lead	39	maria.torres@swatsquad.com	Status	Nuevo	Contactado
+88	2026-01-26 12:19:09	Lead	39	carlos.lopez@swatsquad.com	Status	Contactado	En Seguimiento
+89	2026-01-31 12:19:09	Lead	39	maria.torres@swatsquad.com	Calidad de Contacto	Sin Calificar	Bueno
+90	2026-01-24 16:19:11	Lead	40	ana.garcia@swatsquad.com	Status	Nuevo	Contactado
+91	2026-01-26 08:19:11	Lead	40	pedro.mendez@swatsquad.com	Status	Contactado	Perdido
+92	2026-01-23 12:47:07	Lead	41	sofia.martinez@swatsquad.com	Status	Nuevo	Contactado
+93	2026-01-27 02:47:07	Lead	41	ana.garcia@swatsquad.com	Status	Contactado	En Seguimiento
+94	2026-01-27 20:47:07	Lead	41	carlos.lopez@swatsquad.com	Status	En Seguimiento	Calificado
+95	2026-01-29 06:47:07	Lead	41	ana.garcia@swatsquad.com	Status	Calificado	Paso a Ventas
+96	2026-01-03 11:17:54	Lead	42	pedro.mendez@swatsquad.com	Status	Nuevo	Contactado
+97	2026-01-06 04:17:54	Lead	42	pedro.mendez@swatsquad.com	Status	Contactado	En Seguimiento
+98	2026-01-03 18:17:54	Lead	42	maria.torres@swatsquad.com	Status	En Seguimiento	Calificado
+99	2026-01-22 23:29:36	Lead	43	sofia.martinez@swatsquad.com	Status	Nuevo	Duplicado
+100	2026-01-09 23:13:21	Lead	44	sofia.martinez@swatsquad.com	Status	Nuevo	Contactado
+101	2026-01-12 02:13:21	Lead	44	maria.torres@swatsquad.com	Status	Contactado	Perdido
+102	2026-01-14 20:44:44	Lead	45	pedro.mendez@swatsquad.com	Status	Nuevo	Contactado
+103	2026-01-18 18:44:44	Lead	45	maria.torres@swatsquad.com	Status	Contactado	No Calificado
+104	2026-01-15 01:03:33	Lead	46	ana.garcia@swatsquad.com	Status	Nuevo	Contactado
+105	2026-01-08 02:40:52	Lead	47	carlos.lopez@swatsquad.com	Status	Nuevo	Contactado
+106	2026-01-08 13:40:52	Lead	47	pedro.mendez@swatsquad.com	Status	Contactado	En Seguimiento
+107	2026-01-15 01:40:52	Lead	47	pedro.mendez@swatsquad.com	Calidad de Contacto	Sin Calificar	Bueno
+108	2026-01-26 09:40:23	Lead	48	roberto.silva@swatsquad.com	Status	Nuevo	Contactado
+109	2026-01-29 06:40:23	Lead	48	sofia.martinez@swatsquad.com	Status	Contactado	En Seguimiento
+110	2026-02-02 19:40:23	Lead	48	ana.garcia@swatsquad.com	Status	En Seguimiento	Calificado
+111	2026-01-30 04:40:23	Lead	48	maria.torres@swatsquad.com	Calidad de Contacto	Sin Calificar	Regular
+112	2026-01-28 03:51:52	Lead	49	pedro.mendez@swatsquad.com	Status	Nuevo	Contactado
+113	2026-01-05 05:02:32	Lead	50	maria.torres@swatsquad.com	Status	Nuevo	Contactado
+114	2026-01-06 11:02:32	Lead	50	roberto.silva@swatsquad.com	Status	Contactado	En Seguimiento
+115	2026-01-09 03:02:32	Lead	50	lucia.herrera@swatsquad.com	Status	En Seguimiento	Calificado
+116	2026-01-10 10:47:44	Lead	51	roberto.silva@swatsquad.com	Status	Nuevo	Contactado
+117	2026-01-11 02:47:44	Lead	51	maria.torres@swatsquad.com	Status	Contactado	En Seguimiento
+118	2026-01-11 10:47:44	Lead	51	roberto.silva@swatsquad.com	Status	En Seguimiento	Calificado
+119	2026-01-14 20:55:12	Lead	52	pedro.mendez@swatsquad.com	Status	Nuevo	Contactado
+120	2026-01-18 08:55:12	Lead	52	lucia.herrera@swatsquad.com	Status	Contactado	Perdido
+121	2026-01-30 06:00:13	Lead	53	lucia.herrera@swatsquad.com	Status	Nuevo	Contactado
+122	2026-02-01 09:00:13	Lead	53	carlos.lopez@swatsquad.com	Status	Contactado	Perdido
+123	2026-02-08 05:00:13	Lead	53	maria.torres@swatsquad.com	Calidad de Contacto	Sin Calificar	Excelente
+124	2026-02-01 10:19:55	Lead	54	maria.torres@swatsquad.com	Status	Nuevo	Contactado
+125	2026-02-02 18:19:55	Lead	54	pedro.mendez@swatsquad.com	Status	Contactado	Perdido
+126	2026-01-19 06:39:16	Lead	55	carlos.lopez@swatsquad.com	Status	Nuevo	Contactado
+127	2026-01-22 20:39:16	Lead	55	sofia.martinez@swatsquad.com	Status	Contactado	En Seguimiento
+128	2026-01-28 06:19:51	Lead	56	pedro.mendez@swatsquad.com	Status	Nuevo	Contactado
+129	2026-02-01 06:19:51	Lead	56	pedro.mendez@swatsquad.com	Status	Contactado	No Calificado
+130	2026-01-29 22:03:46	Lead	57	pedro.mendez@swatsquad.com	Status	Nuevo	Contactado
+131	2026-02-01 10:03:46	Lead	57	carlos.lopez@swatsquad.com	Status	Contactado	En Seguimiento
+132	2026-01-31 22:03:46	Lead	57	ana.garcia@swatsquad.com	Calidad de Contacto	Sin Calificar	Malo
+133	2026-02-03 10:21:15	Lead	58	pedro.mendez@swatsquad.com	Status	Nuevo	Contactado
+134	2026-02-05 19:21:15	Lead	58	ana.garcia@swatsquad.com	Status	Contactado	No Calificado
+135	2026-02-05 23:21:15	Lead	58	ana.garcia@swatsquad.com	Calidad de Contacto	Sin Calificar	Regular
+136	2026-01-04 21:47:54	Lead	59	carlos.lopez@swatsquad.com	Status	Nuevo	Contactado
+137	2026-01-07 11:47:54	Lead	59	pedro.mendez@swatsquad.com	Status	Contactado	Perdido
+138	2026-01-06 18:08:48	Lead	60	maria.torres@swatsquad.com	Status	Nuevo	Contactado
+139	2026-01-07 08:08:48	Lead	60	pedro.mendez@swatsquad.com	Status	Contactado	En Seguimiento
+140	2026-01-10 16:08:48	Lead	60	carlos.lopez@swatsquad.com	Calidad de Contacto	Sin Calificar	Malo
+141	2026-01-22 00:45:01	Lead	61	lucia.herrera@swatsquad.com	Status	Nuevo	Contactado
+142	2026-01-25 12:45:01	Lead	61	lucia.herrera@swatsquad.com	Status	Contactado	No Calificado
+143	2026-01-27 20:45:01	Lead	61	ana.garcia@swatsquad.com	Calidad de Contacto	Sin Calificar	Excelente
+144	2026-01-21 14:59:46	Lead	63	ana.garcia@swatsquad.com	Status	Nuevo	Contactado
+145	2026-01-22 09:59:46	Lead	63	sofia.martinez@swatsquad.com	Status	Contactado	En Seguimiento
+146	2026-01-20 09:59:46	Lead	63	ana.garcia@swatsquad.com	Status	En Seguimiento	Calificado
+147	2026-01-14 03:09:19	Lead	64	ana.garcia@swatsquad.com	Status	Nuevo	Duplicado
+148	2026-01-08 23:55:58	Lead	65	sofia.martinez@swatsquad.com	Status	Nuevo	Contactado sin Respuesta
+149	2026-01-10 02:55:58	Lead	65	ana.garcia@swatsquad.com	Calidad de Contacto	Sin Calificar	Regular
+150	2026-01-09 08:17:20	Lead	66	ana.garcia@swatsquad.com	Status	Nuevo	Contactado
+151	2026-01-11 20:17:20	Lead	66	pedro.mendez@swatsquad.com	Status	Contactado	No Calificado
+152	2026-01-19 00:50:51	Lead	67	lucia.herrera@swatsquad.com	Status	Nuevo	Contactado
+153	2026-01-18 12:50:51	Lead	67	carlos.lopez@swatsquad.com	Status	Contactado	En Seguimiento
+154	2026-01-23 19:50:51	Lead	67	maria.torres@swatsquad.com	Status	En Seguimiento	Calificado
+155	2026-01-17 15:26:44	Lead	68	roberto.silva@swatsquad.com	Status	Nuevo	Duplicado
+156	2026-01-17 06:30:48	Lead	69	maria.torres@swatsquad.com	Status	Nuevo	Contactado
+157	2026-01-20 03:30:48	Lead	69	maria.torres@swatsquad.com	Status	Contactado	Perdido
+158	2026-01-15 03:27:28	Lead	70	sofia.martinez@swatsquad.com	Status	Nuevo	Contactado
+159	2026-01-14 03:27:28	Lead	70	lucia.herrera@swatsquad.com	Status	Contactado	En Seguimiento
+160	2026-01-26 08:11:30	Lead	71	roberto.silva@swatsquad.com	Status	Nuevo	Contactado
+161	2026-01-28 10:11:30	Lead	71	ana.garcia@swatsquad.com	Status	Contactado	Perdido
+162	2026-01-14 03:08:42	Lead	73	lucia.herrera@swatsquad.com	Status	Nuevo	Contactado
+163	2026-01-17 04:08:42	Lead	73	sofia.martinez@swatsquad.com	Status	Contactado	En Seguimiento
+164	2026-01-15 15:08:42	Lead	73	carlos.lopez@swatsquad.com	Status	En Seguimiento	Calificado
+165	2026-01-12 18:14:50	Lead	74	roberto.silva@swatsquad.com	Status	Nuevo	Contactado sin Respuesta
+166	2026-01-22 20:25:08	Lead	75	pedro.mendez@swatsquad.com	Status	Nuevo	Contactado
+167	2026-01-26 03:25:08	Lead	75	sofia.martinez@swatsquad.com	Calidad de Contacto	Sin Calificar	Regular
+168	2026-01-27 21:39:58	Lead	76	maria.torres@swatsquad.com	Status	Nuevo	Contactado
+169	2026-01-28 18:39:58	Lead	76	pedro.mendez@swatsquad.com	Status	Contactado	No Calificado
+170	2026-01-31 16:41:17	Lead	77	lucia.herrera@swatsquad.com	Status	Nuevo	Contactado
+171	2026-02-04 13:41:17	Lead	77	ana.garcia@swatsquad.com	Status	Contactado	En Seguimiento
+172	2026-02-08 12:41:17	Lead	77	pedro.mendez@swatsquad.com	Status	En Seguimiento	Calificado
+173	2026-02-09 21:41:17	Lead	77	lucia.herrera@swatsquad.com	Calidad de Contacto	Sin Calificar	Regular
+174	2026-01-19 12:34:03	Lead	78	maria.torres@swatsquad.com	Status	Nuevo	Contactado
+175	2026-01-25 09:12:43	Lead	79	roberto.silva@swatsquad.com	Status	Nuevo	Contactado
+176	2026-01-26 13:12:43	Lead	79	roberto.silva@swatsquad.com	Status	Contactado	En Seguimiento
+177	2026-01-04 11:32:29	Lead	80	pedro.mendez@swatsquad.com	Status	Nuevo	Contactado
+178	2026-01-07 09:32:29	Lead	80	ana.garcia@swatsquad.com	Status	Contactado	Perdido
+179	2026-02-12 05:30:49	Lead	81	lucia.herrera@swatsquad.com	Status	Nuevo	Contactado
+180	2026-02-12 19:30:49	Lead	81	ana.garcia@swatsquad.com	Status	Contactado	En Seguimiento
+181	2026-02-03 17:25:27	Lead	82	lucia.herrera@swatsquad.com	Status	Nuevo	Contactado
+182	2026-02-06 01:25:27	Lead	82	maria.torres@swatsquad.com	Status	Contactado	En Seguimiento
+183	2026-02-10 09:25:27	Lead	82	pedro.mendez@swatsquad.com	Status	En Seguimiento	Calificado
+184	2026-02-06 09:25:27	Lead	82	maria.torres@swatsquad.com	Status	Calificado	Paso a Ventas
+185	2026-02-15 13:03:56	Lead	83	maria.torres@swatsquad.com	Status	Nuevo	Contactado
+186	2026-02-18 00:03:56	Lead	83	pedro.mendez@swatsquad.com	Status	Contactado	En Seguimiento
+187	2026-02-21 04:03:56	Lead	83	maria.torres@swatsquad.com	Calidad de Contacto	Sin Calificar	Malo
+188	2026-02-07 01:42:09	Lead	84	lucia.herrera@swatsquad.com	Status	Nuevo	Contactado
+189	2026-02-08 03:42:09	Lead	84	pedro.mendez@swatsquad.com	Status	Contactado	En Seguimiento
+190	2026-02-11 02:42:09	Lead	84	sofia.martinez@swatsquad.com	Status	En Seguimiento	Calificado
+191	2026-02-17 05:42:09	Lead	84	lucia.herrera@swatsquad.com	Status	Calificado	Paso a Ventas
+192	2026-03-01 10:18:46	Lead	85	lucia.herrera@swatsquad.com	Status	Nuevo	Contactado
+193	2026-02-28 23:18:46	Lead	85	roberto.silva@swatsquad.com	Status	Contactado	Perdido
+194	2026-02-03 02:19:48	Lead	88	sofia.martinez@swatsquad.com	Status	Nuevo	Contactado
+195	2026-02-07 06:19:48	Lead	88	roberto.silva@swatsquad.com	Status	Contactado	En Seguimiento
+196	2026-02-08 04:19:48	Lead	88	pedro.mendez@swatsquad.com	Status	En Seguimiento	Calificado
+197	2026-02-12 06:19:48	Lead	88	lucia.herrera@swatsquad.com	Status	Calificado	Paso a Ventas
+198	2026-02-12 22:58:22	Lead	89	roberto.silva@swatsquad.com	Status	Nuevo	Contactado
+199	2026-02-14 10:58:22	Lead	89	lucia.herrera@swatsquad.com	Status	Contactado	En Seguimiento
+200	2026-02-16 03:58:22	Lead	89	pedro.mendez@swatsquad.com	Status	En Seguimiento	Calificado
+201	2026-02-14 08:58:22	Lead	89	lucia.herrera@swatsquad.com	Status	Calificado	Paso a Ventas
+202	2026-02-14 00:58:22	Lead	89	lucia.herrera@swatsquad.com	Calidad de Contacto	Sin Calificar	Regular
+203	2026-02-09 23:27:12	Lead	90	roberto.silva@swatsquad.com	Status	Nuevo	Contactado
+204	2026-02-08 19:27:12	Lead	90	lucia.herrera@swatsquad.com	Status	Contactado	En Seguimiento
+205	2026-02-16 22:54:35	Lead	91	pedro.mendez@swatsquad.com	Status	Nuevo	Contactado
+206	2026-02-19 01:54:35	Lead	91	ana.garcia@swatsquad.com	Status	Contactado	En Seguimiento
+207	2026-02-23 21:54:35	Lead	91	roberto.silva@swatsquad.com	Status	En Seguimiento	Calificado
+208	2026-02-26 21:54:35	Lead	91	roberto.silva@swatsquad.com	Status	Calificado	Paso a Ventas
+209	2026-02-21 16:08:34	Lead	92	roberto.silva@swatsquad.com	Status	Nuevo	Contactado
+210	2026-02-22 23:08:34	Lead	92	sofia.martinez@swatsquad.com	Status	Contactado	En Seguimiento
+211	2026-03-01 23:08:34	Lead	92	lucia.herrera@swatsquad.com	Status	En Seguimiento	Calificado
+212	2026-02-23 23:08:34	Lead	92	sofia.martinez@swatsquad.com	Status	Calificado	Paso a Ventas
+213	2026-02-15 20:55:02	Lead	93	roberto.silva@swatsquad.com	Status	Nuevo	Contactado
+214	2026-02-16 20:55:02	Lead	93	pedro.mendez@swatsquad.com	Status	Contactado	En Seguimiento
+215	2026-02-21 14:41:39	Lead	94	maria.torres@swatsquad.com	Status	Nuevo	Contactado
+216	2026-02-20 05:41:39	Lead	94	roberto.silva@swatsquad.com	Status	Contactado	En Seguimiento
+217	2026-02-26 03:41:39	Lead	94	carlos.lopez@swatsquad.com	Calidad de Contacto	Sin Calificar	Malo
+218	2026-02-25 13:49:29	Lead	96	lucia.herrera@swatsquad.com	Status	Nuevo	Contactado
+219	2026-03-02 14:49:29	Lead	96	maria.torres@swatsquad.com	Status	Contactado	Perdido
+220	2026-02-18 16:33:07	Lead	97	carlos.lopez@swatsquad.com	Status	Nuevo	Contactado sin Respuesta
+221	2026-02-19 04:33:07	Lead	97	maria.torres@swatsquad.com	Calidad de Contacto	Sin Calificar	Malo
+222	2026-02-22 20:55:13	Lead	98	ana.garcia@swatsquad.com	Status	Nuevo	Contactado
+223	2026-02-24 08:55:13	Lead	98	roberto.silva@swatsquad.com	Status	Contactado	Perdido
+224	2026-02-25 03:30:30	Lead	99	carlos.lopez@swatsquad.com	Status	Nuevo	Contactado
+225	2026-02-26 23:30:30	Lead	99	maria.torres@swatsquad.com	Status	Contactado	Perdido
+226	2026-02-25 23:18:30	Lead	100	ana.garcia@swatsquad.com	Status	Nuevo	Contactado
+227	2026-02-27 05:18:30	Lead	100	lucia.herrera@swatsquad.com	Status	Contactado	En Seguimiento
+228	2026-03-04 19:18:30	Lead	100	carlos.lopez@swatsquad.com	Status	En Seguimiento	Calificado
+229	2026-02-13 09:16:04	Lead	101	pedro.mendez@swatsquad.com	Status	Nuevo	Contactado
+230	2026-02-13 11:16:04	Lead	101	sofia.martinez@swatsquad.com	Status	Contactado	En Seguimiento
+231	2026-02-28 06:17:29	Lead	102	sofia.martinez@swatsquad.com	Status	Nuevo	Contactado
+232	2026-03-01 20:17:29	Lead	102	pedro.mendez@swatsquad.com	Status	Contactado	En Seguimiento
+233	2026-02-28 04:17:29	Lead	102	maria.torres@swatsquad.com	Status	En Seguimiento	Calificado
+234	2026-02-28 22:17:29	Lead	102	pedro.mendez@swatsquad.com	Status	Calificado	Paso a Ventas
+235	2026-02-11 02:52:01	Lead	103	ana.garcia@swatsquad.com	Status	Nuevo	Contactado
+236	2026-02-11 06:52:01	Lead	103	carlos.lopez@swatsquad.com	Status	Contactado	Perdido
+237	2026-02-11 13:20:21	Lead	104	carlos.lopez@swatsquad.com	Status	Nuevo	Contactado
+238	2026-02-15 16:20:21	Lead	104	maria.torres@swatsquad.com	Status	Contactado	En Seguimiento
+239	2026-02-14 20:20:21	Lead	104	sofia.martinez@swatsquad.com	Calidad de Contacto	Sin Calificar	Bueno
+240	2026-02-25 14:14:40	Lead	105	maria.torres@swatsquad.com	Status	Nuevo	Contactado sin Respuesta
+241	2026-03-04 02:14:40	Lead	105	ana.garcia@swatsquad.com	Calidad de Contacto	Sin Calificar	Regular
+242	2026-03-02 16:35:28	Lead	106	carlos.lopez@swatsquad.com	Status	Nuevo	Contactado
+243	2026-03-03 17:35:28	Lead	106	ana.garcia@swatsquad.com	Status	Contactado	Perdido
+244	2026-02-16 22:42:34	Lead	107	roberto.silva@swatsquad.com	Status	Nuevo	Contactado
+245	2026-02-16 17:42:34	Lead	107	carlos.lopez@swatsquad.com	Status	Contactado	En Seguimiento
+246	2026-03-01 16:45:27	Lead	108	lucia.herrera@swatsquad.com	Status	Nuevo	Contactado
+247	2026-03-04 18:45:27	Lead	108	sofia.martinez@swatsquad.com	Status	Contactado	En Seguimiento
+248	2026-03-08 00:45:27	Lead	108	pedro.mendez@swatsquad.com	Status	En Seguimiento	Calificado
+249	2026-03-08 14:45:27	Lead	108	roberto.silva@swatsquad.com	Status	Calificado	Paso a Ventas
+250	2026-03-09 18:45:27	Lead	108	pedro.mendez@swatsquad.com	Calidad de Contacto	Sin Calificar	Malo
+251	2026-02-05 20:50:14	Lead	109	ana.garcia@swatsquad.com	Status	Nuevo	Contactado
+252	2026-02-06 12:50:14	Lead	109	sofia.martinez@swatsquad.com	Status	Contactado	En Seguimiento
+253	2026-02-13 06:33:43	Lead	110	maria.torres@swatsquad.com	Status	Nuevo	Contactado
+254	2026-02-14 13:33:43	Lead	110	maria.torres@swatsquad.com	Status	Contactado	En Seguimiento
+255	2026-02-22 06:33:12	Lead	111	lucia.herrera@swatsquad.com	Status	Nuevo	Duplicado
+256	2026-02-27 07:54:37	Lead	112	lucia.herrera@swatsquad.com	Status	Nuevo	Contactado
+257	2026-03-03 01:54:37	Lead	112	maria.torres@swatsquad.com	Status	Contactado	En Seguimiento
+258	2026-02-28 00:54:37	Lead	112	ana.garcia@swatsquad.com	Status	En Seguimiento	Calificado
+259	2026-02-27 19:54:37	Lead	112	pedro.mendez@swatsquad.com	Status	Calificado	Paso a Ventas
+260	2026-02-27 03:54:37	Lead	112	pedro.mendez@swatsquad.com	Calidad de Contacto	Sin Calificar	Regular
+261	2026-02-09 12:23:36	Lead	113	sofia.martinez@swatsquad.com	Status	Nuevo	Contactado
+262	2026-02-16 17:23:36	Lead	113	pedro.mendez@swatsquad.com	Calidad de Contacto	Sin Calificar	Regular
+263	2026-02-20 02:18:09	Lead	115	maria.torres@swatsquad.com	Status	Nuevo	Contactado
+264	2026-02-22 02:18:09	Lead	115	pedro.mendez@swatsquad.com	Status	Contactado	No Calificado
+265	2026-02-23 04:18:09	Lead	115	lucia.herrera@swatsquad.com	Calidad de Contacto	Sin Calificar	Malo
+266	2026-02-26 11:12:05	Lead	116	ana.garcia@swatsquad.com	Status	Nuevo	Contactado
+267	2026-02-28 04:12:05	Lead	116	sofia.martinez@swatsquad.com	Status	Contactado	En Seguimiento
+268	2026-02-26 09:49:00	Lead	117	ana.garcia@swatsquad.com	Status	Nuevo	Contactado
+269	2026-02-27 04:49:00	Lead	117	ana.garcia@swatsquad.com	Status	Contactado	Perdido
+270	2026-02-19 14:28:51	Lead	118	ana.garcia@swatsquad.com	Status	Nuevo	Contactado
+271	2026-02-20 20:28:51	Lead	118	roberto.silva@swatsquad.com	Status	Contactado	No Calificado
+272	2026-02-23 02:28:51	Lead	118	ana.garcia@swatsquad.com	Calidad de Contacto	Sin Calificar	Excelente
+273	2026-02-10 23:18:44	Lead	119	roberto.silva@swatsquad.com	Status	Nuevo	Contactado
+274	2026-02-11 10:18:44	Lead	119	ana.garcia@swatsquad.com	Status	Contactado	Perdido
+275	2026-02-17 19:35:16	Lead	120	roberto.silva@swatsquad.com	Status	Nuevo	Contactado
+276	2026-02-18 04:35:16	Lead	120	roberto.silva@swatsquad.com	Status	Contactado	No Calificado
+277	2026-02-21 16:35:16	Lead	120	sofia.martinez@swatsquad.com	Calidad de Contacto	Sin Calificar	Bueno
+278	2026-02-25 17:20:36	Lead	121	ana.garcia@swatsquad.com	Status	Nuevo	Contactado
+279	2026-02-25 12:20:36	Lead	121	ana.garcia@swatsquad.com	Status	Contactado	Perdido
+280	2026-02-28 13:21:15	Lead	122	roberto.silva@swatsquad.com	Status	Nuevo	Contactado
+281	2026-02-27 17:21:15	Lead	122	carlos.lopez@swatsquad.com	Status	Contactado	En Seguimiento
+282	2026-02-07 23:27:02	Lead	123	maria.torres@swatsquad.com	Status	Nuevo	Contactado
+283	2026-02-17 04:29:16	Lead	124	pedro.mendez@swatsquad.com	Calidad de Contacto	Sin Calificar	Malo
+284	2026-02-08 10:04:23	Lead	125	lucia.herrera@swatsquad.com	Status	Nuevo	Contactado
+285	2026-02-07 21:04:23	Lead	125	lucia.herrera@swatsquad.com	Status	Contactado	En Seguimiento
+286	2026-03-02 16:03:26	Lead	126	roberto.silva@swatsquad.com	Status	Nuevo	Contactado
+287	2026-03-02 16:03:26	Lead	126	ana.garcia@swatsquad.com	Status	Contactado	No Calificado
+288	2026-02-25 00:53:13	Lead	127	carlos.lopez@swatsquad.com	Status	Nuevo	Contactado
+289	2026-02-27 12:53:13	Lead	127	carlos.lopez@swatsquad.com	Status	Contactado	En Seguimiento
+290	2026-02-23 05:26:12	Lead	128	ana.garcia@swatsquad.com	Status	Nuevo	Contactado
+291	2026-02-24 19:34:51	Lead	129	roberto.silva@swatsquad.com	Status	Nuevo	Contactado
+292	2026-02-28 07:34:51	Lead	129	carlos.lopez@swatsquad.com	Status	Contactado	No Calificado
+293	2026-02-22 07:48:09	Lead	130	ana.garcia@swatsquad.com	Status	Nuevo	Contactado
+294	2026-02-22 12:48:09	Lead	130	ana.garcia@swatsquad.com	Status	Contactado	Perdido
+295	2026-02-12 04:59:53	Lead	131	roberto.silva@swatsquad.com	Status	Nuevo	Contactado
+296	2026-02-10 08:59:53	Lead	131	roberto.silva@swatsquad.com	Status	Contactado	En Seguimiento
+297	2026-02-11 09:59:53	Lead	131	sofia.martinez@swatsquad.com	Status	En Seguimiento	Calificado
+298	2026-03-01 13:57:41	Lead	132	lucia.herrera@swatsquad.com	Status	Nuevo	Contactado
+299	2026-03-02 09:57:41	Lead	132	lucia.herrera@swatsquad.com	Status	Contactado	Perdido
+300	2026-03-09 23:57:41	Lead	132	maria.torres@swatsquad.com	Calidad de Contacto	Sin Calificar	Malo
+301	2026-02-22 13:10:42	Lead	133	pedro.mendez@swatsquad.com	Status	Nuevo	Contactado
+302	2026-02-24 17:10:42	Lead	133	ana.garcia@swatsquad.com	Status	Contactado	En Seguimiento
+303	2026-02-26 21:10:42	Lead	133	pedro.mendez@swatsquad.com	Status	En Seguimiento	Calificado
+304	2026-02-25 11:10:42	Lead	133	ana.garcia@swatsquad.com	Status	Calificado	Paso a Ventas
+305	2026-02-06 14:45:12	Lead	134	maria.torres@swatsquad.com	Status	Nuevo	Contactado
+306	2026-02-06 16:45:12	Lead	134	lucia.herrera@swatsquad.com	Status	Contactado	No Calificado
+307	2026-02-05 18:05:55	Lead	135	roberto.silva@swatsquad.com	Status	Nuevo	Contactado
+308	2026-02-06 01:05:55	Lead	135	sofia.martinez@swatsquad.com	Status	Contactado	Perdido
+309	2026-02-03 08:12:53	Lead	136	pedro.mendez@swatsquad.com	Status	Nuevo	Contactado
+310	2026-02-05 14:12:53	Lead	136	roberto.silva@swatsquad.com	Status	Contactado	Perdido
+311	2026-02-16 19:13:01	Lead	137	roberto.silva@swatsquad.com	Status	Nuevo	Contactado
+312	2026-02-19 21:13:01	Lead	137	pedro.mendez@swatsquad.com	Status	Contactado	En Seguimiento
+313	2026-02-23 19:13:01	Lead	137	carlos.lopez@swatsquad.com	Status	En Seguimiento	Calificado
+314	2026-02-20 13:13:01	Lead	137	ana.garcia@swatsquad.com	Calidad de Contacto	Sin Calificar	Bueno
+315	2026-02-17 18:44:59	Lead	138	lucia.herrera@swatsquad.com	Status	Nuevo	Inválido
+316	2026-02-17 09:47:51	Lead	139	maria.torres@swatsquad.com	Status	Nuevo	Contactado
+317	2026-02-17 00:47:51	Lead	139	maria.torres@swatsquad.com	Status	Contactado	Perdido
+318	2026-02-11 19:02:14	Lead	140	pedro.mendez@swatsquad.com	Status	Nuevo	Contactado
+319	2026-02-12 12:02:14	Lead	140	roberto.silva@swatsquad.com	Status	Contactado	En Seguimiento
+320	2026-02-12 16:02:14	Lead	140	lucia.herrera@swatsquad.com	Status	En Seguimiento	Calificado
+321	2026-02-12 10:02:14	Lead	140	pedro.mendez@swatsquad.com	Calidad de Contacto	Sin Calificar	Regular
+322	2026-02-07 20:16:31	Lead	141	roberto.silva@swatsquad.com	Status	Nuevo	Contactado
+323	2026-02-11 06:16:31	Lead	141	sofia.martinez@swatsquad.com	Status	Contactado	En Seguimiento
+324	2026-02-23 14:30:24	Lead	142	lucia.herrera@swatsquad.com	Status	Nuevo	Inválido
+325	2026-02-23 04:30:24	Lead	142	maria.torres@swatsquad.com	Calidad de Contacto	Sin Calificar	Excelente
+326	2026-02-11 00:27:44	Lead	143	ana.garcia@swatsquad.com	Status	Nuevo	Contactado
+327	2026-02-14 02:27:44	Lead	143	pedro.mendez@swatsquad.com	Status	Contactado	Perdido
+328	2026-02-03 20:06:57	Lead	144	sofia.martinez@swatsquad.com	Status	Nuevo	Contactado
+329	2026-02-04 22:06:57	Lead	144	ana.garcia@swatsquad.com	Status	Contactado	Perdido
+330	2026-02-15 21:32:53	Lead	145	ana.garcia@swatsquad.com	Status	Nuevo	Inválido
+331	2026-02-17 18:05:18	Lead	146	lucia.herrera@swatsquad.com	Status	Nuevo	Contactado
+332	2026-02-17 08:05:18	Lead	146	roberto.silva@swatsquad.com	Status	Contactado	En Seguimiento
+333	2026-02-18 04:05:18	Lead	146	pedro.mendez@swatsquad.com	Status	En Seguimiento	Calificado
+334	2026-02-27 20:05:18	Lead	146	lucia.herrera@swatsquad.com	Status	Calificado	Paso a Ventas
+335	2026-02-17 03:15:17	Lead	147	sofia.martinez@swatsquad.com	Status	Nuevo	Contactado sin Respuesta
+336	2026-02-04 20:08:29	Lead	148	sofia.martinez@swatsquad.com	Status	Nuevo	Contactado
+337	2026-02-05 00:08:29	Lead	148	sofia.martinez@swatsquad.com	Status	Contactado	En Seguimiento
+338	2026-02-09 00:08:29	Lead	148	lucia.herrera@swatsquad.com	Status	En Seguimiento	Calificado
+339	2026-02-09 20:08:29	Lead	148	lucia.herrera@swatsquad.com	Status	Calificado	Paso a Ventas
+340	2026-02-10 05:25:07	Lead	149	maria.torres@swatsquad.com	Status	Nuevo	Contactado
+341	2026-02-23 04:23:19	Lead	150	ana.garcia@swatsquad.com	Status	Nuevo	Contactado
+342	2026-02-24 18:23:19	Lead	150	lucia.herrera@swatsquad.com	Status	Contactado	Perdido
+343	2026-02-24 16:23:19	Lead	150	maria.torres@swatsquad.com	Calidad de Contacto	Sin Calificar	Malo
+344	2026-02-08 19:01:08	Lead	151	carlos.lopez@swatsquad.com	Status	Nuevo	Contactado
+345	2026-02-13 03:01:08	Lead	151	sofia.martinez@swatsquad.com	Status	Contactado	Perdido
+346	2026-02-12 01:01:08	Lead	151	lucia.herrera@swatsquad.com	Calidad de Contacto	Sin Calificar	Bueno
+347	2026-02-19 20:02:32	Lead	152	maria.torres@swatsquad.com	Status	Nuevo	Contactado
+348	2026-02-23 16:02:32	Lead	152	pedro.mendez@swatsquad.com	Status	Contactado	En Seguimiento
+349	2026-02-21 03:02:32	Lead	152	roberto.silva@swatsquad.com	Status	En Seguimiento	Calificado
+350	2026-02-23 18:02:32	Lead	152	carlos.lopez@swatsquad.com	Status	Calificado	Paso a Ventas
+351	2026-03-01 04:25:54	Lead	153	sofia.martinez@swatsquad.com	Status	Nuevo	Contactado
+352	2026-03-01 04:25:54	Lead	153	roberto.silva@swatsquad.com	Status	Contactado	En Seguimiento
+353	2026-03-02 14:25:54	Lead	153	lucia.herrera@swatsquad.com	Status	En Seguimiento	Calificado
+354	2026-02-23 13:54:50	Lead	154	roberto.silva@swatsquad.com	Status	Nuevo	Contactado
+355	2026-02-28 14:54:50	Lead	154	sofia.martinez@swatsquad.com	Status	Contactado	Perdido
+356	2026-02-17 01:35:27	Lead	155	maria.torres@swatsquad.com	Status	Nuevo	Duplicado
+357	2026-02-12 00:06:17	Lead	156	carlos.lopez@swatsquad.com	Status	Nuevo	Contactado
+358	2026-02-14 17:06:17	Lead	156	lucia.herrera@swatsquad.com	Status	Contactado	En Seguimiento
+359	2026-02-14 17:06:17	Lead	156	ana.garcia@swatsquad.com	Status	En Seguimiento	Calificado
+360	2026-02-27 03:58:38	Lead	157	carlos.lopez@swatsquad.com	Status	Nuevo	Contactado
+361	2026-03-02 15:58:38	Lead	157	pedro.mendez@swatsquad.com	Status	Contactado	Perdido
+362	2026-03-02 15:31:04	Lead	159	lucia.herrera@swatsquad.com	Status	Nuevo	Contactado
+363	2026-02-22 11:28:18	Lead	160	maria.torres@swatsquad.com	Status	Nuevo	Contactado
+364	2026-02-24 05:28:18	Lead	160	ana.garcia@swatsquad.com	Status	Contactado	En Seguimiento
+365	2026-02-24 23:28:18	Lead	160	sofia.martinez@swatsquad.com	Status	En Seguimiento	Calificado
+366	2026-03-01 05:28:18	Lead	160	sofia.martinez@swatsquad.com	Status	Calificado	Paso a Ventas
+367	2026-02-14 09:21:24	Lead	161	maria.torres@swatsquad.com	Status	Nuevo	Contactado
+368	2026-02-15 12:21:24	Lead	161	lucia.herrera@swatsquad.com	Status	Contactado	En Seguimiento
+369	2026-02-18 14:21:24	Lead	161	ana.garcia@swatsquad.com	Status	En Seguimiento	Calificado
+370	2026-02-17 20:21:24	Lead	161	ana.garcia@swatsquad.com	Calidad de Contacto	Sin Calificar	Excelente
+371	2026-02-24 00:26:48	Lead	162	maria.torres@swatsquad.com	Status	Nuevo	Contactado
+372	2026-02-25 14:26:48	Lead	162	ana.garcia@swatsquad.com	Status	Contactado	En Seguimiento
+373	2026-02-23 22:26:48	Lead	162	ana.garcia@swatsquad.com	Status	En Seguimiento	Calificado
+374	2026-02-28 14:26:48	Lead	162	carlos.lopez@swatsquad.com	Status	Calificado	Paso a Ventas
+375	2026-02-24 05:29:24	Lead	163	pedro.mendez@swatsquad.com	Status	Nuevo	Contactado
+376	2026-02-24 15:29:24	Lead	163	roberto.silva@swatsquad.com	Calidad de Contacto	Sin Calificar	Regular
+377	2026-03-03 08:30:15	Lead	164	lucia.herrera@swatsquad.com	Status	Nuevo	Contactado
+378	2026-03-05 17:30:15	Lead	164	carlos.lopez@swatsquad.com	Status	Contactado	En Seguimiento
+379	2026-03-10 21:30:15	Lead	164	sofia.martinez@swatsquad.com	Calidad de Contacto	Sin Calificar	Bueno
+380	2026-02-05 23:38:04	Lead	166	lucia.herrera@swatsquad.com	Status	Nuevo	Contactado
+381	2026-02-08 07:38:04	Lead	166	roberto.silva@swatsquad.com	Status	Contactado	En Seguimiento
+382	2026-02-07 00:38:04	Lead	166	lucia.herrera@swatsquad.com	Status	En Seguimiento	Calificado
+383	2026-02-11 09:32:05	Lead	167	sofia.martinez@swatsquad.com	Status	Nuevo	Contactado
+384	2026-02-16 04:32:05	Lead	167	sofia.martinez@swatsquad.com	Status	Contactado	No Calificado
+385	2026-02-04 19:33:06	Lead	168	roberto.silva@swatsquad.com	Status	Nuevo	Contactado
+386	2026-02-03 09:33:06	Lead	168	maria.torres@swatsquad.com	Status	Contactado	Perdido
+387	2026-02-02 14:07:43	Lead	169	roberto.silva@swatsquad.com	Status	Nuevo	Contactado
+388	2026-02-03 11:07:43	Lead	169	sofia.martinez@swatsquad.com	Status	Contactado	No Calificado
+389	2026-02-27 14:08:21	Lead	170	pedro.mendez@swatsquad.com	Status	Nuevo	Contactado
+390	2026-03-05 01:08:21	Lead	170	ana.garcia@swatsquad.com	Status	Contactado	Perdido
+391	2026-02-13 09:44:44	Lead	171	maria.torres@swatsquad.com	Status	Nuevo	Contactado
+392	2026-02-18 10:44:44	Lead	171	ana.garcia@swatsquad.com	Status	Contactado	En Seguimiento
+393	2026-02-17 03:44:44	Lead	171	sofia.martinez@swatsquad.com	Status	En Seguimiento	Calificado
+394	2026-02-08 05:53:05	Lead	172	pedro.mendez@swatsquad.com	Status	Nuevo	Contactado
+395	2026-02-11 11:53:05	Lead	172	lucia.herrera@swatsquad.com	Status	Contactado	En Seguimiento
+396	2026-02-22 00:22:26	Lead	173	ana.garcia@swatsquad.com	Status	Nuevo	Contactado
+397	2026-02-25 02:22:26	Lead	173	sofia.martinez@swatsquad.com	Status	Contactado	En Seguimiento
+398	2026-02-22 12:22:26	Lead	173	carlos.lopez@swatsquad.com	Status	En Seguimiento	Calificado
+399	2026-02-05 02:39:31	Lead	174	pedro.mendez@swatsquad.com	Status	Nuevo	Contactado
+400	2026-02-10 01:39:31	Lead	174	ana.garcia@swatsquad.com	Status	Contactado	Perdido
+401	2026-02-08 15:23:18	Lead	175	carlos.lopez@swatsquad.com	Status	Nuevo	Contactado
+402	2026-02-10 07:23:18	Lead	175	pedro.mendez@swatsquad.com	Status	Contactado	En Seguimiento
+403	2026-02-15 11:23:18	Lead	175	sofia.martinez@swatsquad.com	Status	En Seguimiento	Calificado
+404	2026-02-24 20:46:34	Lead	177	pedro.mendez@swatsquad.com	Status	Nuevo	Contactado
+405	2026-02-26 10:46:34	Lead	177	roberto.silva@swatsquad.com	Status	Contactado	En Seguimiento
+406	2026-02-17 05:55:23	Lead	178	lucia.herrera@swatsquad.com	Status	Nuevo	Contactado
+407	2026-02-19 12:55:23	Lead	178	roberto.silva@swatsquad.com	Status	Contactado	En Seguimiento
+408	2026-02-24 05:55:23	Lead	178	ana.garcia@swatsquad.com	Status	En Seguimiento	Calificado
+409	2026-02-24 02:55:23	Lead	178	ana.garcia@swatsquad.com	Status	Calificado	Paso a Ventas
+410	2026-03-01 21:49:21	Lead	179	carlos.lopez@swatsquad.com	Status	Nuevo	Inválido
+411	2026-03-01 04:49:21	Lead	179	pedro.mendez@swatsquad.com	Calidad de Contacto	Sin Calificar	Regular
+412	2026-02-26 06:38:48	Lead	180	carlos.lopez@swatsquad.com	Status	Nuevo	Contactado
+413	2026-03-02 21:38:48	Lead	180	maria.torres@swatsquad.com	Status	Contactado	Perdido
+414	2026-03-07 03:38:48	Lead	180	sofia.martinez@swatsquad.com	Calidad de Contacto	Sin Calificar	Malo
+415	2026-03-06 06:59:39	Lead	181	ana.garcia@swatsquad.com	Status	Nuevo	Contactado
+416	2026-03-06 11:59:39	Lead	181	carlos.lopez@swatsquad.com	Status	Contactado	En Seguimiento
+417	2026-03-13 17:59:39	Lead	181	roberto.silva@swatsquad.com	Calidad de Contacto	Sin Calificar	Bueno
+418	2026-03-06 13:46:54	Lead	182	maria.torres@swatsquad.com	Status	Nuevo	Contactado
+419	2026-03-05 08:46:54	Lead	182	sofia.martinez@swatsquad.com	Status	Contactado	En Seguimiento
+420	2026-03-05 10:46:54	Lead	182	ana.garcia@swatsquad.com	Status	En Seguimiento	Calificado
+421	2026-03-10 16:46:54	Lead	182	maria.torres@swatsquad.com	Calidad de Contacto	Sin Calificar	Excelente
+422	2026-03-04 15:07:14	Lead	183	pedro.mendez@swatsquad.com	Status	Nuevo	Contactado
+423	2026-03-09 05:07:14	Lead	183	sofia.martinez@swatsquad.com	Calidad de Contacto	Sin Calificar	Regular
+424	2026-03-04 09:55:55	Lead	184	roberto.silva@swatsquad.com	Status	Nuevo	Contactado
+425	2026-03-03 03:55:55	Lead	184	maria.torres@swatsquad.com	Status	Contactado	En Seguimiento
+426	2026-03-06 06:49:04	Lead	185	carlos.lopez@swatsquad.com	Status	Nuevo	Contactado
+427	2026-03-08 10:49:04	Lead	185	maria.torres@swatsquad.com	Status	Contactado	En Seguimiento
+428	2026-03-07 06:54:39	Lead	186	carlos.lopez@swatsquad.com	Status	Nuevo	Contactado
+429	2026-03-07 03:54:39	Lead	186	maria.torres@swatsquad.com	Status	Contactado	En Seguimiento
+430	2026-03-07 12:54:39	Lead	186	pedro.mendez@swatsquad.com	Status	En Seguimiento	Calificado
+431	2026-03-14 03:54:39	Lead	186	sofia.martinez@swatsquad.com	Status	Calificado	Paso a Ventas
+432	2026-03-04 08:31:18	Lead	187	lucia.herrera@swatsquad.com	Status	Nuevo	Contactado
+433	2026-03-10 07:31:18	Lead	187	lucia.herrera@swatsquad.com	Calidad de Contacto	Sin Calificar	Malo
+434	2026-03-04 00:41:43	Lead	188	maria.torres@swatsquad.com	Status	Nuevo	Contactado
+435	2026-03-07 03:41:43	Lead	188	sofia.martinez@swatsquad.com	Status	Contactado	En Seguimiento
+436	2026-03-10 06:41:43	Lead	188	lucia.herrera@swatsquad.com	Status	En Seguimiento	Calificado
+437	2026-03-04 07:16:19	Lead	189	maria.torres@swatsquad.com	Status	Nuevo	Contactado
+438	2026-03-06 00:16:19	Lead	189	maria.torres@swatsquad.com	Status	Contactado	No Calificado
+439	2026-03-04 21:48:57	Lead	190	roberto.silva@swatsquad.com	Status	Nuevo	Duplicado
+440	2026-03-06 07:32:24	Lead	191	lucia.herrera@swatsquad.com	Status	Nuevo	Contactado
+441	2026-03-07 05:32:24	Lead	191	pedro.mendez@swatsquad.com	Status	Contactado	En Seguimiento
+442	2026-03-12 07:32:24	Lead	191	maria.torres@swatsquad.com	Status	En Seguimiento	Calificado
+443	2026-03-08 19:32:24	Lead	191	ana.garcia@swatsquad.com	Status	Calificado	Paso a Ventas
+444	2026-03-02 15:45:51	Lead	192	maria.torres@swatsquad.com	Status	Nuevo	Contactado
+445	2026-03-04 04:45:51	Lead	192	roberto.silva@swatsquad.com	Status	Contactado	En Seguimiento
+446	2026-03-10 04:45:51	Lead	192	maria.torres@swatsquad.com	Status	En Seguimiento	Calificado
+447	2026-03-08 04:45:51	Lead	192	maria.torres@swatsquad.com	Calidad de Contacto	Sin Calificar	Regular
+448	2026-03-02 01:58:57	Lead	193	carlos.lopez@swatsquad.com	Status	Nuevo	Contactado
+449	2026-03-02 09:58:57	Lead	193	lucia.herrera@swatsquad.com	Status	Contactado	Perdido
+450	2026-03-06 05:23:49	Lead	194	maria.torres@swatsquad.com	Status	Nuevo	Contactado
+451	2026-03-09 04:23:49	Lead	194	lucia.herrera@swatsquad.com	Status	Contactado	En Seguimiento
+452	2026-03-13 04:23:49	Lead	194	ana.garcia@swatsquad.com	Status	En Seguimiento	Calificado
+453	2026-03-08 18:23:49	Lead	194	ana.garcia@swatsquad.com	Status	Calificado	Paso a Ventas
+454	2026-03-09 22:23:49	Lead	194	carlos.lopez@swatsquad.com	Calidad de Contacto	Sin Calificar	Bueno
+455	2026-03-07 01:29:09	Lead	195	ana.garcia@swatsquad.com	Status	Nuevo	Contactado
+456	2026-03-05 08:53:13	Lead	196	sofia.martinez@swatsquad.com	Status	Nuevo	Contactado
+457	2026-03-07 17:53:13	Lead	196	maria.torres@swatsquad.com	Status	Contactado	En Seguimiento
+458	2026-03-02 00:33:27	Lead	197	sofia.martinez@swatsquad.com	Status	Nuevo	Contactado
+459	2026-03-05 15:33:27	Lead	197	roberto.silva@swatsquad.com	Status	Contactado	En Seguimiento
+460	2026-03-03 00:33:27	Lead	197	maria.torres@swatsquad.com	Status	En Seguimiento	Calificado
+461	2026-03-03 10:32:50	Lead	198	roberto.silva@swatsquad.com	Status	Nuevo	Contactado
+462	2026-03-09 21:32:50	Lead	198	pedro.mendez@swatsquad.com	Calidad de Contacto	Sin Calificar	Bueno
+463	2026-03-06 02:01:02	Lead	199	sofia.martinez@swatsquad.com	Status	Nuevo	Contactado
+464	2026-03-05 19:01:02	Lead	199	roberto.silva@swatsquad.com	Status	Contactado	En Seguimiento
+465	2026-03-07 00:01:02	Lead	199	carlos.lopez@swatsquad.com	Status	En Seguimiento	Calificado
+466	2026-03-07 07:53:13	Lead	200	ana.garcia@swatsquad.com	Status	Nuevo	Contactado
+467	2026-03-08 15:53:13	Lead	200	maria.torres@swatsquad.com	Status	Contactado	Perdido
+468	2026-03-11 21:53:13	Lead	200	roberto.silva@swatsquad.com	Calidad de Contacto	Sin Calificar	Bueno
+469	2026-03-05 13:36:43	Lead	201	maria.torres@swatsquad.com	Status	Nuevo	Contactado
+470	2026-03-06 02:36:43	Lead	201	roberto.silva@swatsquad.com	Status	Contactado	Perdido
+471	2026-03-05 05:24:58	Lead	202	pedro.mendez@swatsquad.com	Status	Nuevo	Contactado
+472	2026-03-08 03:24:58	Lead	202	lucia.herrera@swatsquad.com	Status	Contactado	En Seguimiento
+473	2026-03-06 11:24:58	Lead	202	lucia.herrera@swatsquad.com	Status	En Seguimiento	Calificado
+474	2026-03-04 17:24:58	Lead	202	carlos.lopez@swatsquad.com	Status	Calificado	Paso a Ventas
+475	2026-03-04 18:21:10	Lead	203	roberto.silva@swatsquad.com	Status	Nuevo	Contactado
+476	2026-03-03 12:21:10	Lead	203	ana.garcia@swatsquad.com	Status	Contactado	Perdido
+477	2026-03-03 05:03:07	Lead	204	maria.torres@swatsquad.com	Status	Nuevo	Contactado
+478	2026-03-04 11:03:07	Lead	204	carlos.lopez@swatsquad.com	Status	Contactado	En Seguimiento
+479	2026-03-05 05:03:07	Lead	204	sofia.martinez@swatsquad.com	Calidad de Contacto	Sin Calificar	Excelente
+480	2026-03-06 01:43:58	Lead	205	lucia.herrera@swatsquad.com	Status	Nuevo	Contactado
+481	2026-03-06 20:43:58	Lead	205	maria.torres@swatsquad.com	Status	Contactado	En Seguimiento
+482	2026-03-04 10:02:36	Lead	206	roberto.silva@swatsquad.com	Status	Nuevo	Inválido
+483	2026-03-12 19:02:36	Lead	206	sofia.martinez@swatsquad.com	Calidad de Contacto	Sin Calificar	Bueno
+484	2026-03-03 05:50:13	Lead	207	sofia.martinez@swatsquad.com	Status	Nuevo	Contactado
+485	2026-03-04 01:50:13	Lead	207	sofia.martinez@swatsquad.com	Status	Contactado	En Seguimiento
+486	2026-03-07 17:50:13	Lead	207	pedro.mendez@swatsquad.com	Status	En Seguimiento	Calificado
+487	2026-03-05 17:34:06	Lead	208	pedro.mendez@swatsquad.com	Status	Nuevo	Contactado
+488	2026-03-08 14:34:06	Lead	208	sofia.martinez@swatsquad.com	Status	Contactado	En Seguimiento
+489	2026-03-12 13:34:06	Lead	208	sofia.martinez@swatsquad.com	Status	En Seguimiento	Calificado
+490	2026-03-08 16:34:06	Lead	208	lucia.herrera@swatsquad.com	Calidad de Contacto	Sin Calificar	Excelente
+491	2026-03-05 02:32:04	Lead	209	lucia.herrera@swatsquad.com	Status	Nuevo	Contactado
+492	2026-03-07 20:32:04	Lead	209	carlos.lopez@swatsquad.com	Status	Contactado	Perdido
+493	2026-03-06 13:16:46	Lead	210	lucia.herrera@swatsquad.com	Status	Nuevo	Contactado
+494	2026-03-05 04:16:46	Lead	210	carlos.lopez@swatsquad.com	Status	Contactado	Perdido
+495	2026-03-04 20:24:46	Lead	211	carlos.lopez@swatsquad.com	Status	Nuevo	Inválido
+496	2026-03-05 10:30:51	Lead	212	ana.garcia@swatsquad.com	Status	Nuevo	Contactado
+497	2026-03-08 15:30:51	Lead	212	lucia.herrera@swatsquad.com	Status	Contactado	En Seguimiento
+498	2026-03-12 04:30:51	Lead	212	carlos.lopez@swatsquad.com	Status	En Seguimiento	Calificado
+499	2026-03-15 13:30:51	Lead	212	maria.torres@swatsquad.com	Status	Calificado	Paso a Ventas
+500	2026-03-06 13:30:51	Lead	212	lucia.herrera@swatsquad.com	Calidad de Contacto	Sin Calificar	Bueno
+501	2026-03-02 01:52:52	Lead	213	lucia.herrera@swatsquad.com	Status	Nuevo	Duplicado
+502	2026-03-03 23:01:08	Lead	214	lucia.herrera@swatsquad.com	Status	Nuevo	Contactado
+503	2026-03-04 09:01:08	Lead	214	pedro.mendez@swatsquad.com	Status	Contactado	En Seguimiento
+504	2026-03-03 17:01:08	Lead	214	roberto.silva@swatsquad.com	Status	En Seguimiento	Calificado
+505	2026-03-13 05:01:08	Lead	214	maria.torres@swatsquad.com	Status	Calificado	Paso a Ventas
+506	2026-03-05 08:29:42	Lead	215	sofia.martinez@swatsquad.com	Status	Nuevo	Contactado
+507	2026-03-05 03:29:42	Lead	215	pedro.mendez@swatsquad.com	Status	Contactado	Perdido
+508	2026-03-11 19:29:42	Lead	215	maria.torres@swatsquad.com	Calidad de Contacto	Sin Calificar	Bueno
+509	2026-03-04 12:45:10	Lead	216	pedro.mendez@swatsquad.com	Status	Nuevo	Contactado
+510	2026-03-08 12:45:10	Lead	216	lucia.herrera@swatsquad.com	Calidad de Contacto	Sin Calificar	Regular
+511	2026-03-05 07:41:06	Lead	217	carlos.lopez@swatsquad.com	Status	Nuevo	Contactado
+512	2026-03-08 12:41:06	Lead	217	lucia.herrera@swatsquad.com	Status	Contactado	En Seguimiento
+513	2026-03-11 10:41:06	Lead	217	pedro.mendez@swatsquad.com	Status	En Seguimiento	Calificado
+514	2026-03-02 15:42:58	Lead	218	sofia.martinez@swatsquad.com	Status	Nuevo	Contactado
+515	2026-03-05 17:42:58	Lead	218	pedro.mendez@swatsquad.com	Status	Contactado	En Seguimiento
+516	2026-03-08 08:42:58	Lead	218	roberto.silva@swatsquad.com	Status	En Seguimiento	Calificado
+517	2026-03-06 19:42:58	Lead	218	pedro.mendez@swatsquad.com	Status	Calificado	Paso a Ventas
+518	2026-03-04 23:42:58	Lead	218	lucia.herrera@swatsquad.com	Calidad de Contacto	Sin Calificar	Excelente
+519	2026-03-03 18:05:40	Lead	219	carlos.lopez@swatsquad.com	Status	Nuevo	Contactado
+520	2026-03-02 13:05:40	Lead	219	sofia.martinez@swatsquad.com	Status	Contactado	En Seguimiento
+521	2026-03-05 06:11:01	Lead	220	lucia.herrera@swatsquad.com	Status	Nuevo	Contactado
+522	2026-03-08 15:11:01	Lead	220	maria.torres@swatsquad.com	Status	Contactado	En Seguimiento
+523	2026-03-07 07:11:01	Lead	220	lucia.herrera@swatsquad.com	Status	En Seguimiento	Calificado
+524	2026-03-12 11:11:01	Lead	220	sofia.martinez@swatsquad.com	Status	Calificado	Paso a Ventas
+525	2026-03-04 00:55:49	Lead	221	ana.garcia@swatsquad.com	Status	Nuevo	Contactado
+526	2026-03-08 20:55:49	Lead	221	ana.garcia@swatsquad.com	Calidad de Contacto	Sin Calificar	Regular
+527	2026-03-04 02:30:31	Lead	222	carlos.lopez@swatsquad.com	Status	Nuevo	Contactado
+528	2026-03-04 08:30:31	Lead	222	pedro.mendez@swatsquad.com	Status	Contactado	Perdido
+529	2026-03-03 08:35:51	Lead	223	sofia.martinez@swatsquad.com	Status	Nuevo	Contactado
+530	2026-03-05 20:35:51	Lead	223	carlos.lopez@swatsquad.com	Status	Contactado	Perdido
+531	2026-03-02 11:14:43	Lead	224	roberto.silva@swatsquad.com	Status	Nuevo	Contactado
+532	2026-03-07 20:14:43	Lead	224	sofia.martinez@swatsquad.com	Status	Contactado	En Seguimiento
+533	2026-03-10 08:14:43	Lead	224	ana.garcia@swatsquad.com	Status	En Seguimiento	Calificado
+534	2026-03-05 08:46:20	Lead	225	lucia.herrera@swatsquad.com	Status	Nuevo	Contactado
+535	2026-03-06 00:46:20	Lead	225	roberto.silva@swatsquad.com	Status	Contactado	Perdido
+536	2026-03-06 20:46:20	Lead	225	carlos.lopez@swatsquad.com	Calidad de Contacto	Sin Calificar	Excelente
+537	2026-03-02 17:35:44	Lead	226	maria.torres@swatsquad.com	Status	Nuevo	Contactado
+538	2026-03-07 10:35:44	Lead	226	pedro.mendez@swatsquad.com	Status	Contactado	Perdido
+539	2026-03-02 20:29:45	Lead	227	roberto.silva@swatsquad.com	Status	Nuevo	Contactado
+540	2026-03-05 09:29:45	Lead	227	lucia.herrera@swatsquad.com	Status	Contactado	Perdido
+541	2026-03-03 09:11:53	Lead	228	pedro.mendez@swatsquad.com	Status	Nuevo	Contactado
+542	2026-03-03 17:11:53	Lead	228	maria.torres@swatsquad.com	Status	Contactado	En Seguimiento
+543	2026-03-03 04:02:11	Lead	229	pedro.mendez@swatsquad.com	Status	Nuevo	Contactado
+544	2026-03-06 04:02:11	Lead	229	lucia.herrera@swatsquad.com	Status	Contactado	No Calificado
+545	2026-03-09 02:02:11	Lead	229	maria.torres@swatsquad.com	Calidad de Contacto	Sin Calificar	Excelente
+546	2026-03-06 04:08:07	Lead	230	maria.torres@swatsquad.com	Status	Nuevo	Contactado
+547	2026-03-06 05:08:07	Lead	230	pedro.mendez@swatsquad.com	Status	Contactado	Perdido
+548	2026-03-03 21:46:13	Lead	231	ana.garcia@swatsquad.com	Status	Nuevo	Contactado
+549	2026-03-06 07:46:13	Lead	231	ana.garcia@swatsquad.com	Status	Contactado	En Seguimiento
+550	2026-03-06 21:46:13	Lead	231	carlos.lopez@swatsquad.com	Calidad de Contacto	Sin Calificar	Bueno
+551	2026-03-02 21:58:41	Lead	232	roberto.silva@swatsquad.com	Status	Nuevo	Contactado
+552	2026-03-07 09:58:41	Lead	232	ana.garcia@swatsquad.com	Status	Contactado	En Seguimiento
+553	2026-03-04 11:58:41	Lead	232	carlos.lopez@swatsquad.com	Status	En Seguimiento	Calificado
+554	2026-03-13 03:58:41	Lead	232	sofia.martinez@swatsquad.com	Status	Calificado	Paso a Ventas
+555	2026-03-11 11:58:41	Lead	232	pedro.mendez@swatsquad.com	Calidad de Contacto	Sin Calificar	Regular
+556	2026-03-06 01:40:11	Lead	233	pedro.mendez@swatsquad.com	Status	Nuevo	Contactado
+557	2026-03-06 10:40:11	Lead	233	lucia.herrera@swatsquad.com	Status	Contactado	En Seguimiento
+558	2026-03-12 23:40:11	Lead	233	ana.garcia@swatsquad.com	Status	En Seguimiento	Calificado
+559	2026-03-13 12:40:11	Lead	233	pedro.mendez@swatsquad.com	Status	Calificado	Paso a Ventas
+560	2026-03-08 08:40:11	Lead	233	pedro.mendez@swatsquad.com	Calidad de Contacto	Sin Calificar	Malo
+561	2026-03-05 11:36:05	Lead	234	pedro.mendez@swatsquad.com	Status	Nuevo	Duplicado
+562	2026-03-11 23:36:05	Lead	234	ana.garcia@swatsquad.com	Calidad de Contacto	Sin Calificar	Bueno
+563	2026-03-04 16:34:19	Lead	235	maria.torres@swatsquad.com	Status	Nuevo	Contactado
+564	2026-03-06 12:34:19	Lead	235	carlos.lopez@swatsquad.com	Status	Contactado	En Seguimiento
+565	2026-03-04 12:34:19	Lead	235	sofia.martinez@swatsquad.com	Status	En Seguimiento	Calificado
+566	2026-03-06 00:41:17	Lead	236	carlos.lopez@swatsquad.com	Status	Nuevo	Contactado
+567	2026-03-03 16:36:59	Lead	237	ana.garcia@swatsquad.com	Status	Nuevo	Duplicado
+568	2026-03-04 04:41:49	Lead	238	roberto.silva@swatsquad.com	Status	Nuevo	Contactado
+569	2026-03-05 03:41:49	Lead	238	carlos.lopez@swatsquad.com	Status	Contactado	En Seguimiento
+570	2026-03-05 04:41:49	Lead	238	carlos.lopez@swatsquad.com	Status	En Seguimiento	Calificado
+571	2026-03-09 11:41:49	Lead	238	pedro.mendez@swatsquad.com	Status	Calificado	Paso a Ventas
+572	2026-03-02 09:08:37	Lead	239	lucia.herrera@swatsquad.com	Status	Nuevo	Contactado
+573	2026-03-05 13:08:37	Lead	239	carlos.lopez@swatsquad.com	Status	Contactado	En Seguimiento
+574	2026-03-09 11:08:37	Lead	239	carlos.lopez@swatsquad.com	Calidad de Contacto	Sin Calificar	Regular
+575	2026-03-06 02:43:12	Lead	240	pedro.mendez@swatsquad.com	Status	Nuevo	Contactado
+576	2026-03-09 14:43:12	Lead	240	pedro.mendez@swatsquad.com	Status	Contactado	En Seguimiento
+577	2026-03-09 03:43:12	Lead	240	carlos.lopez@swatsquad.com	Status	En Seguimiento	Calificado
+578	2026-03-06 06:43:12	Lead	240	ana.garcia@swatsquad.com	Calidad de Contacto	Sin Calificar	Bueno
+579	2026-03-06 01:04:13	Lead	241	ana.garcia@swatsquad.com	Status	Nuevo	Contactado
+580	2026-03-08 23:04:13	Lead	241	carlos.lopez@swatsquad.com	Status	Contactado	En Seguimiento
+581	2026-03-12 12:04:13	Lead	241	pedro.mendez@swatsquad.com	Status	En Seguimiento	Calificado
+582	2026-03-05 21:26:31	Lead	242	pedro.mendez@swatsquad.com	Status	Nuevo	Contactado
+583	2026-03-09 21:26:31	Lead	242	ana.garcia@swatsquad.com	Status	Contactado	En Seguimiento
+584	2026-03-12 14:26:31	Lead	242	sofia.martinez@swatsquad.com	Status	En Seguimiento	Calificado
+585	2026-03-04 22:22:29	Lead	243	roberto.silva@swatsquad.com	Status	Nuevo	Contactado
+586	2026-03-06 19:22:29	Lead	243	ana.garcia@swatsquad.com	Status	Contactado	En Seguimiento
+587	2026-03-11 21:22:29	Lead	243	ana.garcia@swatsquad.com	Status	En Seguimiento	Calificado
+588	2026-03-07 12:02:40	Lead	244	ana.garcia@swatsquad.com	Status	Nuevo	Contactado
+589	2026-03-09 03:02:40	Lead	244	pedro.mendez@swatsquad.com	Status	Contactado	En Seguimiento
+590	2026-03-13 07:02:40	Lead	244	sofia.martinez@swatsquad.com	Status	En Seguimiento	Calificado
+591	2026-03-03 18:52:14	Lead	246	ana.garcia@swatsquad.com	Status	Nuevo	Contactado
+592	2026-03-02 14:52:14	Lead	246	roberto.silva@swatsquad.com	Status	Contactado	Perdido
+593	2026-03-11 02:52:14	Lead	246	sofia.martinez@swatsquad.com	Calidad de Contacto	Sin Calificar	Excelente
+594	2026-03-02 01:14:18	Lead	247	maria.torres@swatsquad.com	Status	Nuevo	Contactado
+595	2026-03-04 23:14:18	Lead	247	carlos.lopez@swatsquad.com	Status	Contactado	En Seguimiento
+596	2026-03-05 19:20:30	Lead	248	lucia.herrera@swatsquad.com	Status	Nuevo	Contactado
+597	2026-03-03 12:58:09	Lead	249	sofia.martinez@swatsquad.com	Status	Nuevo	Contactado
+598	2026-03-03 14:58:09	Lead	249	lucia.herrera@swatsquad.com	Status	Contactado	En Seguimiento
+599	2026-03-06 07:58:09	Lead	249	lucia.herrera@swatsquad.com	Status	En Seguimiento	Calificado
+600	2026-03-07 07:12:19	Lead	250	lucia.herrera@swatsquad.com	Status	Nuevo	Contactado
+601	2026-03-08 08:12:19	Lead	250	ana.garcia@swatsquad.com	Status	Contactado	En Seguimiento
+602	2026-03-13 00:12:19	Lead	250	pedro.mendez@swatsquad.com	Status	En Seguimiento	Calificado
+603	2026-03-15 12:12:19	Lead	250	maria.torres@swatsquad.com	Status	Calificado	Paso a Ventas
+604	2026-03-03 18:09:52	Lead	251	carlos.lopez@swatsquad.com	Status	Nuevo	Contactado
+605	2026-03-04 15:09:52	Lead	251	pedro.mendez@swatsquad.com	Status	Contactado	En Seguimiento
+606	2026-03-05 14:09:52	Lead	251	ana.garcia@swatsquad.com	Status	En Seguimiento	Calificado
+607	2026-03-05 23:44:40	Lead	252	roberto.silva@swatsquad.com	Status	Nuevo	Contactado
+608	2026-03-05 09:44:40	Lead	252	sofia.martinez@swatsquad.com	Status	Contactado	En Seguimiento
+609	2026-03-04 16:01:15	Lead	253	maria.torres@swatsquad.com	Status	Nuevo	Contactado
+610	2026-03-07 11:01:15	Lead	253	roberto.silva@swatsquad.com	Status	Contactado	En Seguimiento
+611	2026-03-07 12:01:15	Lead	253	sofia.martinez@swatsquad.com	Status	En Seguimiento	Calificado
+612	2026-03-11 19:01:15	Lead	253	pedro.mendez@swatsquad.com	Status	Calificado	Paso a Ventas
+613	2026-03-05 03:43:50	Lead	254	pedro.mendez@swatsquad.com	Status	Nuevo	Contactado
+614	2026-03-05 21:43:50	Lead	254	lucia.herrera@swatsquad.com	Status	Contactado	En Seguimiento
+615	2026-03-03 13:23:20	Lead	255	sofia.martinez@swatsquad.com	Status	Nuevo	Contactado
+616	2026-03-06 04:23:20	Lead	255	lucia.herrera@swatsquad.com	Status	Contactado	En Seguimiento
+617	2026-03-10 07:23:20	Lead	255	ana.garcia@swatsquad.com	Status	En Seguimiento	Calificado
+618	2026-03-13 14:23:20	Lead	255	lucia.herrera@swatsquad.com	Status	Calificado	Paso a Ventas
+619	2026-03-04 10:23:20	Lead	255	sofia.martinez@swatsquad.com	Calidad de Contacto	Sin Calificar	Bueno
+620	2026-03-05 11:27:39	Lead	256	ana.garcia@swatsquad.com	Status	Nuevo	Contactado
+621	2026-03-04 23:27:39	Lead	256	roberto.silva@swatsquad.com	Status	Contactado	En Seguimiento
+622	2026-03-11 16:27:39	Lead	256	ana.garcia@swatsquad.com	Status	En Seguimiento	Calificado
+623	2026-03-10 13:27:39	Lead	256	carlos.lopez@swatsquad.com	Calidad de Contacto	Sin Calificar	Regular
+624	2026-03-03 13:09:01	Lead	257	ana.garcia@swatsquad.com	Status	Nuevo	Contactado
+625	2026-03-02 16:09:01	Lead	257	sofia.martinez@swatsquad.com	Status	Contactado	En Seguimiento
+626	2026-03-08 03:09:01	Lead	257	lucia.herrera@swatsquad.com	Status	En Seguimiento	Calificado
+627	2026-03-10 06:09:01	Lead	257	carlos.lopez@swatsquad.com	Status	Calificado	Paso a Ventas
+628	2026-03-08 06:09:01	Lead	257	maria.torres@swatsquad.com	Calidad de Contacto	Sin Calificar	Excelente
+629	2026-03-06 15:44:42	Lead	258	pedro.mendez@swatsquad.com	Status	Nuevo	Contactado
+630	2026-03-09 13:44:42	Lead	258	carlos.lopez@swatsquad.com	Status	Contactado	Perdido
+631	2026-03-05 09:31:47	Lead	259	roberto.silva@swatsquad.com	Status	Nuevo	Duplicado
+632	2026-03-08 12:31:47	Lead	259	pedro.mendez@swatsquad.com	Calidad de Contacto	Sin Calificar	Regular
+633	2026-03-04 10:21:39	Lead	260	ana.garcia@swatsquad.com	Status	Nuevo	Contactado
+634	2026-03-05 02:21:39	Lead	260	maria.torres@swatsquad.com	Status	Contactado	En Seguimiento
+635	2026-03-07 01:21:39	Lead	260	sofia.martinez@swatsquad.com	Status	En Seguimiento	Calificado
+636	2026-03-04 13:24:49	Lead	261	maria.torres@swatsquad.com	Status	Nuevo	Contactado
+637	2026-03-08 01:24:49	Lead	261	maria.torres@swatsquad.com	Status	Contactado	En Seguimiento
+638	2026-03-11 14:24:49	Lead	261	roberto.silva@swatsquad.com	Status	En Seguimiento	Calificado
+639	2026-03-11 23:24:49	Lead	261	maria.torres@swatsquad.com	Calidad de Contacto	Sin Calificar	Malo
+640	2026-03-05 06:51:55	Lead	262	maria.torres@swatsquad.com	Status	Nuevo	Duplicado
+641	2026-03-13 04:51:55	Lead	262	lucia.herrera@swatsquad.com	Calidad de Contacto	Sin Calificar	Malo
+642	2026-03-05 07:57:44	Lead	263	ana.garcia@swatsquad.com	Calidad de Contacto	Sin Calificar	Regular
+643	2026-03-04 14:46:31	Lead	264	pedro.mendez@swatsquad.com	Status	Nuevo	Contactado
+644	2026-03-07 05:46:31	Lead	264	carlos.lopez@swatsquad.com	Status	Contactado	En Seguimiento
+645	2026-03-05 06:38:23	Lead	265	maria.torres@swatsquad.com	Status	Nuevo	Duplicado
+646	2026-03-04 14:08:30	Lead	266	roberto.silva@swatsquad.com	Status	Nuevo	Contactado
+647	2026-03-08 22:08:30	Lead	266	maria.torres@swatsquad.com	Status	Contactado	Perdido
+648	2026-03-06 17:46:07	Lead	267	maria.torres@swatsquad.com	Status	Nuevo	Contactado
+649	2026-03-09 01:46:07	Lead	267	roberto.silva@swatsquad.com	Status	Contactado	En Seguimiento
+650	2026-03-07 19:46:07	Lead	267	maria.torres@swatsquad.com	Status	En Seguimiento	Calificado
+651	2026-03-03 05:26:52	Lead	268	ana.garcia@swatsquad.com	Status	Nuevo	Contactado
+652	2026-03-03 14:26:52	Lead	268	maria.torres@swatsquad.com	Status	Contactado	En Seguimiento
+653	2026-03-05 03:26:52	Lead	268	lucia.herrera@swatsquad.com	Status	En Seguimiento	Calificado
+654	2026-03-10 20:26:52	Lead	268	maria.torres@swatsquad.com	Status	Calificado	Paso a Ventas
+655	2026-03-07 02:32:37	Lead	269	pedro.mendez@swatsquad.com	Status	Nuevo	Contactado
+656	2026-03-09 08:32:37	Lead	269	pedro.mendez@swatsquad.com	Status	Contactado	En Seguimiento
+657	2026-03-13 22:32:37	Lead	269	roberto.silva@swatsquad.com	Calidad de Contacto	Sin Calificar	Regular
+658	2026-03-04 21:42:26	Lead	270	maria.torres@swatsquad.com	Status	Nuevo	Contactado
+659	2026-03-06 09:42:26	Lead	270	lucia.herrera@swatsquad.com	Status	Contactado	En Seguimiento
+660	2026-03-01 17:01:10	Lead	271	roberto.silva@swatsquad.com	Status	Nuevo	Duplicado
+661	2026-03-06 13:53:17	Lead	272	ana.garcia@swatsquad.com	Calidad de Contacto	Sin Calificar	Regular
+662	2026-03-07 01:34:50	Lead	273	maria.torres@swatsquad.com	Status	Nuevo	Duplicado
+663	2026-03-04 02:46:06	Lead	274	sofia.martinez@swatsquad.com	Status	Nuevo	Contactado
+664	2026-03-04 14:46:06	Lead	274	maria.torres@swatsquad.com	Status	Contactado	En Seguimiento
+665	2026-03-04 09:34:40	Lead	275	ana.garcia@swatsquad.com	Status	Nuevo	Inválido
+666	2026-03-11 03:34:40	Lead	275	carlos.lopez@swatsquad.com	Calidad de Contacto	Sin Calificar	Bueno
+667	2026-03-06 00:53:29	Lead	276	lucia.herrera@swatsquad.com	Status	Nuevo	Contactado
+668	2026-03-05 20:53:29	Lead	276	maria.torres@swatsquad.com	Status	Contactado	En Seguimiento
+669	2026-03-06 12:53:29	Lead	276	roberto.silva@swatsquad.com	Status	En Seguimiento	Calificado
+670	2026-03-13 04:53:29	Lead	276	roberto.silva@swatsquad.com	Status	Calificado	Paso a Ventas
+671	2026-03-05 08:38:46	Lead	277	maria.torres@swatsquad.com	Status	Nuevo	Contactado
+672	2026-03-07 09:38:46	Lead	277	sofia.martinez@swatsquad.com	Status	Contactado	En Seguimiento
+673	2026-03-08 01:38:46	Lead	277	maria.torres@swatsquad.com	Status	En Seguimiento	Calificado
+674	2026-03-07 01:38:46	Lead	277	lucia.herrera@swatsquad.com	Status	Calificado	Paso a Ventas
+675	2026-03-07 13:07:25	Lead	278	sofia.martinez@swatsquad.com	Status	Nuevo	Contactado
+676	2026-03-08 07:07:25	Lead	278	sofia.martinez@swatsquad.com	Status	Contactado	En Seguimiento
+677	2026-03-11 18:07:25	Lead	278	lucia.herrera@swatsquad.com	Status	En Seguimiento	Calificado
+678	2026-03-08 15:07:25	Lead	278	carlos.lopez@swatsquad.com	Calidad de Contacto	Sin Calificar	Bueno
+679	2026-03-03 02:59:21	Lead	279	maria.torres@swatsquad.com	Status	Nuevo	Contactado
+680	2026-03-03 05:59:21	Lead	279	sofia.martinez@swatsquad.com	Status	Contactado	En Seguimiento
+681	2026-03-08 14:59:21	Lead	279	pedro.mendez@swatsquad.com	Status	En Seguimiento	Calificado
+682	2026-03-11 13:59:21	Lead	279	roberto.silva@swatsquad.com	Status	Calificado	Paso a Ventas
+683	2026-03-05 22:02:59	Lead	280	maria.torres@swatsquad.com	Status	Nuevo	Contactado
+684	2026-03-07 15:02:59	Lead	280	roberto.silva@swatsquad.com	Calidad de Contacto	Sin Calificar	Bueno
+685	2026-03-04 18:20:01	Lead	281	lucia.herrera@swatsquad.com	Status	Nuevo	Contactado
+686	2026-03-04 20:20:01	Lead	281	carlos.lopez@swatsquad.com	Status	Contactado	En Seguimiento
+687	2026-03-04 11:20:01	Lead	281	roberto.silva@swatsquad.com	Status	En Seguimiento	Calificado
+688	2026-03-07 10:20:01	Lead	281	pedro.mendez@swatsquad.com	Status	Calificado	Paso a Ventas
+689	2026-03-07 18:44:37	Lead	282	carlos.lopez@swatsquad.com	Status	Nuevo	Contactado
+690	2026-03-09 23:44:37	Lead	282	sofia.martinez@swatsquad.com	Status	Contactado	En Seguimiento
+691	2026-03-09 11:44:37	Lead	282	roberto.silva@swatsquad.com	Status	En Seguimiento	Calificado
+692	2026-03-13 11:44:37	Lead	282	carlos.lopez@swatsquad.com	Status	Calificado	Paso a Ventas
+693	2026-03-05 15:33:34	Lead	283	pedro.mendez@swatsquad.com	Status	Nuevo	Contactado
+694	2026-03-04 17:33:34	Lead	283	roberto.silva@swatsquad.com	Status	Contactado	En Seguimiento
+695	2026-03-06 00:33:34	Lead	283	ana.garcia@swatsquad.com	Status	En Seguimiento	Calificado
+696	2026-03-13 15:33:34	Lead	283	ana.garcia@swatsquad.com	Calidad de Contacto	Sin Calificar	Excelente
+697	2026-03-04 10:33:42	Lead	284	roberto.silva@swatsquad.com	Status	Nuevo	Contactado
+698	2026-03-04 15:33:42	Lead	284	lucia.herrera@swatsquad.com	Status	Contactado	En Seguimiento
+699	2026-03-06 06:33:42	Lead	284	carlos.lopez@swatsquad.com	Status	En Seguimiento	Calificado
+700	2026-03-11 21:33:42	Lead	284	sofia.martinez@swatsquad.com	Calidad de Contacto	Sin Calificar	Malo
+701	2026-03-06 06:17:43	Lead	285	maria.torres@swatsquad.com	Status	Nuevo	Contactado
+702	2026-03-07 15:17:43	Lead	285	ana.garcia@swatsquad.com	Status	Contactado	En Seguimiento
+703	2026-03-07 01:17:43	Lead	285	carlos.lopez@swatsquad.com	Status	En Seguimiento	Calificado
+704	2026-03-15 05:17:43	Lead	285	lucia.herrera@swatsquad.com	Status	Calificado	Paso a Ventas
+705	2026-03-03 22:51:51	Lead	286	roberto.silva@swatsquad.com	Status	Nuevo	Contactado
+706	2026-03-05 05:51:51	Lead	286	roberto.silva@swatsquad.com	Status	Contactado	En Seguimiento
+707	2026-03-06 02:01:34	Lead	287	maria.torres@swatsquad.com	Status	Nuevo	Contactado
+708	2026-03-08 17:01:34	Lead	287	maria.torres@swatsquad.com	Status	Contactado	Perdido
+709	2026-03-05 13:19:09	Lead	288	sofia.martinez@swatsquad.com	Status	Nuevo	Duplicado
+710	2026-03-04 09:32:38	Lead	289	lucia.herrera@swatsquad.com	Status	Nuevo	Contactado
+711	2026-03-09 07:32:38	Lead	289	ana.garcia@swatsquad.com	Status	Contactado	En Seguimiento
+712	2026-03-09 01:32:38	Lead	289	maria.torres@swatsquad.com	Status	En Seguimiento	Calificado
+713	2026-03-15 03:32:38	Lead	289	pedro.mendez@swatsquad.com	Status	Calificado	Paso a Ventas
+714	2026-03-04 08:36:11	Lead	290	carlos.lopez@swatsquad.com	Status	Nuevo	Contactado
+715	2026-03-04 20:36:11	Lead	290	roberto.silva@swatsquad.com	Status	Contactado	Perdido
+716	2026-03-02 21:59:50	Lead	291	ana.garcia@swatsquad.com	Status	Nuevo	Contactado
+717	2026-03-05 09:59:50	Lead	291	lucia.herrera@swatsquad.com	Status	Contactado	Perdido
+718	2026-03-06 04:37:41	Lead	292	sofia.martinez@swatsquad.com	Status	Nuevo	Contactado sin Respuesta
+719	2026-03-10 05:37:41	Lead	292	sofia.martinez@swatsquad.com	Calidad de Contacto	Sin Calificar	Excelente
+720	2026-03-02 20:35:01	Lead	293	maria.torres@swatsquad.com	Status	Nuevo	Inválido
+721	2026-03-06 22:35:01	Lead	293	lucia.herrera@swatsquad.com	Calidad de Contacto	Sin Calificar	Regular
+722	2026-03-05 03:45:00	Lead	294	ana.garcia@swatsquad.com	Status	Nuevo	Contactado
+723	2026-03-05 13:45:00	Lead	294	maria.torres@swatsquad.com	Status	Contactado	En Seguimiento
+724	2026-03-03 20:45:37	Lead	295	carlos.lopez@swatsquad.com	Status	Nuevo	Contactado
+725	2026-03-03 01:45:37	Lead	295	ana.garcia@swatsquad.com	Status	Contactado	En Seguimiento
+726	2026-03-09 22:45:37	Lead	295	maria.torres@swatsquad.com	Status	En Seguimiento	Calificado
+727	2026-03-09 13:45:37	Lead	295	carlos.lopez@swatsquad.com	Calidad de Contacto	Sin Calificar	Regular
+728	2026-03-07 13:31:06	Lead	297	roberto.silva@swatsquad.com	Status	Nuevo	Contactado
+729	2026-03-08 03:31:06	Lead	297	maria.torres@swatsquad.com	Status	Contactado	En Seguimiento
+730	2026-03-08 01:31:06	Lead	297	sofia.martinez@swatsquad.com	Status	En Seguimiento	Calificado
+731	2026-03-03 14:29:07	Lead	298	carlos.lopez@swatsquad.com	Status	Nuevo	Contactado
+732	2026-03-05 23:39:22	Lead	299	lucia.herrera@swatsquad.com	Status	Nuevo	Contactado
+733	2026-03-08 05:39:22	Lead	299	lucia.herrera@swatsquad.com	Status	Contactado	En Seguimiento
+734	2026-03-11 12:39:22	Lead	299	carlos.lopez@swatsquad.com	Status	En Seguimiento	Calificado
+735	2026-03-02 04:01:14	Lead	300	pedro.mendez@swatsquad.com	Status	Nuevo	Contactado
+736	2026-03-03 02:01:14	Lead	300	carlos.lopez@swatsquad.com	Status	Contactado	Perdido
+737	2026-01-10 20:14:24	Deal	1	pedro.mendez@swatsquad.com	Status Venta	Recien llegado	Perdido
+738	2026-02-03 16:32:49	Deal	2	roberto.silva@swatsquad.com	Status Venta	Recien llegado	Vendido
+739	2026-01-24 23:47:07	Deal	3	maria.torres@swatsquad.com	Status Venta	Recien llegado	Propuesta enviada
+740	2026-01-28 09:40:23	Deal	4	lucia.herrera@swatsquad.com	Status Venta	Recien llegado	Propuesta enviada
+741	2026-02-03 10:41:17	Deal	5	maria.torres@swatsquad.com	Status Venta	Recien llegado	Recien llegado
+742	2026-02-05 03:25:27	Deal	6	pedro.mendez@swatsquad.com	Status Venta	Recien llegado	Apartado
+743	2026-02-08 13:42:09	Deal	7	lucia.herrera@swatsquad.com	Status Venta	Recien llegado	Propuesta enviada
+744	2026-02-05 03:19:48	Deal	8	pedro.mendez@swatsquad.com	Status Venta	Recien llegado	Contactado
+745	2026-02-15 11:58:22	Deal	9	sofia.martinez@swatsquad.com	Status Venta	Recien llegado	En negociación
+746	2026-02-17 23:54:35	Deal	10	maria.torres@swatsquad.com	Status Venta	Recien llegado	Stand-by
+747	2026-02-23 19:08:34	Deal	11	sofia.martinez@swatsquad.com	Status Venta	Recien llegado	Perdido
+748	2026-03-03 17:17:29	Deal	12	ana.garcia@swatsquad.com	Status Venta	Recien llegado	Propuesta enviada
+749	2026-03-05 22:45:27	Deal	13	pedro.mendez@swatsquad.com	Status Venta	Recien llegado	Apartado
+750	2026-03-04 00:54:37	Deal	14	ana.garcia@swatsquad.com	Status Venta	Recien llegado	En negociación
+751	2026-02-25 05:10:42	Deal	15	maria.torres@swatsquad.com	Status Venta	Recien llegado	Reagendado
+752	2026-02-17 16:05:18	Deal	16	lucia.herrera@swatsquad.com	Status Venta	Recien llegado	Vendido
+753	2026-02-08 07:08:29	Deal	17	roberto.silva@swatsquad.com	Status Venta	Recien llegado	Stand-by
+754	2026-02-22 06:02:32	Deal	18	carlos.lopez@swatsquad.com	Status Venta	Recien llegado	Propuesta enviada
+755	2026-02-23 16:28:18	Deal	19	maria.torres@swatsquad.com	Status Venta	Recien llegado	Propuesta enviada
+756	2026-02-19 00:21:24	Deal	20	ana.garcia@swatsquad.com	Status Venta	Recien llegado	Recien llegado
+757	2026-02-25 07:26:48	Deal	21	carlos.lopez@swatsquad.com	Status Venta	Recien llegado	Stand-by
+758	2026-02-19 16:55:23	Deal	22	lucia.herrera@swatsquad.com	Status Venta	Recien llegado	Propuesta enviada
+759	2026-03-06 15:46:54	Deal	23	pedro.mendez@swatsquad.com	Status Venta	Recien llegado	Perdido
+760	2026-03-10 17:54:39	Deal	24	pedro.mendez@swatsquad.com	Status Venta	Recien llegado	En negociación
+761	2026-03-06 18:32:24	Deal	25	lucia.herrera@swatsquad.com	Status Venta	Recien llegado	Propuesta enviada
+762	2026-03-07 12:23:49	Deal	26	carlos.lopez@swatsquad.com	Status Venta	Recien llegado	En negociación
+763	2026-03-09 09:24:58	Deal	27	ana.garcia@swatsquad.com	Status Venta	Recien llegado	Apartado
+764	2026-03-06 06:30:51	Deal	28	sofia.martinez@swatsquad.com	Status Venta	Recien llegado	Propuesta enviada
+765	2026-03-06 10:01:08	Deal	29	carlos.lopez@swatsquad.com	Status Venta	Recien llegado	Contactado
+766	2026-03-04 12:42:58	Deal	30	pedro.mendez@swatsquad.com	Status Venta	Recien llegado	Vendido
+767	2026-03-11 06:11:01	Deal	31	carlos.lopez@swatsquad.com	Status Venta	Recien llegado	Perdido
+768	2026-03-06 10:58:41	Deal	32	carlos.lopez@swatsquad.com	Status Venta	Recien llegado	Stand-by
+769	2026-03-09 18:40:11	Deal	33	sofia.martinez@swatsquad.com	Status Venta	Recien llegado	Contactado
+770	2026-03-03 14:34:19	Deal	34	pedro.mendez@swatsquad.com	Status Venta	Recien llegado	Stand-by
+771	2026-03-06 21:41:49	Deal	35	carlos.lopez@swatsquad.com	Status Venta	Recien llegado	Apartado
+772	2026-03-08 06:12:19	Deal	36	lucia.herrera@swatsquad.com	Status Venta	Recien llegado	Perdido
+773	2026-03-06 07:09:52	Deal	37	carlos.lopez@swatsquad.com	Status Venta	Recien llegado	Perdido
+774	2026-03-07 04:01:15	Deal	38	ana.garcia@swatsquad.com	Status Venta	Recien llegado	Stand-by
+775	2026-03-09 19:23:20	Deal	39	pedro.mendez@swatsquad.com	Status Venta	Recien llegado	Perdido
+776	2026-03-08 23:27:39	Deal	40	ana.garcia@swatsquad.com	Status Venta	Recien llegado	Apartado
+777	2026-03-09 02:09:01	Deal	41	roberto.silva@swatsquad.com	Status Venta	Recien llegado	No interesado
+778	2026-03-08 22:21:39	Deal	42	ana.garcia@swatsquad.com	Status Venta	Recien llegado	Vendido
+779	2026-03-08 06:46:07	Deal	43	carlos.lopez@swatsquad.com	Status Venta	Recien llegado	Vendido
+780	2026-03-04 09:26:52	Deal	44	maria.torres@swatsquad.com	Status Venta	Recien llegado	Apartado
+781	2026-03-10 04:53:29	Deal	45	ana.garcia@swatsquad.com	Status Venta	Recien llegado	Propuesta enviada
+782	2026-03-07 03:38:46	Deal	46	lucia.herrera@swatsquad.com	Status Venta	Recien llegado	No contesta
+783	2026-03-07 02:07:25	Deal	47	sofia.martinez@swatsquad.com	Status Venta	Recien llegado	Vendido
+784	2026-03-07 09:59:21	Deal	48	sofia.martinez@swatsquad.com	Status Venta	Recien llegado	Stand-by
+785	2026-03-09 05:20:01	Deal	49	roberto.silva@swatsquad.com	Status Venta	Recien llegado	En negociación
+786	2026-03-09 13:44:37	Deal	50	lucia.herrera@swatsquad.com	Status Venta	Recien llegado	Propuesta enviada
+787	2026-03-04 11:33:34	Deal	51	maria.torres@swatsquad.com	Status Venta	Recien llegado	Vendido
+788	2026-03-06 22:17:43	Deal	52	pedro.mendez@swatsquad.com	Status Venta	Recien llegado	Propuesta enviada
+789	2026-03-08 00:32:38	Deal	53	ana.garcia@swatsquad.com	Status Venta	Recien llegado	Propuesta enviada
+790	2026-03-08 11:39:22	Deal	54	lucia.herrera@swatsquad.com	Status Venta	Recien llegado	Apartado

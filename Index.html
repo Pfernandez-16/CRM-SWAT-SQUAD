@@ -1,0 +1,3005 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CRM SWAT Squad</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+    rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <!-- Quill.js Rich Text Editor -->
+  <link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet">
+  <!-- FullCalendar.js -->
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+  <!-- SortableJS (Drag & Drop) -->
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+  <?!= include('Styles') ?>
+</head>
+
+<body>
+  <div id="app">
+    <!-- Vue App mounts here -->
+    <div class="app-loading" v-if="loading">
+      <div class="loader-container">
+        <div class="loader-ring"></div>
+        <p class="loader-text">Cargando CRM...</p>
+      </div>
+    </div>
+
+    <div class="app-layout" v-else>
+      <!-- ========== SIDEBAR ========== -->
+      <aside class="sidebar" :class="{ collapsed: sidebarCollapsed }">
+        <div class="sidebar-header">
+          <div class="logo" v-show="!sidebarCollapsed">
+            <span class="logo-icon">⚡</span>
+            <span class="logo-text">SWAT CRM</span>
+          </div>
+          <button class="btn-icon sidebar-toggle" @click="sidebarCollapsed = !sidebarCollapsed" title="Toggle Sidebar">
+            <span class="material-symbols-outlined">{{ sidebarCollapsed ? 'menu_open' : 'menu' }}</span>
+          </button>
+        </div>
+
+        <nav class="sidebar-nav">
+          <template v-for="item in navItems" :key="item.id">
+            <!-- Role-based visibility: SDR sees prospectos. AE sees negociaciones. Admin/Gerente sees all. -->
+            <a v-if="
+              userRole === 'ADMIN' || userRole === 'GERENTE' ||
+              (userRole === 'SDR' && ['dashboard','leads','calendar','account'].includes(item.id)) ||
+              (userRole === 'AE' && ['dashboard','negociaciones','calendar','account'].includes(item.id)) ||
+              userRole === 'GUEST'
+            " class="nav-item" :class="{ active: currentView === item.id }" @click="currentView = item.id"
+              :title="item.label">
+              <span class="material-symbols-outlined nav-icon">{{ item.icon }}</span>
+              <span class="nav-label" v-show="!sidebarCollapsed">{{ item.label }}</span>
+              <span class="nav-badge" v-if="item.badge && !sidebarCollapsed">{{ item.badge }}</span>
+            </a>
+          </template>
+        </nav>
+
+        <div class="sidebar-footer">
+          <div class="user-info" @click="currentView = 'account'">
+            <div class="user-avatar">{{ userInitials }}</div>
+            <div class="user-details" v-show="!sidebarCollapsed">
+              <span class="user-email">{{ currentUser.nombre || currentUser.email || 'Usuario' }}</span>
+              <span style="font-size:0.7rem; opacity:0.6; display:block;">{{ userRole }}</span>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- ========== MAIN CONTENT ========== -->
+      <main class="main-content">
+        <!-- Top Bar -->
+        <header class="top-bar">
+          <div class="top-bar-left">
+            <h1 class="page-title">{{ currentPageTitle }}</h1>
+          </div>
+          <div class="top-bar-right">
+            <!-- Clock-In / Clock-Out -->
+            <div style="display:inline-flex; align-items:center; gap:0.5rem; margin-right:0.75rem;">
+              <button v-if="!userConnected" class="btn-sm btn-primary" @click="handleClockIn" style="font-size:0.8rem;">
+                🟢 Marcar Asistencia
+              </button>
+              <template v-else>
+                <span style="font-size:0.8rem; color:var(--accent-success, #10b981); font-weight:600;">⏱ {{ clockTimer
+                  || '0h 00m' }}</span>
+                <button class="btn-sm" @click="handleClockOut" style="font-size:0.75rem; opacity:0.8;"
+                  title="Desconectarse">
+                  🔴 Salir
+                </button>
+              </template>
+            </div>
+            <!-- View Mode Toggle (only on leads/negociaciones) -->
+            <div v-if="currentView === 'leads' || currentView === 'negociaciones'"
+              style="display:inline-flex; gap:0.25rem; margin-right:0.75rem; background: var(--bg-elevated, rgba(255,255,255,0.05)); border-radius: 8px; padding: 2px;">
+              <button class="btn-sm" :class="{ 'btn-primary': viewMode === 'table' }" @click="viewMode = 'table'"
+                title="Vista Tabla" style="font-size:0.8rem; padding: 0.25rem 0.5rem;">
+                <span class="material-symbols-outlined"
+                  style="font-size:1.1rem; vertical-align:middle;">view_list</span>
+              </button>
+              <button class="btn-sm" :class="{ 'btn-primary': viewMode === 'kanban' }" @click="viewMode = 'kanban'"
+                title="Vista Kanban" style="font-size:0.8rem; padding: 0.25rem 0.5rem;">
+                <span class="material-symbols-outlined"
+                  style="font-size:1.1rem; vertical-align:middle;">view_kanban</span>
+              </button>
+            </div>
+            <div class="search-box" v-if="currentView === 'leads' || currentView === 'negociaciones'">
+              <span class="material-symbols-outlined search-icon">search</span>
+              <input type="text" v-model="searchQuery" placeholder="Buscar..." class="search-input">
+            </div>
+            <button class="btn-icon" @click="toggleTheme" :title="isDark ? 'Modo Claro' : 'Modo Oscuro'">
+              <span class="material-symbols-outlined">{{ isDark ? 'light_mode' : 'dark_mode' }}</span>
+            </button>
+            <button class="btn-icon" @click="refreshData" title="Actualizar datos">
+              <span class="material-symbols-outlined" :class="{ spinning: refreshing }">refresh</span>
+            </button>
+          </div>
+        </header>
+
+        <!-- View Router -->
+        <div class="view-container">
+          <!-- DASHBOARD -->
+          <div v-if="currentView === 'dashboard'" class="view dashboard-view">
+            <div class="stats-grid">
+              <div class="stat-card">
+                <div class="stat-icon accent-primary"><span class="material-symbols-outlined">groups</span></div>
+                <div class="stat-info">
+                  <span class="stat-value">{{ stats.total }}</span>
+                  <span class="stat-label">Total Leads</span>
+                </div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-icon accent-success"><span class="material-symbols-outlined">trending_up</span></div>
+                <div class="stat-info">
+                  <span class="stat-value">{{ stats.thisWeek }}</span>
+                  <span class="stat-label">Esta Semana</span>
+                </div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-icon accent-warning"><span class="material-symbols-outlined">calendar_month</span>
+                </div>
+                <div class="stat-info">
+                  <span class="stat-value">{{ stats.thisMonth }}</span>
+                  <span class="stat-label">Este Mes</span>
+                </div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-icon accent-info"><span class="material-symbols-outlined">handshake</span></div>
+                <div class="stat-info">
+                  <span class="stat-value">{{ stats.byStatus['Paso a Ventas'] || 0 }}</span>
+                  <span class="stat-label">Paso a Ventas</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="charts-grid">
+              <div class="chart-card">
+                <h3 class="chart-title">Leads por Status</h3>
+                <div class="chart-bars">
+                  <div v-for="(count, status) in stats.byStatus" :key="status" class="bar-row">
+                    <span class="bar-label">{{ status }}</span>
+                    <div class="bar-track">
+                      <div class="bar-fill"
+                        :style="{ width: (count / stats.total * 100) + '%', background: getStatusColor(status) }"></div>
+                    </div>
+                    <span class="bar-value">{{ count }}</span>
+                  </div>
+                </div>
+              </div>
+              <div class="chart-card">
+                <h3 class="chart-title">Leads por Vendedor</h3>
+                <div class="chart-bars">
+                  <div v-for="(count, vendedor) in stats.byVendedor" :key="vendedor" class="bar-row">
+                    <span class="bar-label">{{ vendedor }}</span>
+                    <div class="bar-track">
+                      <div class="bar-fill accent-bg-primary" :style="{ width: (count / stats.total * 100) + '%' }">
+                      </div>
+                    </div>
+                    <span class="bar-value">{{ count }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- PROSPECTOS (SDR) — Table + Kanban Toggle -->
+          <div v-if="currentView === 'leads'" class="view leads-view">
+            <!-- TABLE MODE -->
+            <template v-if="viewMode === 'table'">
+              <div class="leads-toolbar">
+                <span class="leads-count">{{ filteredLeads.length }} prospectos</span>
+                <div class="leads-filters">
+                  <button class="btn btn-primary" @click="openCreateLead()" style="margin-right: 0.75rem;">
+                    <span class="material-symbols-outlined"
+                      style="font-size:1.1rem; vertical-align:middle; margin-right:0.25rem;">person_add</span>
+                    + Crear Lead
+                  </button>
+                  <select v-model="filterStatus" class="filter-select">
+                    <option value="">Todos los Status</option>
+                    <option v-for="s in (catalogs['Status'] || [])" :key="s" :value="s">{{ s }}</option>
+                  </select>
+                </div>
+              </div>
+              <div class="leads-table-wrapper">
+                <table class="leads-table">
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Nombre</th>
+                      <th>Empresa</th>
+                      <th>Email</th>
+                      <th>Teléfono</th>
+                      <th>Status</th>
+                      <th>Vendedor</th>
+                      <th>Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="lead in paginatedLeads" :key="lead._row" @click="openLeadDetail(lead)" class="lead-row">
+                      <td class="col-id">{{ lead._id }}</td>
+                      <td class="col-name">{{ lead._name }}</td>
+                      <td>{{ lead._empresa }}</td>
+                      <td>{{ lead._email }}</td>
+                      <td>{{ lead._tel }}</td>
+                      <td><span class="status-badge" :style="{ background: getStatusColor(lead._colW_Status) }">{{
+                          lead._colW_Status || 'N/A' }}</span></td>
+                      <td>{{ lead._colAQ_Vendedor }}</td>
+                      <td><button class="btn-sm btn-primary" @click.stop="openLeadDetail(lead)">Ver</button></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="pagination" v-if="totalPages > 1">
+                <button class="btn-sm" :disabled="currentPage === 1" @click="currentPage--">← Anterior</button>
+                <span class="page-info">Página {{ currentPage }} de {{ totalPages }}</span>
+                <button class="btn-sm" :disabled="currentPage === totalPages" @click="currentPage++">Siguiente
+                  →</button>
+              </div>
+            </template>
+            <!-- KANBAN MODE (SDR) -->
+            <template v-else>
+              <div class="kanban-board" ref="kanbanBoard">
+                <div v-for="status in kanbanStatuses" :key="status" class="kanban-column" :data-status="status">
+                  <div class="kanban-column-header" :style="{ borderTopColor: getStatusColor(status) }">
+                    <span class="column-title">{{ status }}</span>
+                    <span class="column-count">{{ getLeadsByStatus(status).length }}</span>
+                  </div>
+                  <div class="kanban-cards" :data-status="status">
+                    <div v-for="lead in getFilteredLeadsByStatus(status)" :key="lead._row + '-' + (lead._source || '')"
+                      class="kanban-card" :data-row="lead._row" :data-source="lead._source || 'lead'"
+                      @click="openLeadDetail(lead)">
+                      <div class="card-header">
+                        <span class="card-id">#{{ lead._id }}</span>
+                        <span class="card-calidad" :class="'calidad-' + (lead._colX_Calidad || '').toLowerCase()">{{
+                          lead._colX_Calidad || '—' }}</span>
+                      </div>
+                      <h4 class="card-name">{{ lead._name || 'Sin nombre' }}</h4>
+                      <p class="card-empresa" v-if="lead._empresa">{{ lead._empresa }}</p>
+                      <div class="card-footer">
+                        <span class="card-contact" v-if="lead._tel" title="Teléfono">📞 {{ lead._tel }}</span>
+                        <span class="card-contact" v-if="lead._email" title="Email">📧</span>
+                        <span class="card-vendedor" v-if="lead._colAQ_Vendedor">👤 {{ lead._colAQ_Vendedor }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </template>
+          </div>
+
+          <!-- NEGOCIACIONES (AE) — Table + Kanban Toggle -->
+          <div v-if="currentView === 'negociaciones'" class="view leads-view">
+            <!-- TABLE MODE -->
+            <template v-if="viewMode === 'table'">
+              <div class="leads-toolbar">
+                <span class="leads-count">{{ filteredDeals.length }} negociaciones</span>
+                <div class="leads-filters">
+                  <select v-model="filterDealStatus" class="filter-select">
+                    <option value="">Todos los Status</option>
+                    <option v-for="s in (catalogs['Status de Venta'] || [])" :key="s" :value="s">{{ s }}</option>
+                  </select>
+                </div>
+              </div>
+              <div class="leads-table-wrapper">
+                <table class="leads-table">
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Nombre</th>
+                      <th>Empresa</th>
+                      <th>Teléfono</th>
+                      <th>Email</th>
+                      <th>Status de Venta</th>
+                      <th>Monto de Cierre</th>
+                      <th>Fecha de Cierre</th>
+                      <th>Notas Vendedor</th>
+                      <th>Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="deal in paginatedDeals" :key="deal._row" @click="openLeadDetail(deal)" class="lead-row">
+                      <td class="col-id">{{ deal._id }}</td>
+                      <td class="col-name">{{ deal._name }}</td>
+                      <td>{{ deal._empresa }}</td>
+                      <td>{{ deal._tel }}</td>
+                      <td>{{ deal._email }}</td>
+                      <td><span class="status-badge" :style="{ background: getStatusColor(deal['Status de Venta']) }">{{
+                          deal['Status de Venta'] || 'N/A' }}</span></td>
+                      <td>{{ deal['Monto de cierre'] ? '$' + Number(deal['Monto de cierre']).toLocaleString() : '—' }}
+                      </td>
+                      <td>{{ deal['Fecha de Cierre'] ? formatDate(deal['Fecha de Cierre']) : '—' }}</td>
+                      <td class="col-notes">{{ formatNotes(deal['Notas Vendedor'], 40) }}</td>
+                      <td><button class="btn-sm btn-primary" @click.stop="openLeadDetail(deal)">Ver</button></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="pagination" v-if="totalDealPages > 1">
+                <button class="btn-sm" :disabled="currentNegPage === 1" @click="currentNegPage--">← Anterior</button>
+                <span class="page-info">Página {{ currentNegPage }} de {{ totalDealPages }}</span>
+                <button class="btn-sm" :disabled="currentNegPage === totalDealPages" @click="currentNegPage++">Siguiente
+                  →</button>
+              </div>
+            </template>
+            <!-- KANBAN MODE (AE) -->
+            <template v-else>
+              <div class="kanban-board" ref="kanbanBoard">
+                <div v-for="status in kanbanStatuses" :key="status" class="kanban-column" :data-status="status">
+                  <div class="kanban-column-header" :style="{ borderTopColor: getStatusColor(status) }">
+                    <span class="column-title">{{ status }}</span>
+                    <span class="column-count">{{ getLeadsByStatus(status).length }}</span>
+                  </div>
+                  <div class="kanban-cards" :data-status="status">
+                    <div v-for="deal in getFilteredLeadsByStatus(status)" :key="deal._row + '-' + (deal._source || '')"
+                      class="kanban-card" :data-row="deal._row" :data-source="deal._source || 'deal'"
+                      @click="openLeadDetail(deal)">
+                      <div class="card-header">
+                        <span class="card-id">#{{ deal._id }}</span>
+                        <span class="card-calidad" :class="'calidad-' + (deal._colX_Calidad || '').toLowerCase()">{{
+                          deal._colX_Calidad || '—' }}</span>
+                      </div>
+                      <h4 class="card-name">{{ deal._name || 'Sin nombre' }}</h4>
+                      <p class="card-empresa" v-if="deal._empresa">{{ deal._empresa }}</p>
+                      <div class="card-footer">
+                        <span class="card-contact" v-if="deal._tel" title="Teléfono">📞 {{ deal._tel }}</span>
+                        <span class="card-contact" v-if="deal._email" title="Email">📧</span>
+                        <span v-if="deal['Monto de cierre']" style="font-size:0.75rem; color:var(--accent-success);">💰
+                          ${{ Number(deal['Monto de cierre']).toLocaleString() }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </template>
+          </div>
+
+
+          <!-- CALENDAR -->
+          <div v-if="currentView === 'calendar'" class="view calendar-view">
+            <div id="fullcalendar-container"
+              style="background: var(--bg-primary); border-radius: 12px; padding: 1rem; min-height: 600px;"></div>
+          </div>
+
+          <!-- REPORTES (ADMIN) -->
+          <div v-if="currentView === 'reportes'" class="view reportes-view">
+            <!-- Loading overlay -->
+            <div v-if="reportLoading" class="report-loading-overlay">
+              <div class="loader-container">
+                <div class="loader-ring"></div>
+                <p class="loader-text">Generando reporte...</p>
+                <button class="btn btn-secondary" @click="cancelReport" style="margin-top: 1rem;">Cancelar</button>
+              </div>
+            </div>
+
+            <!-- Sticky date controls bar -->
+            <div class="report-controls-bar">
+              <div class="report-controls-left">
+                <input type="text" class="date-range-picker" placeholder="Seleccionar rango de fechas..." readonly>
+                <select v-model="compareType" class="filter-select" style="min-width: 200px; margin-left: 0.5rem;"
+                  title="Tipo de comparación temporal">
+                  <option value="prev_period">vs Período Anterior</option>
+                  <option value="yoy">vs Mismo Período Año Pasado (YOY)</option>
+                </select>
+                <span class="comparison-label" v-if="comparisonLabel">{{ comparisonLabel }}</span>
+              </div>
+              <div class="report-controls-right">
+                <button class="btn btn-primary" @click="generateReport" :disabled="reportLoading || !dateRange.start">
+                  <span class="material-symbols-outlined"
+                    style="font-size:1.1rem; vertical-align:middle; margin-right:0.25rem;">assessment</span>
+                  Generar Reporte
+                </button>
+              </div>
+            </div>
+
+            <!-- Error state -->
+            <div v-if="reportError" class="report-error-card">
+              <span class="material-symbols-outlined" style="font-size:2rem; color:var(--accent-danger);">error</span>
+              <p>{{ reportError }}</p>
+              <button class="btn btn-primary" @click="generateReport">Reintentar</button>
+            </div>
+
+            <!-- Empty data state -->
+            <div v-else-if="reportData && reportData._empty" class="report-empty-state">
+              <span class="material-symbols-outlined" style="font-size:3rem; opacity:0.4;">analytics</span>
+              <p>No hay datos para el rango seleccionado. Intenta con otras fechas.</p>
+            </div>
+
+            <!-- Report content -->
+            <div v-else-if="reportData" class="report-content">
+              <!-- Quick-nav -->
+              <div class="quick-nav">
+                <button v-for="section in reportSections" :key="section.id" class="quick-nav-btn"
+                  :class="{ active: openSections.includes(section.id) }" @click="scrollToSection(section.id)">
+                  {{ section.label }}
+                </button>
+              </div>
+
+              <!-- Accordion sections (8 report sections) -->
+              <div v-for="section in reportSections" :key="section.id" :id="'section-' + section.id"
+                class="report-section">
+                <div class="section-header" @click="toggleSection(section.id)">
+                  <span class="material-symbols-outlined section-chevron">
+                    {{ openSections.includes(section.id) ? 'expand_more' : 'chevron_right' }}
+                  </span>
+                  <h3 class="chart-title">{{ section.label }}</h3>
+                </div>
+                <div v-show="openSections.includes(section.id)" class="section-body">
+                  <!-- Embudo General Table -->
+                  <div v-if="section.id === 'embudoGeneral'" class="report-table-wrapper">
+                    <table class="report-table">
+                      <thead>
+                        <tr>
+                          <th rowspan="2" style="min-width:160px;">Metrica</th>
+                          <th rowspan="2" data-tooltip="Tasa de conversión vs etapa anterior">CVR</th>
+                          <th colspan="3" class="col-group-header">Total</th>
+                          <th colspan="3" class="col-group-header">Manufacturers</th>
+                          <th colspan="3" class="col-group-header">Individuals</th>
+                        </tr>
+                        <tr>
+                          <th>Cant</th>
+                          <th>%</th>
+                          <th data-tooltip="Cambio porcentual vs periodo anterior">Delta%</th>
+                          <th>Cant</th>
+                          <th>%</th>
+                          <th data-tooltip="Cambio porcentual vs periodo anterior">Delta%</th>
+                          <th>Cant</th>
+                          <th>%</th>
+                          <th data-tooltip="Cambio porcentual vs periodo anterior">Delta%</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr v-for="row in embudoRows" :key="row.label">
+                          <td class="col-metric">{{ row.label }}</td>
+                          <!-- CVR Inter-Etapa -->
+                          <td class="col-percentage" style="text-align:center;">
+                            <span v-if="row.cvrInterEtapa !== null" class="percentage-value"
+                              :style="{ color: Number(row.cvrInterEtapa) >= 70 ? 'var(--accent-success, #10b981)' : Number(row.cvrInterEtapa) >= 40 ? 'var(--accent-warning, #f5a623)' : 'var(--accent-danger, #ef4444)', fontWeight: 600 }">
+                              {{ row.cvrInterEtapa }}%
+                            </span>
+                            <span v-else class="percentage-value" style="opacity:0.3;">—</span>
+                          </td>
+                          <!-- Total segment -->
+                          <template v-if="row.type === 'amount'">
+                            <td class="col-count">{{ formatAmount(getSegmentValue(row.metric, 'total').amount) }}</td>
+                            <td class="col-percentage"><span class="percentage-value">--</span></td>
+                          </template>
+                          <template v-else>
+                            <td class="col-count">{{ getSegmentValue(row.metric, 'total').count }}</td>
+                            <td class="col-percentage">
+                              <div class="percentage-cell">
+                                <div class="percentage-bar"
+                                  :style="{ width: getSegmentValue(row.metric, 'total').pct + '%', background: 'var(--accent-primary)' }">
+                                </div>
+                                <span class="percentage-value">{{ getSegmentValue(row.metric, 'total').pct }}%</span>
+                              </div>
+                            </td>
+                          </template>
+                          <td class="col-delta">
+                            <span v-if="Number(getSegmentValue(row.metric, 'total').delta) > 0" class="delta-positive">
+                              <span class="material-symbols-outlined">arrow_upward</span>
+                              +{{ getSegmentValue(row.metric, 'total').delta }}%
+                            </span>
+                            <span v-else-if="Number(getSegmentValue(row.metric, 'total').delta) < 0"
+                              class="delta-negative">
+                              <span class="material-symbols-outlined">arrow_downward</span>
+                              {{ getSegmentValue(row.metric, 'total').delta }}%
+                            </span>
+                            <span v-else class="delta-neutral">
+                              <span class="material-symbols-outlined">remove</span>
+                              0%
+                            </span>
+                          </td>
+                          <!-- Manufacturers segment -->
+                          <template v-if="row.type === 'amount'">
+                            <td class="col-count">{{ formatAmount(getSegmentValue(row.metric, 'manufacturers').amount)
+                              }}</td>
+                            <td class="col-percentage"><span class="percentage-value">--</span></td>
+                          </template>
+                          <template v-else>
+                            <td class="col-count">{{ getSegmentValue(row.metric, 'manufacturers').count }}</td>
+                            <td class="col-percentage">
+                              <div class="percentage-cell">
+                                <div class="percentage-bar"
+                                  :style="{ width: getSegmentValue(row.metric, 'manufacturers').pct + '%', background: 'var(--accent-info)' }">
+                                </div>
+                                <span class="percentage-value">{{ getSegmentValue(row.metric, 'manufacturers').pct
+                                  }}%</span>
+                              </div>
+                            </td>
+                          </template>
+                          <td class="col-delta">
+                            <span v-if="Number(getSegmentValue(row.metric, 'manufacturers').delta) > 0"
+                              class="delta-positive">
+                              <span class="material-symbols-outlined">arrow_upward</span>
+                              +{{ getSegmentValue(row.metric, 'manufacturers').delta }}%
+                            </span>
+                            <span v-else-if="Number(getSegmentValue(row.metric, 'manufacturers').delta) < 0"
+                              class="delta-negative">
+                              <span class="material-symbols-outlined">arrow_downward</span>
+                              {{ getSegmentValue(row.metric, 'manufacturers').delta }}%
+                            </span>
+                            <span v-else class="delta-neutral">
+                              <span class="material-symbols-outlined">remove</span>
+                              0%
+                            </span>
+                          </td>
+                          <!-- Individuals segment -->
+                          <template v-if="row.type === 'amount'">
+                            <td class="col-count">{{ formatAmount(getSegmentValue(row.metric, 'individuals').amount) }}
+                            </td>
+                            <td class="col-percentage"><span class="percentage-value">--</span></td>
+                          </template>
+                          <template v-else>
+                            <td class="col-count">{{ getSegmentValue(row.metric, 'individuals').count }}</td>
+                            <td class="col-percentage">
+                              <div class="percentage-cell">
+                                <div class="percentage-bar"
+                                  :style="{ width: getSegmentValue(row.metric, 'individuals').pct + '%', background: 'var(--accent-warning)' }">
+                                </div>
+                                <span class="percentage-value">{{ getSegmentValue(row.metric, 'individuals').pct
+                                  }}%</span>
+                              </div>
+                            </td>
+                          </template>
+                          <td class="col-delta">
+                            <span v-if="Number(getSegmentValue(row.metric, 'individuals').delta) > 0"
+                              class="delta-positive">
+                              <span class="material-symbols-outlined">arrow_upward</span>
+                              +{{ getSegmentValue(row.metric, 'individuals').delta }}%
+                            </span>
+                            <span v-else-if="Number(getSegmentValue(row.metric, 'individuals').delta) < 0"
+                              class="delta-negative">
+                              <span class="material-symbols-outlined">arrow_downward</span>
+                              {{ getSegmentValue(row.metric, 'individuals').delta }}%
+                            </span>
+                            <span v-else class="delta-neutral">
+                              <span class="material-symbols-outlined">remove</span>
+                              0%
+                            </span>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <!-- Incontactables Table -->
+                  <div v-else-if="section.id === 'incontactables'" class="report-table-wrapper">
+                    <table class="report-table">
+                      <thead>
+                        <tr>
+                          <th rowspan="2" style="min-width:160px;">Metrica</th>
+                          <th colspan="3" class="col-group-header">Total</th>
+                          <th colspan="3" class="col-group-header">Manufacturers</th>
+                          <th colspan="3" class="col-group-header">Individuals</th>
+                        </tr>
+                        <tr>
+                          <th>Cant</th>
+                          <th>%</th>
+                          <th data-tooltip="Cambio porcentual vs periodo anterior">Delta%</th>
+                          <th>Cant</th>
+                          <th>%</th>
+                          <th data-tooltip="Cambio porcentual vs periodo anterior">Delta%</th>
+                          <th>Cant</th>
+                          <th>%</th>
+                          <th data-tooltip="Cambio porcentual vs periodo anterior">Delta%</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr v-for="row in incontactablesRows" :key="row.label">
+                          <td class="col-metric">{{ row.label }}</td>
+                          <!-- Total segment -->
+                          <template v-if="row.type === 'amount'">
+                            <td class="col-count">{{ formatAmount(getSegmentValue(row.metric, 'total').amount) }}</td>
+                            <td class="col-percentage"><span class="percentage-value">--</span></td>
+                          </template>
+                          <template v-else>
+                            <td class="col-count">{{ getSegmentValue(row.metric, 'total').count }}</td>
+                            <td class="col-percentage">
+                              <div class="percentage-cell">
+                                <div class="percentage-bar"
+                                  :style="{ width: getSegmentValue(row.metric, 'total').pct + '%', background: 'var(--accent-primary)' }">
+                                </div>
+                                <span class="percentage-value">{{ getSegmentValue(row.metric, 'total').pct }}%</span>
+                              </div>
+                            </td>
+                          </template>
+                          <td class="col-delta">
+                            <span v-if="Number(getSegmentValue(row.metric, 'total').delta) > 0" class="delta-positive">
+                              <span class="material-symbols-outlined">arrow_upward</span>
+                              +{{ getSegmentValue(row.metric, 'total').delta }}%
+                            </span>
+                            <span v-else-if="Number(getSegmentValue(row.metric, 'total').delta) < 0"
+                              class="delta-negative">
+                              <span class="material-symbols-outlined">arrow_downward</span>
+                              {{ getSegmentValue(row.metric, 'total').delta }}%
+                            </span>
+                            <span v-else class="delta-neutral">
+                              <span class="material-symbols-outlined">remove</span>
+                              0%
+                            </span>
+                          </td>
+                          <!-- Manufacturers segment -->
+                          <template v-if="row.type === 'amount'">
+                            <td class="col-count">{{ formatAmount(getSegmentValue(row.metric, 'manufacturers').amount)
+                              }}</td>
+                            <td class="col-percentage"><span class="percentage-value">--</span></td>
+                          </template>
+                          <template v-else>
+                            <td class="col-count">{{ getSegmentValue(row.metric, 'manufacturers').count }}</td>
+                            <td class="col-percentage">
+                              <div class="percentage-cell">
+                                <div class="percentage-bar"
+                                  :style="{ width: getSegmentValue(row.metric, 'manufacturers').pct + '%', background: 'var(--accent-info)' }">
+                                </div>
+                                <span class="percentage-value">{{ getSegmentValue(row.metric, 'manufacturers').pct
+                                  }}%</span>
+                              </div>
+                            </td>
+                          </template>
+                          <td class="col-delta">
+                            <span v-if="Number(getSegmentValue(row.metric, 'manufacturers').delta) > 0"
+                              class="delta-positive">
+                              <span class="material-symbols-outlined">arrow_upward</span>
+                              +{{ getSegmentValue(row.metric, 'manufacturers').delta }}%
+                            </span>
+                            <span v-else-if="Number(getSegmentValue(row.metric, 'manufacturers').delta) < 0"
+                              class="delta-negative">
+                              <span class="material-symbols-outlined">arrow_downward</span>
+                              {{ getSegmentValue(row.metric, 'manufacturers').delta }}%
+                            </span>
+                            <span v-else class="delta-neutral">
+                              <span class="material-symbols-outlined">remove</span>
+                              0%
+                            </span>
+                          </td>
+                          <!-- Individuals segment -->
+                          <template v-if="row.type === 'amount'">
+                            <td class="col-count">{{ formatAmount(getSegmentValue(row.metric, 'individuals').amount) }}
+                            </td>
+                            <td class="col-percentage"><span class="percentage-value">--</span></td>
+                          </template>
+                          <template v-else>
+                            <td class="col-count">{{ getSegmentValue(row.metric, 'individuals').count }}</td>
+                            <td class="col-percentage">
+                              <div class="percentage-cell">
+                                <div class="percentage-bar"
+                                  :style="{ width: getSegmentValue(row.metric, 'individuals').pct + '%', background: 'var(--accent-warning)' }">
+                                </div>
+                                <span class="percentage-value">{{ getSegmentValue(row.metric, 'individuals').pct
+                                  }}%</span>
+                              </div>
+                            </td>
+                          </template>
+                          <td class="col-delta">
+                            <span v-if="Number(getSegmentValue(row.metric, 'individuals').delta) > 0"
+                              class="delta-positive">
+                              <span class="material-symbols-outlined">arrow_upward</span>
+                              +{{ getSegmentValue(row.metric, 'individuals').delta }}%
+                            </span>
+                            <span v-else-if="Number(getSegmentValue(row.metric, 'individuals').delta) < 0"
+                              class="delta-negative">
+                              <span class="material-symbols-outlined">arrow_downward</span>
+                              {{ getSegmentValue(row.metric, 'individuals').delta }}%
+                            </span>
+                            <span v-else class="delta-neutral">
+                              <span class="material-symbols-outlined">remove</span>
+                              0%
+                            </span>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <!-- Cross Selling Table -->
+                  <div v-else-if="section.id === 'crossSelling'" class="report-table-wrapper">
+                    <table class="report-table">
+                      <thead>
+                        <tr>
+                          <th rowspan="2" style="min-width:160px;">Metrica</th>
+                          <th colspan="3" class="col-group-header">Total</th>
+                          <th colspan="3" class="col-group-header">Manufacturers</th>
+                          <th colspan="3" class="col-group-header">Individuals</th>
+                        </tr>
+                        <tr>
+                          <th>Cant</th>
+                          <th>%</th>
+                          <th data-tooltip="Cambio porcentual vs periodo anterior">Delta%</th>
+                          <th>Cant</th>
+                          <th>%</th>
+                          <th data-tooltip="Cambio porcentual vs periodo anterior">Delta%</th>
+                          <th>Cant</th>
+                          <th>%</th>
+                          <th data-tooltip="Cambio porcentual vs periodo anterior">Delta%</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr v-for="row in crossSellingRows" :key="row.label">
+                          <td class="col-metric">{{ row.label }}</td>
+                          <!-- Total segment -->
+                          <template v-if="row.type === 'amount'">
+                            <td class="col-count">{{ formatAmount(getSegmentValue(row.metric, 'total').amount) }}</td>
+                            <td class="col-percentage"><span class="percentage-value">--</span></td>
+                          </template>
+                          <template v-else>
+                            <td class="col-count">{{ getSegmentValue(row.metric, 'total').count }}</td>
+                            <td class="col-percentage">
+                              <div class="percentage-cell">
+                                <div class="percentage-bar"
+                                  :style="{ width: getSegmentValue(row.metric, 'total').pct + '%', background: 'var(--accent-primary)' }">
+                                </div>
+                                <span class="percentage-value">{{ getSegmentValue(row.metric, 'total').pct }}%</span>
+                              </div>
+                            </td>
+                          </template>
+                          <td class="col-delta">
+                            <span v-if="Number(getSegmentValue(row.metric, 'total').delta) > 0" class="delta-positive">
+                              <span class="material-symbols-outlined">arrow_upward</span>
+                              +{{ getSegmentValue(row.metric, 'total').delta }}%
+                            </span>
+                            <span v-else-if="Number(getSegmentValue(row.metric, 'total').delta) < 0"
+                              class="delta-negative">
+                              <span class="material-symbols-outlined">arrow_downward</span>
+                              {{ getSegmentValue(row.metric, 'total').delta }}%
+                            </span>
+                            <span v-else class="delta-neutral">
+                              <span class="material-symbols-outlined">remove</span>
+                              0%
+                            </span>
+                          </td>
+                          <!-- Manufacturers segment -->
+                          <template v-if="row.type === 'amount'">
+                            <td class="col-count">{{ formatAmount(getSegmentValue(row.metric, 'manufacturers').amount)
+                              }}</td>
+                            <td class="col-percentage"><span class="percentage-value">--</span></td>
+                          </template>
+                          <template v-else>
+                            <td class="col-count">{{ getSegmentValue(row.metric, 'manufacturers').count }}</td>
+                            <td class="col-percentage">
+                              <div class="percentage-cell">
+                                <div class="percentage-bar"
+                                  :style="{ width: getSegmentValue(row.metric, 'manufacturers').pct + '%', background: 'var(--accent-info)' }">
+                                </div>
+                                <span class="percentage-value">{{ getSegmentValue(row.metric, 'manufacturers').pct
+                                  }}%</span>
+                              </div>
+                            </td>
+                          </template>
+                          <td class="col-delta">
+                            <span v-if="Number(getSegmentValue(row.metric, 'manufacturers').delta) > 0"
+                              class="delta-positive">
+                              <span class="material-symbols-outlined">arrow_upward</span>
+                              +{{ getSegmentValue(row.metric, 'manufacturers').delta }}%
+                            </span>
+                            <span v-else-if="Number(getSegmentValue(row.metric, 'manufacturers').delta) < 0"
+                              class="delta-negative">
+                              <span class="material-symbols-outlined">arrow_downward</span>
+                              {{ getSegmentValue(row.metric, 'manufacturers').delta }}%
+                            </span>
+                            <span v-else class="delta-neutral">
+                              <span class="material-symbols-outlined">remove</span>
+                              0%
+                            </span>
+                          </td>
+                          <!-- Individuals segment -->
+                          <template v-if="row.type === 'amount'">
+                            <td class="col-count">{{ formatAmount(getSegmentValue(row.metric, 'individuals').amount) }}
+                            </td>
+                            <td class="col-percentage"><span class="percentage-value">--</span></td>
+                          </template>
+                          <template v-else>
+                            <td class="col-count">{{ getSegmentValue(row.metric, 'individuals').count }}</td>
+                            <td class="col-percentage">
+                              <div class="percentage-cell">
+                                <div class="percentage-bar"
+                                  :style="{ width: getSegmentValue(row.metric, 'individuals').pct + '%', background: 'var(--accent-warning)' }">
+                                </div>
+                                <span class="percentage-value">{{ getSegmentValue(row.metric, 'individuals').pct
+                                  }}%</span>
+                              </div>
+                            </td>
+                          </template>
+                          <td class="col-delta">
+                            <span v-if="Number(getSegmentValue(row.metric, 'individuals').delta) > 0"
+                              class="delta-positive">
+                              <span class="material-symbols-outlined">arrow_upward</span>
+                              +{{ getSegmentValue(row.metric, 'individuals').delta }}%
+                            </span>
+                            <span v-else-if="Number(getSegmentValue(row.metric, 'individuals').delta) < 0"
+                              class="delta-negative">
+                              <span class="material-symbols-outlined">arrow_downward</span>
+                              {{ getSegmentValue(row.metric, 'individuals').delta }}%
+                            </span>
+                            <span v-else class="delta-neutral">
+                              <span class="material-symbols-outlined">remove</span>
+                              0%
+                            </span>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <!-- Matriz de Contactabilidad (Pivoted: Toques as Rows, Products/Countries as Columns) -->
+                  <div v-else-if="section.id === 'matrizContactabilidad'" class="report-table-wrapper">
+                    <div style="margin-bottom: 8px; display: flex; align-items: center; gap: 0.75rem;">
+                      <span style="font-size: 0.8rem; opacity: 0.7;">Columnas por:</span>
+                      <select v-model="matrizPivotMode" class="filter-select"
+                        style="font-size:0.78rem; min-width: 140px;">
+                        <option value="product">Producto</option>
+                        <option value="country">País</option>
+                      </select>
+                    </div>
+                    <template v-if="reportData && reportData.matrizContactabilidad">
+                      <table class="report-table">
+                        <thead>
+                          <tr>
+                            <th style="min-width:100px;">Toque</th>
+                            <th style="min-width:80px;">Total</th>
+                            <th
+                              v-for="col in (matrizPivotMode === 'product' ? reportData.matrizContactabilidad.productKeys : reportData.matrizContactabilidad.countryKeys)"
+                              :key="col" style="min-width:90px;">
+                              {{ col }}
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr v-for="t in 10" :key="'toque'+t">
+                            <td class="col-metric" style="font-weight:600;">Toque {{ t }}</td>
+                            <td class="col-count" style="font-weight:600;">{{
+                              reportData.matrizContactabilidad.tocTotal['toque'+t] || 0 }}</td>
+                            <td
+                              v-for="col in (matrizPivotMode === 'product' ? reportData.matrizContactabilidad.productKeys : reportData.matrizContactabilidad.countryKeys)"
+                              :key="'t'+t+col" class="col-count">
+                              {{ (matrizPivotMode === 'product' ? reportData.matrizContactabilidad.byProduct['toque'+t]
+                              : reportData.matrizContactabilidad.byCountry['toque'+t])[col] || 0 }}
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </template>
+                    <div v-else style="padding: 1rem; opacity: 0.5; text-align: center;">
+                      No hay datos de contactabilidad para este período.
+                    </div>
+                  </div>
+
+                  <!-- Semaforo Contesto Table -->
+                  <div v-else-if="section.id === 'semaforoContesto'">
+                    <div style="margin-bottom: 8px;">
+                      <select v-model="semaforoSegment" class="filter-select" style="font-size:0.78rem;">
+                        <option value="total">Total</option>
+                        <option value="manufacturers">Manufacturers</option>
+                        <option value="individuals">Individuals</option>
+                      </select>
+                    </div>
+                    <div class="report-table-wrapper">
+                      <table class="report-table semaforo-grid">
+                        <thead>
+                          <tr>
+                            <th>Canal</th>
+                            <th v-for="n in maxToquesContesto" :key="n">Toque {{ n }}</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr v-for="row in semaforoContestoGrid" :key="row.channel">
+                            <td class="col-metric">{{ row.channel }}</td>
+                            <td v-for="(toque, idx) in row.toques" :key="idx" style="text-align:center;">
+                              <template v-if="toque">
+                                <div style="font-weight:600;">{{ getSegmentValue(toque, semaforoSegment).count }}</div>
+                                <div style="font-size:0.7rem;">
+                                  <span v-if="Number(getSegmentValue(toque, semaforoSegment).delta) > 0"
+                                    class="delta-positive" style="font-size:0.7rem;">
+                                    <span class="material-symbols-outlined"
+                                      style="font-size:0.7rem;">arrow_upward</span>{{ getSegmentValue(toque,
+                                    semaforoSegment).delta }}%
+                                  </span>
+                                  <span v-else-if="Number(getSegmentValue(toque, semaforoSegment).delta) < 0"
+                                    class="delta-negative" style="font-size:0.7rem;">
+                                    <span class="material-symbols-outlined"
+                                      style="font-size:0.7rem;">arrow_downward</span>{{ getSegmentValue(toque,
+                                    semaforoSegment).delta }}%
+                                  </span>
+                                  <span v-else class="delta-neutral" style="font-size:0.7rem;">
+                                    <span class="material-symbols-outlined" style="font-size:0.7rem;">remove</span>0%
+                                  </span>
+                                </div>
+                              </template>
+                              <span v-else style="color:var(--text-muted);">--</span>
+                            </td>
+                            <!-- Fill empty cells for channels with fewer toques -->
+                            <td v-for="n in (maxToquesContesto - row.toques.length)" :key="'empty-' + n"
+                              style="text-align:center; color:var(--text-muted);">--</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  <!-- Semaforo No Contesto Table -->
+                  <div v-else-if="section.id === 'semaforoNoContesto'">
+                    <div style="margin-bottom: 8px;">
+                      <select v-model="semaforoSegment" class="filter-select" style="font-size:0.78rem;">
+                        <option value="total">Total</option>
+                        <option value="manufacturers">Manufacturers</option>
+                        <option value="individuals">Individuals</option>
+                      </select>
+                    </div>
+                    <div class="report-table-wrapper">
+                      <table class="report-table semaforo-grid">
+                        <thead>
+                          <tr>
+                            <th>Canal</th>
+                            <th v-for="n in maxToquesNoContesto" :key="n">Toque {{ n }}</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr v-for="row in semaforoNoContestoGrid" :key="row.channel">
+                            <td class="col-metric">{{ row.channel }}</td>
+                            <td v-for="(toque, idx) in row.toques" :key="idx" style="text-align:center;">
+                              <template v-if="toque">
+                                <div style="font-weight:600;">{{ getSegmentValue(toque, semaforoSegment).count }}</div>
+                                <div style="font-size:0.7rem;">
+                                  <span v-if="Number(getSegmentValue(toque, semaforoSegment).delta) > 0"
+                                    class="delta-positive" style="font-size:0.7rem;">
+                                    <span class="material-symbols-outlined"
+                                      style="font-size:0.7rem;">arrow_upward</span>{{ getSegmentValue(toque,
+                                    semaforoSegment).delta }}%
+                                  </span>
+                                  <span v-else-if="Number(getSegmentValue(toque, semaforoSegment).delta) < 0"
+                                    class="delta-negative" style="font-size:0.7rem;">
+                                    <span class="material-symbols-outlined"
+                                      style="font-size:0.7rem;">arrow_downward</span>{{ getSegmentValue(toque,
+                                    semaforoSegment).delta }}%
+                                  </span>
+                                  <span v-else class="delta-neutral" style="font-size:0.7rem;">
+                                    <span class="material-symbols-outlined" style="font-size:0.7rem;">remove</span>0%
+                                  </span>
+                                </div>
+                              </template>
+                              <span v-else style="color:var(--text-muted);">--</span>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  <!-- Sin Respuesta 6to Toque Table -->
+                  <div v-else-if="section.id === 'sinRespuesta'" class="report-table-wrapper">
+                    <table class="report-table">
+                      <thead>
+                        <tr>
+                          <th rowspan="2" style="min-width:160px;">Metrica</th>
+                          <th colspan="3" class="col-group-header">Total</th>
+                          <th colspan="3" class="col-group-header">Manufacturers</th>
+                          <th colspan="3" class="col-group-header">Individuals</th>
+                        </tr>
+                        <tr>
+                          <th>Cant</th>
+                          <th>%</th>
+                          <th data-tooltip="Cambio porcentual vs periodo anterior">Delta%</th>
+                          <th>Cant</th>
+                          <th>%</th>
+                          <th data-tooltip="Cambio porcentual vs periodo anterior">Delta%</th>
+                          <th>Cant</th>
+                          <th>%</th>
+                          <th data-tooltip="Cambio porcentual vs periodo anterior">Delta%</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr v-for="row in sinRespuestaRows" :key="row.label">
+                          <td class="col-metric">{{ row.label }}</td>
+                          <!-- Total segment -->
+                          <td class="col-count">{{ getSegmentValue(row.metric, 'total').count }}</td>
+                          <td class="col-percentage">
+                            <div class="percentage-cell">
+                              <div class="percentage-bar"
+                                :style="{ width: getSegmentValue(row.metric, 'total').pct + '%', background: 'var(--accent-primary)' }">
+                              </div>
+                              <span class="percentage-value">{{ getSegmentValue(row.metric, 'total').pct }}%</span>
+                            </div>
+                          </td>
+                          <td class="col-delta">
+                            <span v-if="Number(getSegmentValue(row.metric, 'total').delta) > 0" class="delta-positive">
+                              <span class="material-symbols-outlined">arrow_upward</span>
+                              +{{ getSegmentValue(row.metric, 'total').delta }}%
+                            </span>
+                            <span v-else-if="Number(getSegmentValue(row.metric, 'total').delta) < 0"
+                              class="delta-negative">
+                              <span class="material-symbols-outlined">arrow_downward</span>
+                              {{ getSegmentValue(row.metric, 'total').delta }}%
+                            </span>
+                            <span v-else class="delta-neutral">
+                              <span class="material-symbols-outlined">remove</span>
+                              0%
+                            </span>
+                          </td>
+                          <!-- Manufacturers segment -->
+                          <td class="col-count">{{ getSegmentValue(row.metric, 'manufacturers').count }}</td>
+                          <td class="col-percentage">
+                            <div class="percentage-cell">
+                              <div class="percentage-bar"
+                                :style="{ width: getSegmentValue(row.metric, 'manufacturers').pct + '%', background: 'var(--accent-info)' }">
+                              </div>
+                              <span class="percentage-value">{{ getSegmentValue(row.metric, 'manufacturers').pct
+                                }}%</span>
+                            </div>
+                          </td>
+                          <td class="col-delta">
+                            <span v-if="Number(getSegmentValue(row.metric, 'manufacturers').delta) > 0"
+                              class="delta-positive">
+                              <span class="material-symbols-outlined">arrow_upward</span>
+                              +{{ getSegmentValue(row.metric, 'manufacturers').delta }}%
+                            </span>
+                            <span v-else-if="Number(getSegmentValue(row.metric, 'manufacturers').delta) < 0"
+                              class="delta-negative">
+                              <span class="material-symbols-outlined">arrow_downward</span>
+                              {{ getSegmentValue(row.metric, 'manufacturers').delta }}%
+                            </span>
+                            <span v-else class="delta-neutral">
+                              <span class="material-symbols-outlined">remove</span>
+                              0%
+                            </span>
+                          </td>
+                          <!-- Individuals segment -->
+                          <td class="col-count">{{ getSegmentValue(row.metric, 'individuals').count }}</td>
+                          <td class="col-percentage">
+                            <div class="percentage-cell">
+                              <div class="percentage-bar"
+                                :style="{ width: getSegmentValue(row.metric, 'individuals').pct + '%', background: 'var(--accent-warning)' }">
+                              </div>
+                              <span class="percentage-value">{{ getSegmentValue(row.metric, 'individuals').pct
+                                }}%</span>
+                            </div>
+                          </td>
+                          <td class="col-delta">
+                            <span v-if="Number(getSegmentValue(row.metric, 'individuals').delta) > 0"
+                              class="delta-positive">
+                              <span class="material-symbols-outlined">arrow_upward</span>
+                              +{{ getSegmentValue(row.metric, 'individuals').delta }}%
+                            </span>
+                            <span v-else-if="Number(getSegmentValue(row.metric, 'individuals').delta) < 0"
+                              class="delta-negative">
+                              <span class="material-symbols-outlined">arrow_downward</span>
+                              {{ getSegmentValue(row.metric, 'individuals').delta }}%
+                            </span>
+                            <span v-else class="delta-neutral">
+                              <span class="material-symbols-outlined">remove</span>
+                              0%
+                            </span>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <!-- Razones No Paso a Ventas Table -->
+                  <div v-else-if="section.id === 'noPasoVentas'" class="report-table-wrapper">
+                    <table class="report-table">
+                      <thead>
+                        <tr>
+                          <th rowspan="2" style="min-width:160px;">Razón</th>
+                          <th rowspan="2" data-tooltip="Participación base 100 sobre total descartados">Mix%</th>
+                          <th colspan="3" class="col-group-header">Total</th>
+                          <th colspan="3" class="col-group-header">Manufacturers</th>
+                          <th colspan="3" class="col-group-header">Individuals</th>
+                        </tr>
+                        <tr>
+                          <th>Cant</th>
+                          <th>%</th>
+                          <th data-tooltip="Cambio porcentual vs periodo anterior">Delta%</th>
+                          <th>Cant</th>
+                          <th>%</th>
+                          <th data-tooltip="Cambio porcentual vs periodo anterior">Delta%</th>
+                          <th>Cant</th>
+                          <th>%</th>
+                          <th data-tooltip="Cambio porcentual vs periodo anterior">Delta%</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr v-for="row in razonesNoPasoRows" :key="row.label"
+                          :style="row.isSummary ? 'font-weight:700; background:var(--bg-surface);' : ''">
+                          <td class="col-metric">{{ row.label }}</td>
+                          <!-- Mix Base 100 -->
+                          <td class="col-percentage" style="text-align:center; min-width:70px;">
+                            <div class="percentage-cell">
+                              <div class="percentage-bar"
+                                :style="{ width: row.mixPct + '%', background: 'var(--accent-danger, #ef4444)' }"></div>
+                              <span class="percentage-value" :style="row.isSummary ? 'font-weight:700;' : ''">{{
+                                row.mixPct }}%</span>
+                            </div>
+                          </td>
+                          <!-- Total segment -->
+                          <td class="col-count">{{ getSegmentValue(row.metric, 'total').count }}</td>
+                          <td class="col-percentage">
+                            <div class="percentage-cell">
+                              <div class="percentage-bar"
+                                :style="{ width: getSegmentValue(row.metric, 'total').pct + '%', background: 'var(--accent-primary)' }">
+                              </div>
+                              <span class="percentage-value">{{ getSegmentValue(row.metric, 'total').pct }}%</span>
+                            </div>
+                          </td>
+                          <td class="col-delta">
+                            <span v-if="Number(getSegmentValue(row.metric, 'total').delta) > 0" class="delta-positive">
+                              <span class="material-symbols-outlined">arrow_upward</span>
+                              +{{ getSegmentValue(row.metric, 'total').delta }}%
+                            </span>
+                            <span v-else-if="Number(getSegmentValue(row.metric, 'total').delta) < 0"
+                              class="delta-negative">
+                              <span class="material-symbols-outlined">arrow_downward</span>
+                              {{ getSegmentValue(row.metric, 'total').delta }}%
+                            </span>
+                            <span v-else class="delta-neutral">
+                              <span class="material-symbols-outlined">remove</span>
+                              0%
+                            </span>
+                          </td>
+                          <!-- Manufacturers segment -->
+                          <td class="col-count">{{ getSegmentValue(row.metric, 'manufacturers').count }}</td>
+                          <td class="col-percentage">
+                            <div class="percentage-cell">
+                              <div class="percentage-bar"
+                                :style="{ width: getSegmentValue(row.metric, 'manufacturers').pct + '%', background: 'var(--accent-info)' }">
+                              </div>
+                              <span class="percentage-value">{{ getSegmentValue(row.metric, 'manufacturers').pct
+                                }}%</span>
+                            </div>
+                          </td>
+                          <td class="col-delta">
+                            <span v-if="Number(getSegmentValue(row.metric, 'manufacturers').delta) > 0"
+                              class="delta-positive">
+                              <span class="material-symbols-outlined">arrow_upward</span>
+                              +{{ getSegmentValue(row.metric, 'manufacturers').delta }}%
+                            </span>
+                            <span v-else-if="Number(getSegmentValue(row.metric, 'manufacturers').delta) < 0"
+                              class="delta-negative">
+                              <span class="material-symbols-outlined">arrow_downward</span>
+                              {{ getSegmentValue(row.metric, 'manufacturers').delta }}%
+                            </span>
+                            <span v-else class="delta-neutral">
+                              <span class="material-symbols-outlined">remove</span>
+                              0%
+                            </span>
+                          </td>
+                          <!-- Individuals segment -->
+                          <td class="col-count">{{ getSegmentValue(row.metric, 'individuals').count }}</td>
+                          <td class="col-percentage">
+                            <div class="percentage-cell">
+                              <div class="percentage-bar"
+                                :style="{ width: getSegmentValue(row.metric, 'individuals').pct + '%', background: 'var(--accent-warning)' }">
+                              </div>
+                              <span class="percentage-value">{{ getSegmentValue(row.metric, 'individuals').pct
+                                }}%</span>
+                            </div>
+                          </td>
+                          <td class="col-delta">
+                            <span v-if="Number(getSegmentValue(row.metric, 'individuals').delta) > 0"
+                              class="delta-positive">
+                              <span class="material-symbols-outlined">arrow_upward</span>
+                              +{{ getSegmentValue(row.metric, 'individuals').delta }}%
+                            </span>
+                            <span v-else-if="Number(getSegmentValue(row.metric, 'individuals').delta) < 0"
+                              class="delta-negative">
+                              <span class="material-symbols-outlined">arrow_downward</span>
+                              {{ getSegmentValue(row.metric, 'individuals').delta }}%
+                            </span>
+                            <span v-else class="delta-neutral">
+                              <span class="material-symbols-outlined">remove</span>
+                              0%
+                            </span>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <!-- Razones Perdio la Venta Table -->
+                  <div v-else-if="section.id === 'perdioVenta'" class="report-table-wrapper">
+                    <table class="report-table">
+                      <thead>
+                        <tr>
+                          <th rowspan="2" style="min-width:160px;">Razón</th>
+                          <th rowspan="2" data-tooltip="Participación base 100 sobre total ventas perdidas">Mix%</th>
+                          <th colspan="3" class="col-group-header">Total</th>
+                          <th colspan="3" class="col-group-header">Manufacturers</th>
+                          <th colspan="3" class="col-group-header">Individuals</th>
+                        </tr>
+                        <tr>
+                          <th>Cant</th>
+                          <th>%</th>
+                          <th data-tooltip="Cambio porcentual vs periodo anterior">Delta%</th>
+                          <th>Cant</th>
+                          <th>%</th>
+                          <th data-tooltip="Cambio porcentual vs periodo anterior">Delta%</th>
+                          <th>Cant</th>
+                          <th>%</th>
+                          <th data-tooltip="Cambio porcentual vs periodo anterior">Delta%</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr v-for="row in razonesPerdioRows" :key="row.label"
+                          :style="row.isSummary ? 'font-weight:700; background:var(--bg-surface);' : ''">
+                          <td class="col-metric">{{ row.label }}</td>
+                          <!-- Mix Base 100 -->
+                          <td class="col-percentage" style="text-align:center; min-width:70px;">
+                            <div class="percentage-cell">
+                              <div class="percentage-bar"
+                                :style="{ width: row.mixPct + '%', background: 'var(--accent-danger, #ef4444)' }"></div>
+                              <span class="percentage-value" :style="row.isSummary ? 'font-weight:700;' : ''">{{
+                                row.mixPct }}%</span>
+                            </div>
+                          </td>
+                          <!-- Total segment -->
+                          <td class="col-count">{{ getSegmentValue(row.metric, 'total').count }}</td>
+                          <td class="col-percentage">
+                            <div class="percentage-cell">
+                              <div class="percentage-bar"
+                                :style="{ width: getSegmentValue(row.metric, 'total').pct + '%', background: 'var(--accent-primary)' }">
+                              </div>
+                              <span class="percentage-value">{{ getSegmentValue(row.metric, 'total').pct }}%</span>
+                            </div>
+                          </td>
+                          <td class="col-delta">
+                            <span v-if="Number(getSegmentValue(row.metric, 'total').delta) > 0" class="delta-positive">
+                              <span class="material-symbols-outlined">arrow_upward</span>
+                              +{{ getSegmentValue(row.metric, 'total').delta }}%
+                            </span>
+                            <span v-else-if="Number(getSegmentValue(row.metric, 'total').delta) < 0"
+                              class="delta-negative">
+                              <span class="material-symbols-outlined">arrow_downward</span>
+                              {{ getSegmentValue(row.metric, 'total').delta }}%
+                            </span>
+                            <span v-else class="delta-neutral">
+                              <span class="material-symbols-outlined">remove</span>
+                              0%
+                            </span>
+                          </td>
+                          <!-- Manufacturers segment -->
+                          <td class="col-count">{{ getSegmentValue(row.metric, 'manufacturers').count }}</td>
+                          <td class="col-percentage">
+                            <div class="percentage-cell">
+                              <div class="percentage-bar"
+                                :style="{ width: getSegmentValue(row.metric, 'manufacturers').pct + '%', background: 'var(--accent-info)' }">
+                              </div>
+                              <span class="percentage-value">{{ getSegmentValue(row.metric, 'manufacturers').pct
+                                }}%</span>
+                            </div>
+                          </td>
+                          <td class="col-delta">
+                            <span v-if="Number(getSegmentValue(row.metric, 'manufacturers').delta) > 0"
+                              class="delta-positive">
+                              <span class="material-symbols-outlined">arrow_upward</span>
+                              +{{ getSegmentValue(row.metric, 'manufacturers').delta }}%
+                            </span>
+                            <span v-else-if="Number(getSegmentValue(row.metric, 'manufacturers').delta) < 0"
+                              class="delta-negative">
+                              <span class="material-symbols-outlined">arrow_downward</span>
+                              {{ getSegmentValue(row.metric, 'manufacturers').delta }}%
+                            </span>
+                            <span v-else class="delta-neutral">
+                              <span class="material-symbols-outlined">remove</span>
+                              0%
+                            </span>
+                          </td>
+                          <!-- Individuals segment -->
+                          <td class="col-count">{{ getSegmentValue(row.metric, 'individuals').count }}</td>
+                          <td class="col-percentage">
+                            <div class="percentage-cell">
+                              <div class="percentage-bar"
+                                :style="{ width: getSegmentValue(row.metric, 'individuals').pct + '%', background: 'var(--accent-warning)' }">
+                              </div>
+                              <span class="percentage-value">{{ getSegmentValue(row.metric, 'individuals').pct
+                                }}%</span>
+                            </div>
+                          </td>
+                          <td class="col-delta">
+                            <span v-if="Number(getSegmentValue(row.metric, 'individuals').delta) > 0"
+                              class="delta-positive">
+                              <span class="material-symbols-outlined">arrow_upward</span>
+                              +{{ getSegmentValue(row.metric, 'individuals').delta }}%
+                            </span>
+                            <span v-else-if="Number(getSegmentValue(row.metric, 'individuals').delta) < 0"
+                              class="delta-negative">
+                              <span class="material-symbols-outlined">arrow_downward</span>
+                              {{ getSegmentValue(row.metric, 'individuals').delta }}%
+                            </span>
+                            <span v-else class="delta-neutral">
+                              <span class="material-symbols-outlined">remove</span>
+                              0%
+                            </span>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <!-- Placeholder for other sections -->
+                  <p v-else style="color: var(--text-muted); padding: 1rem;">Seccion en construccion...</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Initial state (no report generated yet, no error) -->
+            <div v-else class="report-initial-state">
+              <span class="material-symbols-outlined" style="font-size:3rem; opacity:0.4;">assessment</span>
+              <p style="color: var(--text-secondary); margin-top: 0.5rem;">Selecciona un rango de fechas y haz clic en
+                "Generar Reporte"</p>
+            </div>
+          </div>
+
+          <!-- CONFIGURATION -->
+          <div v-if="currentView === 'config'" class="view config-view">
+            <!-- Master Category Tabs -->
+            <div class="config-categories">
+              <button v-for="cat in configCategories" :key="cat.id" class="config-category-btn"
+                :class="{ active: activeConfigCategory === cat.id }"
+                @click="activeConfigCategory = cat.id; activeCatalog = ''">
+                {{ cat.label }}
+              </button>
+            </div>
+
+            <!-- Sub-catalog Tabs (filtered by category) -->
+            <div class="config-subcatalogs" v-if="filteredCatalogNames.length">
+              <button v-for="cat in filteredCatalogNames" :key="cat" class="config-tab"
+                :class="{ active: activeCatalog === cat }" @click="activeCatalog = cat">
+                {{ cat }}
+              </button>
+            </div>
+            <div class="config-empty-cat" v-else>
+              <span class="material-symbols-outlined empty-icon">category</span>
+              <p>No hay catálogos en esta categoría.</p>
+            </div>
+
+            <!-- Catalog Editor -->
+            <div class="config-editor" v-if="activeCatalog">
+              <div class="config-editor-header">
+                <h3>{{ activeCatalog }}</h3>
+                <span class="config-item-count">{{ editingCatalogValues.length }} valores</span>
+              </div>
+              <div class="config-values" ref="configValuesList">
+                <div v-for="(val, idx) in editingCatalogValues" :key="'cat_'+idx" class="config-value-row"
+                  style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.5rem;">
+                  <span class="material-symbols-outlined drag-handle"
+                    style="cursor:grab; color:var(--text-secondary);">drag_indicator</span>
+                  <span class="config-value-num">{{ idx + 1 }}</span>
+                  <input type="text" v-model="editingCatalogValues[idx]" class="config-input" style="flex:1;" />
+                  <button class="btn-icon btn-danger-icon" @click="editingCatalogValues.splice(idx, 1)"
+                    title="Eliminar">
+                    <span class="material-symbols-outlined">delete</span>
+                  </button>
+                </div>
+              </div>
+              <div class="config-actions">
+                <button class="btn-sm btn-primary" @click="editingCatalogValues.push('')">+ Agregar Valor</button>
+                <button class="btn btn-success" @click="saveCatalog" :disabled="savingCatalog">
+                  {{ savingCatalog ? 'Guardando...' : '💾 Guardar Catálogo' }}
+                </button>
+              </div>
+            </div>
+
+            <!-- HMN Variables Panel (Admin Only) -->
+            <div v-if="userRole === 'ADMIN'" class="config-editor" style="margin-top: 1.5rem;">
+              <div class="config-editor-header">
+                <h3>⚙️ Variables Globales (HMN)</h3>
+              </div>
+              <div class="form-grid" style="padding: 1rem;">
+                <div class="form-group">
+                  <label>SLA Respuesta SDR (horas)</label>
+                  <input type="number" v-model="hmnVariables['HMN_SLA_Respuesta_SDR']" class="form-input"
+                    placeholder="24" />
+                </div>
+                <div class="form-group">
+                  <label>SLA Traspaso AE (horas)</label>
+                  <input type="number" v-model="hmnVariables['HMN_SLA_Traspaso_AE']" class="form-input"
+                    placeholder="48" />
+                </div>
+                <div class="form-group">
+                  <label>Toques Máximos Automatizados</label>
+                  <input type="number" v-model="hmnVariables['HMN_Toques_Maximos_Automatizados']" class="form-input"
+                    placeholder="5" />
+                </div>
+                <div class="form-group">
+                  <label>Meta Facturación Mensual ($)</label>
+                  <input type="number" step="0.01" v-model="hmnVariables['HMN_Meta_Facturacion_Mensual']"
+                    class="form-input" placeholder="50000" />
+                </div>
+                <div class="form-group">
+                  <label>Meta Leads Calificados SDR</label>
+                  <input type="number" v-model="hmnVariables['HMN_Meta_Leads_Calificados_SDR']" class="form-input"
+                    placeholder="100" />
+                </div>
+              </div>
+              <div class="config-actions" style="padding: 0 1rem 1rem;">
+                <button class="btn btn-success" @click="saveHMN" :disabled="savingHMN">
+                  {{ savingHMN ? 'Guardando...' : '💾 Guardar HMN' }}
+                </button>
+              </div>
+            </div>
+
+            <!-- User Management Panel (Admin Only) -->
+            <div v-if="userRole === 'ADMIN'" class="config-editor" style="margin-top: 1.5rem;">
+              <div class="config-editor-header">
+                <h3>👥 Gestión de Usuarios</h3>
+                <span class="config-item-count">{{ allUsers.length }} usuarios</span>
+              </div>
+              <!-- Add User -->
+              <div style="display:flex; gap:0.5rem; padding: 1rem; flex-wrap:wrap; align-items:flex-end;">
+                <div class="form-group" style="flex:1; min-width:150px;">
+                  <label>Email</label>
+                  <input type="email" v-model="newUserEmail" class="form-input" placeholder="usuario@email.com" />
+                </div>
+                <div class="form-group" style="flex:1; min-width:120px;">
+                  <label>Nombre</label>
+                  <input type="text" v-model="newUserNombre" class="form-input" placeholder="Nombre" />
+                </div>
+                <div class="form-group" style="min-width:100px;">
+                  <label>Rol</label>
+                  <select v-model="newUserRol" class="form-select">
+                    <option>SDR</option>
+                    <option>AE</option>
+                    <option>GERENTE</option>
+                    <option>ADMIN</option>
+                  </select>
+                </div>
+                <button class="btn btn-primary" @click="addUser" :disabled="savingUsers" style="height:38px;">
+                  {{ savingUsers ? '...' : '+ Agregar' }}
+                </button>
+              </div>
+              <!-- Users Table -->
+              <div class="leads-table-wrapper" style="padding: 0 1rem 1rem;">
+                <table class="leads-table">
+                  <thead>
+                    <tr>
+                      <th>Email</th>
+                      <th>Nombre</th>
+                      <th>Rol</th>
+                      <th>Activo</th>
+                      <th>Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="u in allUsers" :key="u.email">
+                      <td>{{ u.email }}</td>
+                      <td>{{ u.nombre || '—' }}</td>
+                      <td>
+                        <select :value="u.rol" @change="updateUserRole(u, $event.target.value)" class="form-select"
+                          style="width:auto; padding:0.25rem;">
+                          <option>SDR</option>
+                          <option>AE</option>
+                          <option>GERENTE</option>
+                          <option>ADMIN</option>
+                          <option>GUEST</option>
+                        </select>
+                      </td>
+                      <td>
+                        <span :style="{ color: u.activo !== false ? 'var(--accent-success)' : 'var(--accent-danger)' }">
+                          {{ u.activo !== false ? '✅ Activo' : '❌ Inactivo' }}
+                        </span>
+                      </td>
+                      <td>
+                        <button class="btn-sm" @click="toggleUserActive(u)">
+                          {{ u.activo !== false ? 'Desactivar' : 'Activar' }}
+                        </button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Routing Rules Panel (Admin Only) -->
+            <div v-if="userRole === 'ADMIN'" class="config-editor" style="margin-top: 1.5rem;">
+              <div class="config-editor-header">
+                <h3>🔀 Reglas de Asignación y Routing</h3>
+              </div>
+              <div style="padding: 1rem; display:flex; flex-direction:column; gap:1rem;">
+
+                <!-- Modo de Asignación de Negociaciones -->
+                <div class="form-group">
+                  <label><strong>Modo de Asignación de Negociaciones (AE)</strong></label>
+                  <select v-model="routingConfig.aeAssignmentMode" class="form-select">
+                    <option value="SDR_CHOICE">📋 El SDR asigna manualmente al AE</option>
+                    <option value="AUTO">🤖 Automático (Round Robin Inteligente)</option>
+                    <option value="MANAGER_REVIEW">👔 Gerente revisa y asigna</option>
+                  </select>
+                  <small style="color:var(--text-secondary); margin-top:0.3rem; display:block;">
+                    <template v-if="routingConfig.aeAssignmentMode === 'SDR_CHOICE'">
+                      El SDR seleccionará manualmente al Account Executive en el modal de pase a ventas.
+                    </template>
+                    <template v-else-if="routingConfig.aeAssignmentMode === 'AUTO'">
+                      El sistema asignará automáticamente al siguiente AE activo usando Round Robin (orden definido en
+                      la columna "Orden_Round_Robin" de la BD).
+                    </template>
+                    <template v-else>
+                      Todas las negociaciones se enviarán al gerente designado para que él asigne manualmente.
+                    </template>
+                  </small>
+                </div>
+
+                <!-- Manager Email (solo modo MANAGER_REVIEW) -->
+                <div class="form-group" v-if="routingConfig.aeAssignmentMode === 'MANAGER_REVIEW'">
+                  <label>Gerente Receptor</label>
+                  <select v-model="routingConfig.managerEmail" class="form-select">
+                    <option value="">Selecciona un Gerente...</option>
+                    <option v-for="m in managerList" :key="m.email" :value="m.email">
+                      {{ m.nombre || m.email }}
+                    </option>
+                  </select>
+                </div>
+
+                <!-- Info Round Robin -->
+                <div v-if="routingConfig.aeAssignmentMode === 'AUTO'"
+                  style="background: var(--bg-tertiary); border-radius: 8px; padding: 0.8rem; font-size: 0.85rem; color: var(--text-secondary);">
+                  <span class="material-symbols-outlined"
+                    style="vertical-align:middle; font-size:1rem; margin-right:0.3rem;">info</span>
+                  <strong>Round Robin Inteligente:</strong> El sistema filtrará solo los AEs que hayan marcado
+                  asistencia (Activo ✅), los ordenará según la columna <code>Orden_Round_Robin</code> de tu hoja
+                  <code>dim_vendedores</code>, y asignará al siguiente en la cola de forma equitativa y automática.
+                </div>
+
+                <!-- AE Queue list for Round Robin (Drag & Drop) -->
+                <div v-if="routingConfig.aeAssignmentMode === 'AUTO'" style="margin-top:1rem;">
+                  <label style="font-weight:600; display:block; margin-bottom:0.5rem;">Gestión de Cola (Orden Actual de
+                    Asignación)</label>
+                  <p style="font-size:0.8rem; color:var(--text-secondary); margin-bottom:0.8rem;">Arrastra y suelta a
+                    los ejecutivos para modificar el orden de entrada predeterminado.</p>
+
+                  <div class="config-values" ref="roundRobinQueue"
+                    style="background:var(--bg-tertiary); padding:0.8rem; border-radius:8px;">
+                    <div v-for="(ae, idx) in activeAEs" :key="ae.email" class="config-value-row rr-drag-row"
+                      style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.4rem; padding:0.5rem; background:var(--bg-color); border:1px solid var(--border-color); border-radius:6px;">
+                      <span class="material-symbols-outlined drag-handle"
+                        style="cursor:grab; color:var(--text-secondary);">drag_indicator</span>
+                      <span
+                        style="background:var(--accent-primary); color:white; width:22px; height:22px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:bold;">{{
+                        idx + 1 }}</span>
+                      <div style="flex:1;">
+                        <div style="font-weight:500;">{{ ae.nombre }}</div>
+                        <div style="font-size:0.75rem; color:var(--text-secondary);">{{ ae.email }}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style="margin-top:0.8rem; display:flex; justify-content:flex-end;">
+                    <button class="btn-sm btn-primary" @click="saveRoundRobinOrder" :disabled="savingRROrder">
+                      <span class="material-symbols-outlined"
+                        style="font-size:1rem; margin-right:0.3rem; vertical-align:middle;">save</span>
+                      {{ savingRROrder ? 'Guardando...' : 'Guardar Nuevo Orden' }}
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Último asignado (informativo) -->
+                <div v-if="routingConfig.lastAeRRSavedEmail" style="font-size:0.8rem; color:var(--text-secondary);">
+                  Último AE asignado por RR: <strong>{{ routingConfig.lastAeRRSavedEmail }}</strong>
+                </div>
+
+              </div>
+              <div class="config-actions" style="padding: 0 1rem 1rem;">
+                <button class="btn btn-success" @click="saveRoutingRules" :disabled="savingRouting">
+                  {{ savingRouting ? 'Guardando...' : '💾 Guardar Reglas de Routing' }}
+                </button>
+              </div>
+            </div>
+          </div>
+
+
+          <!-- ACCOUNT -->
+          <div v-if="currentView === 'account'" class="view account-view">
+            <div class="account-card">
+              <div class="account-avatar-lg">{{ userInitials }}</div>
+              <h2>{{ currentUser.email }}</h2>
+              <div class="account-settings">
+                <div class="setting-row">
+                  <span class="setting-label">Tema</span>
+                  <div class="theme-toggle-group">
+                    <button class="btn-sm" :class="{ 'btn-primary': isDark }" @click="setTheme('dark')">🌙
+                      Oscuro</button>
+                    <button class="btn-sm" :class="{ 'btn-primary': !isDark }" @click="setTheme('light')">☀️
+                      Claro</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- ========== LEAD DETAIL MODAL ========== -->
+    <div class="modal-overlay" v-if="showLeadModal" @click.self="closeLeadModal">
+      <div class="modal-panel">
+        <div class="modal-header">
+          <div>
+            <h2 class="modal-title" v-if="isCreating">{{ creationType === 'deal' ? '✨ Nuevo Deal' : '✨ Nuevo Lead' }}
+            </h2>
+            <h2 class="modal-title" v-else>
+              {{ selectedLead._source === 'deal' || selectedLead._source === 'cross_deal' ? 'Deal' : 'Lead' }}
+              #{{ selectedLead._id }} — {{ selectedLead._name }}
+            </h2>
+            <span class="status-badge" :style="{ background: getStatusColor(editLead['Status']) }">{{ editLead['Status']
+              }}</span>
+          </div>
+          <button class="btn-icon" @click="closeLeadModal"><span class="material-symbols-outlined">close</span></button>
+        </div>
+        <!-- Email Compose Quick Action (only when viewing existing lead/deal) -->
+        <div v-if="!isCreating && (editLead['Email'])"
+          style="display:flex; justify-content:flex-end; padding: 0 1.5rem; margin-top: -0.25rem;">
+          <button class="btn-sm btn-primary" @click="openEmailCompose"
+            style="font-size:0.8rem; gap:0.35rem; display:inline-flex; align-items:center;">
+            <span class="material-symbols-outlined" style="font-size:1.1rem;">mail</span>
+            Enviar Correo
+          </button>
+        </div>
+
+        <div class="modal-tabs">
+          <template v-if="isCreating">
+            <button v-for="tab in ['Lead', 'Deal']" :key="tab" class="modal-tab" :class="{ active: modalTab === tab }"
+              @click="modalTab = tab">{{ tab }}</button>
+          </template>
+          <template v-else>
+            <!-- SDR: no Deal tab. AE/Admin: all tabs -->
+            <template v-if="userRole === 'SDR'">
+              <button v-for="tab in ['Lead', '⏱️ Logs de Toques', 'Historial', 'Notas']" :key="tab" class="modal-tab"
+                :class="{ active: modalTab === tab }" @click="modalTab = tab">{{ tab }}</button>
+            </template>
+            <template v-else>
+              <button v-for="tab in ['Lead', 'Deal', '⏱️ Logs de Toques', 'Historial', 'Notas']" :key="tab"
+                class="modal-tab" :class="{ active: modalTab === tab }" @click="modalTab = tab">{{ tab }}</button>
+            </template>
+          </template>
+        </div>
+
+        <div class="modal-body">
+          <!-- TAB: Lead -->
+          <div v-if="modalTab === 'Lead'" class="tab-content">
+            <div class="form-grid">
+
+              <!-- ═══════════════════════════════════════════════════════════ -->
+              <!-- SECTION 1: Header / Vendedor Asignado (TOP RIGHT)         -->
+              <!-- ═══════════════════════════════════════════════════════════ -->
+
+              <!-- Phase 1.5: Warning banner when Lead already has a Deal -->
+              <div v-if="selectedLead._hasDeal"
+                style="grid-column: 1 / -1; background: rgba(234, 179, 8, 0.15); border: 1px solid rgba(234, 179, 8, 0.5); border-radius: 0.5rem; padding: 0.75rem 1rem; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                <span style="font-size: 1.3rem;">⚠️</span>
+                <span style="color: var(--text-primary); font-size: 0.85rem;">Este prospecto ya tiene una
+                  <strong>Negociación abierta</strong> en el pipeline de ventas. <strong>(ID: {{ selectedLead._dealId
+                    }})</strong></span>
+              </div>
+
+              <h4 style="grid-column: 1 / -1; color: var(--accent-primary); margin-bottom: 0.5rem; text-align: center;">
+                🏷️ Propietario del Lead</h4>
+              <div class="form-group">
+                <label>Vendedor Asignado (SDR)</label>
+                <!-- For Deals: show plain text (backend sends nombre) -->
+                <input v-if="isReadOnlySdrFields" type="text" :value="editLead['Vendedor asignado (SDR)']"
+                  class="form-input" disabled />
+                <!-- For Leads: editable select by ID -->
+                <select v-else v-model="editLead['Vendedor asignado (SDR)']" class="form-select">
+                  <option value="">— Seleccionar —</option>
+                  <option v-for="v in sdrList" :key="v.id_vendedor" :value="v.id_vendedor">{{ v.nombre }}
+                  </option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Fecha y Hora de Asignación</label>
+                <input type="text" :value="formatDate(editLead['Fecha y Hora de asignación'])" class="form-input"
+                  disabled />
+              </div>
+
+              <div class="form-divider" style="grid-column: 1 / -1; margin-top: 1rem;"></div>
+
+              <!-- ═══════════════════════════════════════════════════════════ -->
+              <!-- SECTION 2: Información de Contacto                        -->
+              <!-- ═══════════════════════════════════════════════════════════ -->
+              <h4 style="grid-column: 1 / -1; color: var(--accent-primary); margin-bottom: 0.5rem; text-align: center;">
+                📇 Información de Contacto</h4>
+              <div class="form-group">
+                <label>Nombre</label>
+                <input type="text" v-model="editLead['Nombre']" class="form-input" :disabled="isReadOnlySdrFields" />
+              </div>
+              <div class="form-group">
+                <label>Apellido</label>
+                <input type="text" v-model="editLead['Apellido']" class="form-input" :disabled="isReadOnlySdrFields" />
+              </div>
+              <div class="form-group">
+                <label>Email</label>
+                <input type="email" v-model="editLead['Email']" class="form-input" :disabled="isReadOnlySdrFields" />
+              </div>
+              <div class="form-group">
+                <label>Teléfono</label>
+                <input type="text" v-model="editLead['Teléfono']" class="form-input" :disabled="isReadOnlySdrFields" />
+              </div>
+              <div class="form-group">
+                <label>Teléfono 2</label>
+                <input type="text" v-model="editLead['Teléfono 2']" class="form-input"
+                  :disabled="isReadOnlySdrFields" />
+              </div>
+              <div class="form-group">
+                <label>Empresa</label>
+                <input type="text" v-model="editLead['empresa']" class="form-input" :disabled="isReadOnlySdrFields" />
+              </div>
+              <div class="form-group">
+                <label>Área / Cargo</label>
+                <input type="text" v-model="editLead['Area']" class="form-input" :disabled="isReadOnlySdrFields" />
+              </div>
+              <div class="form-group">
+                <label>País</label>
+                <input type="text" v-model="editLead['Pais']" class="form-input" :disabled="isReadOnlySdrFields" />
+              </div>
+              <div class="form-group">
+                <label>Ciudad</label>
+                <input type="text" v-model="editLead['City']" class="form-input" :disabled="isReadOnlySdrFields" />
+              </div>
+              <div class="form-group">
+                <label>Empleados</label>
+                <input type="text" v-model="editLead['Empleados']" class="form-input" :disabled="isReadOnlySdrFields" />
+              </div>
+              <div class="form-group">
+                <label>Nivel</label>
+                <input type="text" v-model="editLead['Nivel']" class="form-input" :disabled="isReadOnlySdrFields" />
+              </div>
+              <div class="form-group">
+                <label>Servicio</label>
+                <input type="text" v-model="editLead['Servicio']" class="form-input" :disabled="isReadOnlySdrFields" />
+              </div>
+
+              <div class="form-divider" style="grid-column: 1 / -1; margin-top: 1rem;"></div>
+
+              <!-- ═══════════════════════════════════════════════════════════ -->
+              <!-- SECTION 3: Información de Campaña (READ-ONLY)             -->
+              <!-- ═══════════════════════════════════════════════════════════ -->
+              <h4 style="grid-column: 1 / -1; color: var(--accent-primary); margin-bottom: 0.5rem; text-align: center;">
+                📊 Información de Campaña (Solo Lectura)</h4>
+              <div class="form-group">
+                <label>Source</label>
+                <input type="text" :value="editLead['source']" class="form-input" disabled />
+              </div>
+              <div class="form-group">
+                <label>Medium</label>
+                <input type="text" :value="editLead['medium']" class="form-input" disabled />
+              </div>
+              <div class="form-group">
+                <label>Campaign</label>
+                <input type="text" :value="editLead['campaign']" class="form-input" disabled />
+              </div>
+              <div class="form-group">
+                <label>Term</label>
+                <input type="text" :value="editLead['term']" class="form-input" disabled />
+              </div>
+              <div class="form-group">
+                <label>Content</label>
+                <input type="text" :value="editLead['content']" class="form-input" disabled />
+              </div>
+              <div class="form-group">
+                <label>fbclid</label>
+                <input type="text" :value="editLead['fbclid']" class="form-input" disabled />
+              </div>
+              <div class="form-group">
+                <label>IP</label>
+                <input type="text" :value="editLead['Ip']" class="form-input" disabled />
+              </div>
+              <div class="form-group">
+                <label>Link</label>
+                <input type="text" :value="editLead['Link']" class="form-input" disabled />
+              </div>
+
+              <div class="form-divider" style="grid-column: 1 / -1; margin-top: 1rem;"></div>
+
+              <!-- ═══════════════════════════════════════════════════════════ -->
+              <!-- SECTION 4: Información de Seguimiento                     -->
+              <!-- ═══════════════════════════════════════════════════════════ -->
+              <h4 style="grid-column: 1 / -1; color: var(--accent-primary); margin-bottom: 0.5rem; text-align: center;">
+                📞 Información de Seguimiento</h4>
+              <div class="form-group">
+                <label>Status</label>
+                <select v-model="editLead['Status']" class="form-select" :disabled="isReadOnlySdrFields">
+                  <option v-for="s in (catalogs['Status'] || [])" :key="s" :value="s">{{ s }}</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Calidad de Contacto</label>
+                <select v-model="editLead['Calidad de Contacto']" class="form-select" :disabled="isReadOnlySdrFields">
+                  <option value="">— Seleccionar —</option>
+                  <option v-for="s in (catalogs['Calidad de Contacto'] || [])" :key="s" :value="s">{{ s }}</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Toque Actual (1-10)</label>
+                <select v-model="editLead['Toques de Contactación']" class="form-select" :disabled="isReadOnlySdrFields"
+                  @change="onToqueChange($event.target.value)">
+                  <option value="">— Seleccionar —</option>
+                  <option v-for="n in 10" :key="n" :value="String(n)">{{ n }}</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Timestamp (Último Toque)</label>
+                <input type="text" :value="formatDate(editLead['Timestamp'])" class="form-input" disabled />
+              </div>
+              <div class="form-group">
+                <label>Tipo de Seguimiento</label>
+                <select v-model="editLead['Tipo de Seguimiento']" class="form-select" :disabled="isReadOnlySdrFields">
+                  <option value="">— Seleccionar —</option>
+                  <option v-for="s in (catalogs['Tipo de Seguimiento'] || [])" :key="s" :value="s">{{ s }}</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Status del Seguimiento</label>
+                <select v-model="editLead['Status del Seguimiento']" class="form-select"
+                  :disabled="isReadOnlySdrFields">
+                  <option value="">— Seleccionar —</option>
+                  <option v-for="s in (catalogs['Status del Seguimiento'] || [])" :key="s" :value="s">{{ s }}</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Razón de Pérdida</label>
+                <select v-model="editLead['Razón de pérdida']" class="form-select" :disabled="isReadOnlySdrFields">
+                  <option value="">— Seleccionar —</option>
+                  <option v-for="s in (catalogs['Razón de pérdida'] || [])" :key="s" :value="s">{{ s }}</option>
+                </select>
+              </div>
+
+              <div class="form-divider" style="grid-column: 1 / -1; margin-top: 1rem;"></div>
+
+              <!-- ═══════════════════════════════════════════════════════════ -->
+              <!-- SECTION 5: Calificación (BANT & Pricing)                  -->
+              <!-- ═══════════════════════════════════════════════════════════ -->
+              <h4 style="grid-column: 1 / -1; color: var(--accent-primary); margin-bottom: 0.5rem; text-align: center;">
+                🎯 Calificación BANT & Pricing</h4>
+              <div class="form-group">
+                <label>¿Entendió el Marketing?</label>
+                <select v-model="editLead['¿Entendió la información de Marketing?']" class="form-select"
+                  :disabled="isReadOnlySdrFields">
+                  <option value="">—</option>
+                  <option>Si</option>
+                  <option>No</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>¿Mostró Interés genuino?</label>
+                <select v-model="editLead['¿Mostró Interés genuino?']" class="form-select"
+                  :disabled="isReadOnlySdrFields">
+                  <option value="">—</option>
+                  <option>Si</option>
+                  <option>No</option>
+                </select>
+              </div>
+              <div class="form-group" style="grid-column: 1 / -1;">
+                <label>¿Cuál es tu necesidad puntual?</label>
+                <textarea v-model="editLead['¿Cuál es tu necesidad puntual?']" class="form-input" rows="3"
+                  placeholder="Describe la necesidad del prospecto..." :disabled="isReadOnlySdrFields"
+                  style="resize: vertical;"></textarea>
+              </div>
+              <div class="form-group">
+                <label>¿El perfil del prospecto es el adecuado?</label>
+                <select v-model="editLead['¿El perfil del prospecto es el adecuado?']" class="form-select"
+                  :disabled="isReadOnlySdrFields">
+                  <option value="">—</option>
+                  <option>Si</option>
+                  <option>No</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>¿Necesitas tocar base con alguién para decidir?</label>
+                <select v-model="editLead['¿Necesitas tocar base con alguién para decidir la compra?']"
+                  class="form-select" :disabled="isReadOnlySdrFields">
+                  <option value="">—</option>
+                  <option>Si</option>
+                  <option>No</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>¿Presupuesto asignado?</label>
+                <select v-model="editLead['¿Tienes presupuesto asignado para este proyecto, en este año?']"
+                  class="form-select" :disabled="isReadOnlySdrFields">
+                  <option value="">—</option>
+                  <option>Si</option>
+                  <option>No</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>¿Han sido parte de alguna asociación?</label>
+                <select v-model="editLead['¿han sido parte de alguna asociación de la industria?']" class="form-select"
+                  :disabled="isReadOnlySdrFields">
+                  <option value="">—</option>
+                  <option>Si</option>
+                  <option>No</option>
+                </select>
+              </div>
+
+              <div class="form-divider" style="grid-column: 1 / -1; margin-top: 1rem;"></div>
+
+              <h4 style="grid-column: 1 / -1; color: var(--accent-primary); margin-bottom: 0.5rem; text-align: center;">
+                💰 Pricing (SDR)</h4>
+              <div class="form-group">
+                <label>Tipo de Cliente</label>
+                <select v-model="editLead['Tipo de Cliente']" class="form-select" :disabled="isReadOnlySdrFields">
+                  <option value="">— Seleccionar —</option>
+                  <option v-for="s in (catalogs['Tipo de Cliente'] || [])" :key="s" :value="s">{{ s }}</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Ticket Promedio</label>
+                <input type="number" step="0.01" v-model="editLead['Ticket Promedio']" class="form-input"
+                  placeholder="$0.00" :disabled="isReadOnlySdrFields" />
+              </div>
+              <div class="form-group" v-if="editLead['Tipo de Cliente'] === 'SaaS'">
+                <label>Licencias Promedio</label>
+                <input type="number" v-model="editLead['Licencias Promedio']" class="form-input" placeholder="0"
+                  :disabled="isReadOnlySdrFields" />
+              </div>
+              <div class="form-group">
+                <label>Monto Aproximado (Pipeline Value)</label>
+                <input type="text" :value="'$' + Number(calculoMontoAproximado || 0).toLocaleString()"
+                  class="form-input" disabled
+                  style="background: var(--bg-elevated, rgba(255,255,255,0.05)); font-weight: 700; color: var(--accent-success, #10b981);" />
+              </div>
+              <div class="form-group">
+                <label>¿Cual es su región?</label>
+                <select v-model="editLead['¿Cual es su región?']" class="form-select" :disabled="isReadOnlySdrFields">
+                  <option value="">— Seleccionar —</option>
+                  <option v-for="r in uniqueRegions" :key="r" :value="r">{{ r }}</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>¿Que tipo de membresía es?</label>
+                <select v-model="editLead['¿Que tipo de membresía es?']" class="form-select"
+                  :disabled="isReadOnlySdrFields">
+                  <option value="">— Seleccionar —</option>
+                  <option v-for="m in uniqueMembershipTypes" :key="m" :value="m">{{ m }}</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Pricing Tier</label>
+                <select v-model="editLead['Pricing Tier']" class="form-select" :disabled="isReadOnlySdrFields">
+                  <option value="">— Seleccionar —</option>
+                  <option v-for="a in uniqueAttractions" :key="a" :value="a">{{ a }}</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>¿Cuánto?</label>
+                <input type="text" v-model="editLead['¿Cuánto?']" class="form-input" placeholder="$0.00"
+                  :disabled="isReadOnlySdrFields" />
+              </div>
+              <div class="pricing-result" v-if="computedPricing" style="grid-column: 1 / -1;">
+                <div class="pricing-card">
+                  <span class="pricing-label">1 Año</span>
+                  <span class="pricing-value">${{ computedPricing.oneYear.toLocaleString() }}</span>
+                </div>
+                <div class="pricing-card">
+                  <span class="pricing-label">2 Años</span>
+                  <span class="pricing-value">${{ computedPricing.twoYear.toLocaleString() }}</span>
+                </div>
+              </div>
+
+              <div class="form-divider"></div>
+
+              <!-- Notas del Lead (Read-only for AE) -->
+              <div class="form-group" style="grid-column: 1 / -1;">
+                <label>Notas</label>
+                <textarea v-model="editLead['Notas']" class="notes-textarea" rows="3" placeholder="Notas del deal..."
+                  disabled></textarea>
+              </div>
+
+              <div class="form-divider"></div>
+
+            </div> <!-- End of Lead form-grid -->
+          </div> <!-- End of Lead tab-content -->
+
+          <!-- TAB: Deal (EXCLUSIVO AE) -->
+          <div v-if="modalTab === 'Deal'" class="tab-content">
+            <div class="form-grid">
+
+              <!-- ═══════════════════════════════════════════════════════════ -->
+              <!-- SECTION 1: AE Asignado                                    -->
+              <!-- ═══════════════════════════════════════════════════════════ -->
+              <h4 style="grid-column: 1 / -1; color: var(--accent-primary); margin-bottom: 0.5rem; text-align: center;">
+                🏷️ AE Asignado</h4>
+              <div class="form-group">
+                <label>Vendedor AE</label>
+                <select v-model="editLead['Vendedor Asignado para Seguimiento']" class="form-select">
+                  <option value="">— Sin asignar —</option>
+                  <option v-for="v in aeList" :key="v.id_vendedor" :value="v.id_vendedor">{{ v.nombre }}</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Fecha 1er Contacto AE</label>
+                <input type="text" :value="formatDate(editLead['Fecha de primer contacto AE'])" class="form-input"
+                  disabled />
+              </div>
+              <div class="form-group">
+                <label>Número de Toque AE</label>
+                <select v-model="editLead['Numero de toque']" class="form-select"
+                  @change="onAeToqueChange($event.target.value)">
+                  <option value="">— Sin toque —</option>
+                  <option v-for="n in 10" :key="n" :value="String(n)">{{ n }}</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Timestamp (Último Toque AE)</label>
+                <input type="text" :value="formatDate(editLead['Timestamp AE'])" class="form-input" disabled />
+              </div>
+
+              <div class="form-divider" style="grid-column: 1 / -1; margin-top: 1rem;"></div>
+
+              <!-- ═══════════════════════════════════════════════════════════ -->
+              <!-- SECTION 2: Status de Venta & Agenda                       -->
+              <!-- ═══════════════════════════════════════════════════════════ -->
+              <h4 style="grid-column: 1 / -1; color: var(--accent-primary); margin-bottom: 0.5rem; text-align: center;">
+                📋 Status de Venta</h4>
+              <div class="form-group">
+                <label>Status de Venta</label>
+                <select v-if="catalogs['Status de Venta']?.length" v-model="editLead['Status de Venta']"
+                  class="form-select">
+                  <option value="">— Seleccionar —</option>
+                  <option v-for="s in catalogs['Status de Venta']" :key="s" :value="s">{{ s }}</option>
+                </select>
+                <input v-else type="text" v-model="editLead['Status de Venta']" class="form-input" />
+              </div>
+              <div class="form-group">
+                <label>¿Ventas Contactó Cliente?</label>
+                <select v-model="editLead['¿Ventas Contactó Cliente?']" class="form-select">
+                  <option value="">—</option>
+                  <option>Si</option>
+                  <option>No</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Fecha de Reagenda</label>
+                <div style="display:flex; gap:0.3rem; align-items:center;">
+                  <input type="date" v-model="editLead['Fecha de Reagenda']" class="form-input" style="flex:1;" />
+                  <button type="button" class="btn-icon" title="Agendar en Calendar"
+                    @click="openQuickCalendar('Reagenda', editLead['Fecha de Reagenda'], editLead['Hora de Reagenda'])">
+                    <span class="material-symbols-outlined"
+                      style="font-size:1.1rem; color:var(--accent-primary);">calendar_month</span>
+                  </button>
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Hora de Reagenda</label>
+                <div style="display:flex; gap:0.3rem; align-items:center;">
+                  <input type="time" v-model="editLead['Hora de Reagenda']" class="form-input" style="flex:1;" />
+                  <button type="button" class="btn-icon" title="Agendar en Calendar"
+                    @click="openQuickCalendar('Reagenda', editLead['Fecha de Reagenda'], editLead['Hora de Reagenda'])">
+                    <span class="material-symbols-outlined"
+                      style="font-size:1.1rem; color:var(--accent-primary);">calendar_month</span>
+                  </button>
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Index</label>
+                <select v-if="catalogs['Index']?.length" v-model="editLead['Index']" class="form-select">
+                  <option value="">— Seleccionar —</option>
+                  <option v-for="s in catalogs['Index']" :key="s" :value="s">{{ s }}</option>
+                </select>
+                <input v-else type="text" v-model="editLead['Index']" class="form-input" />
+              </div>
+              <div class="form-group" style="grid-column: 1 / -1;">
+                <label>¿Por qué perdimos la venta?</label>
+                <select v-if="catalogs['¿Por qué perdimos la venta?']?.length"
+                  v-model="editLead['¿Por qué perdimos la venta?']" class="form-select">
+                  <option value="">— Seleccionar —</option>
+                  <option v-for="s in catalogs['¿Por qué perdimos la venta?']" :key="s" :value="s">{{ s }}</option>
+                </select>
+                <textarea v-else v-model="editLead['¿Por qué perdimos la venta?']" class="notes-textarea" rows="2"
+                  placeholder="Razón de pérdida de la venta..."></textarea>
+              </div>
+
+              <div class="form-divider" style="grid-column: 1 / -1; margin-top: 1rem;"></div>
+
+              <!-- ═══════════════════════════════════════════════════════════ -->
+              <!-- SECTION 3: Proyección y Cierre                            -->
+              <!-- ═══════════════════════════════════════════════════════════ -->
+              <h4 style="grid-column: 1 / -1; color: var(--accent-primary); margin-bottom: 0.5rem; text-align: center;">
+                💰 Proyección y Cierre</h4>
+              <div class="form-group">
+                <label>Proyección</label>
+                <select v-model="editLead['Proyeccion']" class="form-select">
+                  <option value="">—</option>
+                  <option v-for="s in (catalogs['Proyeccion'] || [])" :key="s" :value="s">{{ s }}</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Monto de Cotización</label>
+                <input type="number" step="0.01" v-model="editLead['Monto de Cotización']" class="form-input"
+                  placeholder="$0.00" />
+              </div>
+              <div class="form-group">
+                <label>Monto de Apartado</label>
+                <input type="number" step="0.01" v-model="editLead['Monto de Apartado']" class="form-input"
+                  placeholder="$0.00" />
+              </div>
+              <div class="form-group">
+                <label>Monto de Venta (Cierre)</label>
+                <input type="number" step="0.01" v-model="editLead['Monto de cierre']" class="form-input"
+                  placeholder="$0.00" />
+              </div>
+              <div class="form-group">
+                <label>Producto de Cierre</label>
+                <input type="text" v-model="editLead['Producto de Cierre']" class="form-input" />
+              </div>
+              <div class="form-group">
+                <label>Fecha de Cierre</label>
+                <div style="display:flex; gap:0.3rem; align-items:center;">
+                  <input type="date" v-model="editLead['Fecha de Cierre']" class="form-input" style="flex:1;" />
+                  <button type="button" class="btn-icon" title="Agendar en Calendar"
+                    @click="openQuickCalendar('Cierre', editLead['Fecha de Cierre'], '')">
+                    <span class="material-symbols-outlined"
+                      style="font-size:1.1rem; color:var(--accent-primary);">calendar_month</span>
+                  </button>
+                </div>
+              </div>
+              <div class="form-group">
+                <label>1 Year Mem</label>
+                <select v-if="catalogs['1 Year Mem']?.length" v-model="editLead['1 Year Mem']" class="form-select">
+                  <option value="">— Seleccionar —</option>
+                  <option v-for="s in catalogs['1 Year Mem']" :key="s" :value="s">{{ s }}</option>
+                </select>
+                <input v-else type="text" v-model="editLead['1 Year Mem']" class="form-input" />
+              </div>
+              <div class="form-group">
+                <label>2 Year Mem</label>
+                <select v-if="catalogs['2 Year Mem']?.length" v-model="editLead['2 Year Mem']" class="form-select">
+                  <option value="">— Seleccionar —</option>
+                  <option v-for="s in catalogs['2 Year Mem']" :key="s" :value="s">{{ s }}</option>
+                </select>
+                <input v-else type="text" v-model="editLead['2 Year Mem']" class="form-input" />
+              </div>
+              <div class="form-group">
+                <label>Descuento</label>
+                <select v-if="catalogs['Descuento']?.length" v-model="editLead['Descuento']" class="form-select">
+                  <option value="">— Seleccionar —</option>
+                  <option v-for="s in catalogs['Descuento']" :key="s" :value="s">{{ s }}</option>
+                </select>
+                <input v-else type="text" v-model="editLead['Descuento']" class="form-input" />
+              </div>
+
+              <div class="form-divider" style="grid-column: 1 / -1; margin-top: 1rem;"></div>
+
+              <!-- ═══════════════════════════════════════════════════════════ -->
+              <!-- SECTION 4: Cross Selling & Historial de Compras           -->
+              <!-- ═══════════════════════════════════════════════════════════ -->
+              <h4 style="grid-column: 1 / -1; color: var(--accent-primary); margin-bottom: 0.5rem; text-align: center;">
+                🔄 Cross Selling & Historial de Compras</h4>
+              <div class="form-group">
+                <label>¿Cross Selling?</label>
+                <select v-model="editLead['Cross Selling?']" class="form-select">
+                  <option value="">—</option>
+                  <option>Si</option>
+                  <option>No</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>¿Es cliente activo?</label>
+                <select v-model="editLead['¿Es cliente activo?']" class="form-select">
+                  <option value="">—</option>
+                  <option>Si</option>
+                  <option>No</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>¿Es recompra?</label>
+                <select v-model="editLead['¿Es recompra?']" class="form-select">
+                  <option value="">—</option>
+                  <option>Si</option>
+                  <option>No</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Producto de Recompra</label>
+                <input type="text" v-model="editLead['Producto de Recompra']" class="form-input" />
+              </div>
+              <div class="form-group">
+                <label>Valor de recompra</label>
+                <input type="number" step="0.01" v-model="editLead['Valor de recompra']" class="form-input"
+                  placeholder="$0.00" />
+              </div>
+              <div class="form-group">
+                <label>Fecha de recompra</label>
+                <div style="display:flex; gap:0.3rem; align-items:center;">
+                  <input type="date" v-model="editLead['Fecha de recompra']" class="form-input" style="flex:1;" />
+                  <button type="button" class="btn-icon" title="Agendar en Calendar"
+                    @click="openQuickCalendar('Recompra', editLead['Fecha de recompra'], '')">
+                    <span class="material-symbols-outlined"
+                      style="font-size:1.1rem; color:var(--accent-primary);">calendar_month</span>
+                  </button>
+                </div>
+              </div>
+
+              <div class="form-divider" style="grid-column: 1 / -1; margin-top: 1rem;"></div>
+
+              <!-- ═══════════════════════════════════════════════════════════ -->
+              <!-- SECTION 5: Cobranza & Facturación                         -->
+              <!-- ═══════════════════════════════════════════════════════════ -->
+              <h4 style="grid-column: 1 / -1; color: var(--accent-primary); margin-bottom: 0.5rem; text-align: center;">
+                💳 Cobranza & Facturación</h4>
+              <div class="form-group">
+                <label>Link de Pago</label>
+                <select v-if="catalogs['Link de Pago']?.length" v-model="editLead['Link de Pago']" class="form-select">
+                  <option value="">— Seleccionar —</option>
+                  <option v-for="s in catalogs['Link de Pago']" :key="s" :value="s">{{ s }}</option>
+                </select>
+                <input v-else type="text" v-model="editLead['Link de Pago']" class="form-input" />
+              </div>
+              <div class="form-group">
+                <label>Renovación</label>
+                <select v-if="catalogs['Renovación']?.length" v-model="editLead['Renovación']" class="form-select">
+                  <option value="">— Seleccionar —</option>
+                  <option v-for="s in catalogs['Renovación']" :key="s" :value="s">{{ s }}</option>
+                </select>
+                <input v-else type="text" v-model="editLead['Renovación']" class="form-input" />
+              </div>
+              <div class="form-group">
+                <label>Soporte de pago</label>
+                <select v-if="catalogs['Soporte de pago']?.length" v-model="editLead['Soporte de pago']"
+                  class="form-select">
+                  <option value="">— Seleccionar —</option>
+                  <option v-for="s in catalogs['Soporte de pago']" :key="s" :value="s">{{ s }}</option>
+                </select>
+                <input v-else type="text" v-model="editLead['Soporte de pago']" class="form-input" />
+              </div>
+              <div class="form-group">
+                <label>Tipo de Transacción</label>
+                <input type="text" v-model="editLead['Tipo de Transacción']" class="form-input" />
+              </div>
+              <div class="form-group">
+                <label>Fuente de origen</label>
+                <input type="text" v-model="editLead['Fuente de origen']" class="form-input" />
+              </div>
+              <div class="form-group">
+                <label>Deal Code</label>
+                <input type="text" v-model="editLead['Deal Code']" class="form-input" />
+              </div>
+
+              <div class="form-divider" style="grid-column: 1 / -1; margin-top: 1rem;"></div>
+
+              <!-- ═══════════════════════════════════════════════════════════ -->
+              <!-- SECTION 6: Notas AE                                       -->
+              <!-- ═══════════════════════════════════════════════════════════ -->
+              <h4 style="grid-column: 1 / -1; color: var(--accent-primary); margin-bottom: 0.5rem; text-align: center;">
+                📝 Notas del AE</h4>
+
+              <!-- SDR Notes (Read-Only for context) -->
+              <div class="form-group" style="grid-column: 1 / -1;" v-if="editLead['Notas']">
+                <label style="color: var(--text-secondary);">Notas del SDR (Solo Lectura)</label>
+                <div
+                  style="background: var(--bg-elevated, rgba(255,255,255,0.03)); border: 1px solid var(--border-color); border-radius: 0.5rem; padding: 0.75rem 1rem; font-size: 0.85rem; color: var(--text-secondary); white-space: pre-wrap; max-height: 120px; overflow-y: auto;">
+                  {{ editLead['Notas'] }}</div>
+              </div>
+
+              <!-- AE Notes (Editable) -->
+              <div class="form-group" style="grid-column: 1 / -1;">
+                <label>Notas Vendedor AE</label>
+                <textarea v-model="editLead['Notas Vendedor']" class="notes-textarea" rows="3"
+                  placeholder="Notas exclusivas del Account Executive..."></textarea>
+              </div>
+
+
+
+            </div>
+          </div>
+
+          <!-- TAB: Logs de Toques -->
+          <div v-if="modalTab === '⏱️ Logs de Toques'" class="tab-content">
+
+            <!-- SECTION A: Relational Touch History (from fact_toques) -->
+            <h4 style="color: var(--accent-primary); margin-bottom: 0.75rem;">
+              <span class="material-symbols-outlined" style="font-size:1.1rem; vertical-align:middle;">call_log</span>
+              Historial de Toques
+            </h4>
+            <template v-if="selectedLead._toquesList && selectedLead._toquesList.length">
+              <table style="width:100%; border-collapse:collapse; margin-bottom:1.5rem; font-size:0.85rem;">
+                <thead>
+                  <tr style="border-bottom: 2px solid var(--border-color, #333);">
+                    <th style="text-align:left; padding: 0.5rem;">Toque #</th>
+                    <th style="text-align:left; padding: 0.5rem;">Fecha / Hora</th>
+                    <th style="text-align:left; padding: 0.5rem;">Rol</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(entry, i) in selectedLead._toquesList" :key="'tq'+i"
+                    style="border-bottom: 1px solid var(--border-color, #222);">
+                    <td style="padding: 0.4rem 0.5rem; font-weight:600;">{{ entry.toque }}</td>
+                    <td style="padding: 0.4rem 0.5rem; color: var(--text-secondary);">{{ formatDate(entry.fecha) }}</td>
+                    <td style="padding: 0.4rem 0.5rem;">{{ entry.rol || 'SDR' }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </template>
+            <p v-else style="color: var(--text-secondary); font-size:0.85rem; margin-bottom:1.5rem;">No hay toques
+              registrados aún.</p>
+
+            <!-- SECTION B: Existing Interaction Logs (from fact_interacciones) -->
+            <h4 style="color: var(--accent-primary); margin-bottom: 0.75rem;">
+              <span class="material-symbols-outlined" style="font-size:1.1rem; vertical-align:middle;">history</span>
+              Logs de Interacción (Sistema)
+            </h4>
+            <div v-if="editLead._history && editLead._history.length" class="timeline">
+              <div v-for="(log, i) in editLead._history" :key="'log'+i" class="timeline-item">
+                <div class="timeline-dot" style="background: var(--text-secondary);"></div>
+                <div class="timeline-content">
+                  <span class="timeline-type">{{ log.type }}</span>
+                  <span class="timeline-date">{{ formatDate(log.date) }}</span>
+                </div>
+              </div>
+            </div>
+            <p v-else style="color: var(--text-secondary); font-size:0.85rem;">No hay logs de interacción registrados.
+            </p>
+          </div>
+
+          <!-- TAB: Historial -->
+          <div v-if="modalTab === 'Historial'" class="tab-content">
+            <!-- Loading spinner -->
+            <div v-if="leadHistory.loading" style="text-align:center; padding: 2rem;">
+              <span class="material-symbols-outlined"
+                style="font-size:2rem; animation: spin 1s linear infinite;">progress_activity</span>
+              <p style="color: var(--text-secondary); margin-top: 0.5rem;">Cargando historial...</p>
+            </div>
+            <div v-else>
+
+
+              <!-- Section 0B: Lifecycle Events (from _history — ingreso, asignación, BANT, traspaso) -->
+              <div class="history-section" style="margin-top: 1.25rem;">
+                <h4 style="color: var(--accent-success, #10b981); margin-bottom: 0.75rem;">
+                  <span class="material-symbols-outlined"
+                    style="font-size:1.1rem; vertical-align:middle;">timeline</span>
+                  Eventos del Ciclo de Vida
+                </h4>
+                <div v-if="selectedLead._history && selectedLead._history.length" class="timeline">
+                  <div v-for="(entry, idx) in selectedLead._history" :key="'lc'+idx" class="timeline-item">
+                    <div class="timeline-dot"
+                      :class="entry.type && entry.type.includes('Contestó') ? 'dot-success' : 'dot-danger'"></div>
+                    <div class="timeline-content">
+                      <span class="timeline-type">{{ entry.type }}</span>
+                      <span class="timeline-date">{{ formatDate(entry.date) }}</span>
+                    </div>
+                  </div>
+                </div>
+                <p v-else style="color: var(--text-secondary); font-size:0.85rem;">Sin eventos de ciclo de vida.</p>
+              </div>
+
+              <!-- Section 0C: Interaction Logs (from fact_interacciones) -->
+              <div class="history-section" style="margin-top: 1.25rem;">
+                <h4 style="color: var(--text-secondary); margin-bottom: 0.75rem;">
+                  <span class="material-symbols-outlined"
+                    style="font-size:1.1rem; vertical-align:middle;">history</span>
+                  Logs de Interacción (Sistema)
+                </h4>
+                <div v-if="editLead._history && editLead._history.length" class="timeline">
+                  <div v-for="(log, i) in editLead._history" :key="'ilog'+i" class="timeline-item">
+                    <div class="timeline-dot" style="background: var(--text-secondary);"></div>
+                    <div class="timeline-content">
+                      <span class="timeline-type">{{ log.type }}</span>
+                      <span class="timeline-date">{{ formatDate(log.date) }}</span>
+                    </div>
+                  </div>
+                </div>
+                <p v-else style="color: var(--text-secondary); font-size:0.85rem;">No hay logs de interacción
+                  registrados.</p>
+              </div>
+              <!-- Section 1: Pipeline Changes -->
+              <div class="history-section">
+                <h4 style="color: var(--accent-primary); margin-bottom: 0.75rem;">
+                  <span class="material-symbols-outlined"
+                    style="font-size:1.1rem; vertical-align:middle;">swap_horiz</span>
+                  Cambios de Pipeline (Status)
+                </h4>
+                <div v-if="leadHistory.pipeline.length" class="timeline">
+                  <div v-for="(e, i) in leadHistory.pipeline" :key="'p'+i" class="timeline-item">
+                    <div class="timeline-dot" style="background: var(--accent-primary);"></div>
+                    <div class="timeline-content">
+                      <span class="timeline-type">{{ e.valorAnterior || '—' }} → {{ e.valorNuevo || '—' }}</span>
+                      <span class="timeline-date">{{ formatDate(e.timestamp) }} · {{ e.usuario }}</span>
+                    </div>
+                  </div>
+                </div>
+                <p v-else style="color: var(--text-secondary); font-size:0.85rem;">Sin registros de pipeline.</p>
+              </div>
+
+              <!-- Section 2: Lead Field Changes -->
+              <div class="history-section" style="margin-top: 1.25rem;">
+                <h4 style="color: var(--accent-info, #3b82f6); margin-bottom: 0.75rem;">
+                  <span class="material-symbols-outlined" style="font-size:1.1rem; vertical-align:middle;">person</span>
+                  Cambios de Información del Lead
+                </h4>
+                <div v-if="leadHistory.leads.length" class="timeline">
+                  <div v-for="(e, i) in leadHistory.leads" :key="'l'+i" class="timeline-item">
+                    <div class="timeline-dot" style="background: var(--accent-info, #3b82f6);"></div>
+                    <div class="timeline-content">
+                      <span class="timeline-type"><strong>{{ e.campo }}</strong>: {{ e.valorAnterior || '(vacío)' }} →
+                        {{ e.valorNuevo || '(vacío)' }}</span>
+                      <span class="timeline-date">{{ formatDate(e.timestamp) }} · {{ e.usuario }}</span>
+                    </div>
+                  </div>
+                </div>
+                <p v-else style="color: var(--text-secondary); font-size:0.85rem;">Sin cambios de lead registrados.</p>
+              </div>
+
+              <!-- Section 3: Deal Field Changes -->
+              <div class="history-section" style="margin-top: 1.25rem;">
+                <h4 style="color: var(--accent-warning, #f59e0b); margin-bottom: 0.75rem;">
+                  <span class="material-symbols-outlined"
+                    style="font-size:1.1rem; vertical-align:middle;">handshake</span>
+                  Cambios del Deal
+                </h4>
+                <div v-if="leadHistory.deals.length" class="timeline">
+                  <div v-for="(e, i) in leadHistory.deals" :key="'d'+i" class="timeline-item">
+                    <div class="timeline-dot" style="background: var(--accent-warning, #f59e0b);"></div>
+                    <div class="timeline-content">
+                      <span class="timeline-type"><strong>{{ e.campo }}</strong>: {{ e.valorAnterior || '(vacío)' }} →
+                        {{ e.valorNuevo || '(vacío)' }}</span>
+                      <span class="timeline-date">{{ formatDate(e.timestamp) }} · {{ e.usuario }}</span>
+                    </div>
+                  </div>
+                </div>
+                <p v-else style="color: var(--text-secondary); font-size:0.85rem;">Sin cambios de deal registrados.</p>
+              </div>
+
+              <!-- Section 4: Contact History (existing) -->
+              <div class="history-section" style="margin-top: 1.25rem;">
+                <h4 style="color: var(--accent-success, #10b981); margin-bottom: 0.75rem;">
+                  <span class="material-symbols-outlined" style="font-size:1.1rem; vertical-align:middle;">call</span>
+                  Historial de Contacto
+                </h4>
+                <div v-if="selectedLead._history && selectedLead._history.length" class="timeline">
+                  <div v-for="(entry, idx) in selectedLead._history" :key="'h'+idx" class="timeline-item">
+                    <div class="timeline-dot" :class="entry.type.includes('Contestó') ? 'dot-success' : 'dot-danger'">
+                    </div>
+                    <div class="timeline-content">
+                      <span class="timeline-type">{{ entry.type }}</span>
+                      <span class="timeline-date">{{ formatDate(entry.date) }}</span>
+                    </div>
+                  </div>
+                </div>
+                <p v-else style="color: var(--text-secondary); font-size:0.85rem;">Sin historial de contacto.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB: Notas -->
+          <div v-if="modalTab === 'Notas'" class="tab-content">
+
+            <!-- SDR Notes (Read-Only context for AEs) -->
+            <div v-if="(userRole === 'AE' || userRole === 'ADMIN' || userRole === 'GERENTE') && editLead['Notas']"
+              style="margin-bottom: 1.5rem;">
+              <h4 style="color: var(--text-secondary); margin-bottom: 0.5rem;">
+                <span class="material-symbols-outlined"
+                  style="font-size:1rem; vertical-align:middle;">description</span>
+                Notas del SDR (Solo Lectura)
+              </h4>
+              <div
+                style="background: var(--bg-elevated, rgba(255,255,255,0.03)); border: 1px solid var(--border-color); border-radius: 0.5rem; padding: 0.75rem 1rem; font-size: 0.85rem; color: var(--text-secondary); white-space: pre-wrap; max-height: 200px; overflow-y: auto;">
+                {{ editLead['Notas'] }}</div>
+            </div>
+
+            <!-- SDR: edits their own notes -->
+            <template v-if="userRole === 'SDR'">
+              <h4 style="color: var(--accent-primary); margin-bottom: 0.5rem;">📝 Notas del SDR</h4>
+              <textarea v-model="editLead['Notas']" class="notes-textarea"
+                placeholder="Escribe notas sobre este lead..."></textarea>
+            </template>
+
+            <!-- AE/Admin/Gerente: edits their own notes (Notas Vendedor) -->
+            <template v-if="userRole === 'AE' || userRole === 'ADMIN' || userRole === 'GERENTE'">
+              <h4 style="color: var(--accent-primary); margin-bottom: 0.5rem;">📝 Notas del AE</h4>
+              <textarea v-model="editLead['Notas Vendedor']" class="notes-textarea"
+                placeholder="Escribe notas exclusivas del Account Executive..."></textarea>
+            </template>
+
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-secondary" @click="closeLeadModal">Cancelar</button>
+          <!-- Pase a Ventas button (only for leads without a deal, not in creation mode) -->
+          <button v-if="!isCreating && !selectedLead._hasDeal && selectedLead._source !== 'deal'" class="btn"
+            style="background: var(--accent-warning, #f59e0b); color: #fff;" @click="openHandoffModal(selectedLead)">
+            <span class="material-symbols-outlined"
+              style="font-size:1rem; vertical-align:middle; margin-right:0.2rem;">swap_horiz</span>
+            Pase a Ventas
+          </button>
+          <button v-if="isCreating" class="btn btn-success" @click="submitCreation" :disabled="saving">
+            {{ saving ? 'Creando...' : (creationType === 'deal' ? '✨ Crear Deal' : '✨ Crear Lead') }}
+          </button>
+          <button v-else class="btn btn-success" @click="saveLeadChanges" :disabled="saving">
+            {{ saving ? 'Guardando...' : '💾 Guardar Cambios' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== HANDOFF MODAL (Ficha de Negociación) ========== -->
+    <div class="modal-overlay" v-if="showHandoffModal" @click.self="cancelHandoff">
+      <div class="modal-panel" style="max-width: 650px;">
+        <div class="modal-header" style="border-bottom: 3px solid var(--accent-success);">
+          <div>
+            <h2 class="modal-title">📋 Ficha de Negociación</h2>
+            <span
+              style="font-size:0.85rem; color:var(--text-secondary); display: block; margin-top: 0.5rem; line-height: 1.6;">
+              <strong>Traspaso de Lead:</strong> #{{ handoffLead._id }} — {{ handoffLead._name }}<br>
+              <strong>Ejecutivo SDR a cargo:</strong> {{ currentUser.nombre || handoffLead['Vendedor asignado (SDR)'] ||
+              'SDR Actual' }}
+            </span>
+          </div>
+          <button class="btn-icon" @click="cancelHandoff"><span class="material-symbols-outlined">close</span></button>
+        </div>
+
+        <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+          <!-- Section 1: Contact History Summary -->
+          <div style="margin-bottom: 1.5rem;">
+            <h4 style="color: var(--accent-primary); margin-bottom: 0.5rem;">
+              <span class="material-symbols-outlined" style="font-size:1rem; vertical-align:middle;">history</span>
+              Historial de Contacto
+            </h4>
+            <div v-if="handoffLead._history && handoffLead._history.length" class="timeline"
+              style="max-height: 150px; overflow-y: auto;">
+              <div v-for="(entry, idx) in handoffLead._history" :key="'ho'+idx" class="timeline-item">
+                <div class="timeline-dot"
+                  :class="entry.type && entry.type.includes('Contestó') ? 'dot-success' : 'dot-danger'"></div>
+                <div class="timeline-content">
+                  <span class="timeline-type">{{ entry.type }}</span>
+                  <span class="timeline-date">{{ formatDate(entry.date) }}</span>
+                </div>
+              </div>
+            </div>
+            <p v-else style="color: var(--text-secondary); font-size:0.85rem;">Sin historial de contacto registrado.</p>
+          </div>
+
+          <!-- Section 2: BANT Qualification -->
+          <div style="margin-bottom: 1.5rem;">
+            <h4 style="color: var(--accent-warning, #f59e0b); margin-bottom: 0.75rem;">
+              <span class="material-symbols-outlined" style="font-size:1rem; vertical-align:middle;">verified</span>
+              Calificación BANT (Obligatoria)
+            </h4>
+            <div class="form-grid">
+              <div class="form-group" style="grid-column: 1 / -1;">
+                <label>¿Cuál es la necesidad puntual del prospecto? *</label>
+                <textarea v-model="handoffData.necesidad_puntual" class="notes-textarea" rows="2"
+                  placeholder="Describe la necesidad puntual del prospecto..." required></textarea>
+              </div>
+              <div class="form-group">
+                <label>¿Necesita consultarlo con alguien? (Autoridad) *</label>
+                <select v-model="handoffData.necesita_decision_tercero" class="form-select" required>
+                  <option value="">— Seleccionar —</option>
+                  <option>Si</option>
+                  <option>No</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>¿Tiene presupuesto asignado? *</label>
+                <select v-model="handoffData.tiene_presupuesto" class="form-select" required>
+                  <option value="">— Seleccionar —</option>
+                  <option>Si</option>
+                  <option>No</option>
+                </select>
+              </div>
+              <div class="form-group" v-if="handoffData.tiene_presupuesto === 'Si'">
+                <label>¿De cuánto es el presupuesto?</label>
+                <input type="text" v-model="handoffData.monto_presupuesto" class="form-input"
+                  placeholder="Monto o rango..." />
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 3: Notes for AE ("Bandeja de Plata") -->
+          <div>
+            <h4 style="color: var(--accent-info, #3b82f6); margin-bottom: 0.5rem;">
+              <span class="material-symbols-outlined" style="font-size:1rem; vertical-align:middle;">edit_note</span>
+              Notas para el AE ("Bandeja de Plata")
+            </h4>
+            <textarea v-model="handoffData.notas_bandeja_plata" class="notes-textarea" rows="3"
+              placeholder="Contexto adicional, observaciones, detalles relevantes para el AE..."></textarea>
+          </div>
+
+          <!-- Section 4: AE Assignment (conditional on routing mode) -->
+          <div style="margin-top: 1rem;">
+            <h4 style="color: var(--accent-primary); margin-bottom: 0.5rem;">
+              <span class="material-symbols-outlined" style="font-size:1rem; vertical-align:middle;">person_add</span>
+              Asignación de Account Executive
+            </h4>
+            <!-- Mode: SDR_CHOICE → Show AE selector -->
+            <div v-if="routingConfig.aeAssignmentMode === 'SDR_CHOICE'" class="form-group">
+              <label>Seleccionar AE *</label>
+              <select v-model="handoffData.aeEmail" class="form-select" required>
+                <option value="">— Seleccionar Account Executive —</option>
+                <option v-for="ae in aeList" :key="ae.email" :value="ae.email">{{ ae.nombre || ae.email }}</option>
+              </select>
+            </div>
+            <!-- Mode: AUTO → Show info badge -->
+            <div v-else-if="routingConfig.aeAssignmentMode === 'AUTO'"
+              style="background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.3); border-radius: 8px; padding: 0.75rem; font-size: 0.85rem;">
+              <span class="material-symbols-outlined"
+                style="font-size:1rem; vertical-align:middle; margin-right:0.3rem; color: var(--accent-info);">smart_toy</span>
+              <strong>Asignación automática (Round Robin):</strong> El sistema asignará al siguiente AE activo de forma
+              equitativa.
+            </div>
+            <!-- Mode: MANAGER_REVIEW → Show manager badge -->
+            <div v-else
+              style="background: rgba(234,179,8,0.1); border: 1px solid rgba(234,179,8,0.3); border-radius: 8px; padding: 0.75rem; font-size: 0.85rem;">
+              <span class="material-symbols-outlined"
+                style="font-size:1rem; vertical-align:middle; margin-right:0.3rem; color: var(--accent-warning);">supervisor_account</span>
+              <strong>Revisión gerencial:</strong> La negociación será asignada al gerente ({{
+              routingConfig.managerEmail
+              || 'No configurado' }}) para distribución manual.
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-secondary" @click="cancelHandoff">Cancelar</button>
+          <button class="btn btn-success" @click="submitHandoff"
+            :disabled="saving || !handoffData.necesidad_puntual || !handoffData.necesita_decision_tercero || !handoffData.tiene_presupuesto || (routingConfig.aeAssignmentMode === 'SDR_CHOICE' && !handoffData.aeEmail)">
+            {{ saving ? 'Procesando...' : '✅ Confirmar Traspaso al AE' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== EVENT DETAILS MICRO-MODAL (Google Calendar Style) ========== -->
+    <div class="modal-overlay" v-if="showEventDetails" @click.self="showEventDetails = false" style="z-index:2060;">
+      <div class="modal-panel" style="max-width: 520px;">
+        <div class="modal-header" style="border-bottom: 3px solid var(--accent-primary, #6366f1);">
+          <div>
+            <h2 class="modal-title">
+              <span class="material-symbols-outlined" style="vertical-align:middle; margin-right:0.3rem;">event</span>
+              {{ selectedEventData.type || 'Evento' }}
+            </h2>
+          </div>
+          <div style="display:flex; gap:0.3rem;">
+            <button class="btn-icon" title="Eliminar evento" @click="deleteEventFromCalendar"
+              style="color: var(--accent-danger, #ef4444);">
+              <span class="material-symbols-outlined">delete</span>
+            </button>
+            <button class="btn-icon" @click="showEventDetails = false">
+              <span class="material-symbols-outlined">close</span>
+            </button>
+          </div>
+        </div>
+        <div class="modal-body" style="padding: 1.2rem; display:flex; flex-direction:column; gap:1rem;">
+
+          <!-- Título editable -->
+          <div style="display:flex; align-items:center; gap:0.6rem;">
+            <span class="material-symbols-outlined" style="color:var(--text-secondary); font-size:1.3rem;">edit</span>
+            <input type="text" v-model="selectedEventData.title" class="form-input"
+              style="font-size: 1.1rem; font-weight: 600;" placeholder="Título del evento" />
+          </div>
+
+          <!-- Fecha y Hora -->
+          <div style="display:flex; align-items:center; gap:0.6rem;">
+            <span class="material-symbols-outlined"
+              style="color:var(--text-secondary); font-size:1.3rem;">schedule</span>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:0.5rem; flex:1;">
+              <div>
+                <label
+                  style="font-size:0.7rem; color:var(--text-secondary); display:block; margin-bottom:0.2rem;">Inicio</label>
+                <input type="datetime-local" v-model="selectedEventData.startLocal" class="form-input"
+                  style="font-size:0.85rem;" />
+              </div>
+              <div>
+                <label
+                  style="font-size:0.7rem; color:var(--text-secondary); display:block; margin-bottom:0.2rem;">Fin</label>
+                <input type="datetime-local" v-model="selectedEventData.endLocal" class="form-input"
+                  style="font-size:0.85rem;" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Tipo de registro -->
+          <div style="display:flex; align-items:center; gap:0.6rem;">
+            <span class="material-symbols-outlined"
+              style="color:var(--text-secondary); font-size:1.3rem;">palette</span>
+            <select v-model="selectedEventData.type" class="form-select" style="flex:1;">
+              <option value="Evento">📅 Evento</option>
+              <option value="Tarea">📋 Tarea</option>
+              <option value="Recordatorio">🔔 Recordatorio</option>
+              <option value="Registro Visual">👁️ Registro Visual</option>
+            </select>
+          </div>
+
+          <!-- Notificación -->
+          <div style="display:flex; align-items:center; gap:0.6rem;">
+            <span class="material-symbols-outlined"
+              style="color:var(--text-secondary); font-size:1.3rem;">notifications</span>
+            <select v-model="selectedEventData.notificationMinutes" class="form-select" style="flex:1;">
+              <option value="0">Sin notificación</option>
+              <option value="5">5 minutos antes</option>
+              <option value="10">10 minutos antes</option>
+              <option value="15">15 minutos antes</option>
+              <option value="30">30 minutos antes</option>
+              <option value="60">1 hora antes</option>
+              <option value="1440">1 día antes</option>
+            </select>
+          </div>
+
+          <!-- Visibilidad -->
+          <div style="display:flex; align-items:center; gap:0.6rem;">
+            <span class="material-symbols-outlined" style="color:var(--text-secondary); font-size:1.3rem;">lock</span>
+            <select v-model="selectedEventData.visibility" class="form-select" style="flex:1;">
+              <option value="DEFAULT">Visibilidad predeterminada</option>
+              <option value="PUBLIC">Público</option>
+              <option value="PRIVATE">Privado</option>
+              <option value="CONFIDENTIAL">Confidencial</option>
+            </select>
+          </div>
+
+          <!-- Descripción -->
+          <div style="display:flex; align-items:flex-start; gap:0.6rem;">
+            <span class="material-symbols-outlined"
+              style="color:var(--text-secondary); font-size:1.3rem; margin-top:0.3rem;">notes</span>
+            <textarea v-model="selectedEventData.description" class="form-input" rows="3"
+              placeholder="Añade una descripción o notas..."
+              style="flex:1; resize:vertical; min-height:60px; font-size:0.9rem;"></textarea>
+          </div>
+
+          <!-- Leyenda de colores -->
+          <div
+            style="background: var(--bg-tertiary); border-radius: 8px; padding: 0.5rem 0.8rem; font-size: 0.72rem; color: var(--text-secondary);">
+            <strong>Colores:</strong>
+            <span style="color:#4285f4;">● Evento</span> &nbsp;
+            <span style="color:#e67c73;">● Tarea</span> &nbsp;
+            <span style="color:#dc2127;">● Recordatorio</span> &nbsp;
+            <span style="color:#616161;">● Registro</span>
+          </div>
+
+        </div>
+        <div class="modal-footer" style="display:flex; justify-content:flex-end; gap:0.5rem; padding:1rem;">
+          <button class="btn-secondary" @click="showEventDetails = false">Cancelar</button>
+          <button class="btn-primary" @click="submitEventDetailsUpdate">
+            <span class="material-symbols-outlined"
+              style="font-size:1rem; vertical-align:middle; margin-right:0.2rem;">save</span>
+            Guardar Cambios
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== QUICK CALENDAR MICRO-MODAL ========== -->
+    <div class="modal-overlay" v-if="showQuickCalendar" @click.self="showQuickCalendar = false" style="z-index:2060;">
+      <div class="modal-panel" style="max-width: 420px;">
+        <div class="modal-header" style="border-bottom: 3px solid var(--accent-success, #22c55e);">
+          <div>
+            <h2 class="modal-title">
+              <span class="material-symbols-outlined"
+                style="vertical-align:middle; margin-right:0.3rem;">calendar_month</span>
+              Agendar en Calendar
+            </h2>
+          </div>
+          <button class="btn-icon" @click="showQuickCalendar = false">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </div>
+        <div class="modal-body" style="padding: 1.2rem; display:flex; flex-direction:column; gap:1rem;">
+          <!-- Tipo de registro -->
+          <div class="form-group">
+            <label style="font-weight:600; margin-bottom:0.4rem; display:block;">
+              <span class="material-symbols-outlined"
+                style="font-size:1.1rem; vertical-align:middle; color:var(--text-secondary);">palette</span>
+              Tipo de registro
+            </label>
+            <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+              <button v-for="t in ['Evento','Tarea','Recordatorio','Registro Visual']" :key="t" type="button"
+                class="btn-sm" :style="{
+                  background: quickCalForm.tipo === t ? 'var(--accent-primary)' : 'var(--bg-tertiary)',
+                  color: quickCalForm.tipo === t ? '#fff' : 'var(--text-primary)',
+                  border: 'none', borderRadius: '8px', padding: '0.4rem 0.8rem', cursor: 'pointer',
+                  fontWeight: quickCalForm.tipo === t ? '600' : '400'
+                }" @click="quickCalForm.tipo = t">
+                {{ t === 'Evento' ? '📅' : t === 'Tarea' ? '📋' : t === 'Recordatorio' ? '🔔' : '👁️' }} {{ t }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Asunto -->
+          <div class="form-group">
+            <label style="font-weight:600; margin-bottom:0.4rem; display:block;">
+              <span class="material-symbols-outlined"
+                style="font-size:1.1rem; vertical-align:middle; color:var(--text-secondary);">edit</span>
+              Asunto
+            </label>
+            <input type="text" v-model="quickCalForm.asunto" class="form-input"
+              placeholder="Ej: Reagenda - Juan Pérez" />
+          </div>
+
+          <!-- Fecha y Hora -->
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:0.8rem;">
+            <div class="form-group">
+              <label style="font-weight:600; margin-bottom:0.4rem; display:block;">
+                <span class="material-symbols-outlined"
+                  style="font-size:1.1rem; vertical-align:middle; color:var(--text-secondary);">calendar_month</span>
+                Fecha
+              </label>
+              <input type="date" v-model="quickCalForm.fecha" class="form-input" />
+            </div>
+            <div class="form-group">
+              <label style="font-weight:600; margin-bottom:0.4rem; display:block;">
+                <span class="material-symbols-outlined"
+                  style="font-size:1.1rem; vertical-align:middle; color:var(--text-secondary);">schedule</span>
+                Hora (opcional)
+              </label>
+              <input type="time" v-model="quickCalForm.hora" class="form-input" />
+            </div>
+          </div>
+
+          <!-- Configuración Extra (Solo Evento) -->
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:0.8rem;" v-if="quickCalForm.tipo === 'Evento'">
+            <div class="form-group">
+              <label style="font-weight:600; margin-bottom:0.4rem; display:block;">
+                <span class="material-symbols-outlined"
+                  style="font-size:1.1rem; vertical-align:middle; color:var(--text-secondary);">notifications</span>
+                Recordatorio
+              </label>
+              <select v-model="quickCalForm.notificationMinutes" class="form-select">
+                <option value="0">En el momento</option>
+                <option value="5">5 minutos antes</option>
+                <option value="10">10 minutos antes</option>
+                <option value="15">15 minutos antes</option>
+                <option value="30">30 minutos antes</option>
+                <option value="60">1 hora antes</option>
+                <option value="1440">1 día antes</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label style="font-weight:600; margin-bottom:0.4rem; display:block;">
+                <span class="material-symbols-outlined"
+                  style="font-size:1.1rem; vertical-align:middle; color:var(--text-secondary);">visibility</span>
+                Visibilidad
+              </label>
+              <select v-model="quickCalForm.visibility" class="form-select">
+                <option value="DEFAULT">Predeterminada</option>
+                <option value="PUBLIC">Pública</option>
+                <option value="PRIVATE">Privada</option>
+                <option value="CONFIDENTIAL">Confidencial</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Info de colores -->
+          <div
+            style="background: var(--bg-tertiary); border-radius: 8px; padding: 0.6rem 0.8rem; font-size: 0.75rem; color: var(--text-secondary);">
+            <strong>Colores en tu Calendario:</strong>
+            <span style="color:#4285f4;">● Evento</span> &nbsp;
+            <span style="color:#e67c73;">● Tarea</span> &nbsp;
+            <span style="color:#dc2127;">● Recordatorio</span> &nbsp;
+            <span style="color:#616161;">● Registro</span>
+          </div>
+        </div>
+        <div class="modal-footer" style="display:flex; justify-content:flex-end; gap:0.5rem; padding:1rem;">
+          <button class="btn-secondary" @click="showQuickCalendar = false">Cancelar</button>
+          <button class="btn-primary" @click="saveQuickCalendar"
+            :disabled="!quickCalForm.asunto || !quickCalForm.fecha">
+            <span class="material-symbols-outlined"
+              style="font-size:1rem; vertical-align:middle; margin-right:0.2rem;">check</span>
+            Crear {{ quickCalForm.tipo }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== EMAIL COMPOSE MODAL (Enhanced: Rich Text + Attachments) ========== -->
+    <div class="modal-overlay" v-if="showEmailCompose" @click.self="closeEmailCompose" style="z-index:2050;">
+      <div class="modal-panel" style="max-width: 700px;">
+        <div class="modal-header" style="border-bottom: 3px solid var(--accent-info, #3b82f6);">
+          <div>
+            <h2 class="modal-title">
+              <span class="material-symbols-outlined" style="vertical-align:middle; margin-right:0.3rem;">mail</span>
+              Enviar Correo Electrónico
+            </h2>
+            <span style="font-size:0.8rem; color:var(--text-secondary); display:block; margin-top:0.25rem;">
+              Desde tu cuenta de Gmail del Workspace
+            </span>
+          </div>
+          <button class="btn-icon" @click="closeEmailCompose"><span
+              class="material-symbols-outlined">close</span></button>
+        </div>
+
+        <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+          <div class="form-grid" style="grid-template-columns: 1fr;">
+            <!-- To -->
+            <div class="form-group">
+              <label>Para (destinatario)</label>
+              <input type="email" v-model="emailForm.to" class="form-input" placeholder="correo@ejemplo.com" />
+            </div>
+            <!-- Subject -->
+            <div class="form-group">
+              <label>Asunto</label>
+              <input type="text" v-model="emailForm.subject" class="form-input" placeholder="Asunto del correo..." />
+            </div>
+            <!-- Rich Text Body (Quill Editor) -->
+            <div class="form-group">
+              <label>Cuerpo del Mensaje</label>
+              <div id="quill-email-editor"
+                style="min-height:180px; background:var(--bg-primary); color:var(--text-primary); border:1px solid var(--border-color); border-radius:0 0 0.5rem 0.5rem;">
+              </div>
+            </div>
+
+            <!-- ═══ Attachments Zone ═══ -->
+            <div class="form-group" style="margin-top:0.5rem;">
+              <label style="display:flex; align-items:center; gap:0.4rem;">
+                <span class="material-symbols-outlined" style="font-size:1.1rem;">attach_file</span>
+                Archivos Adjuntos
+              </label>
+
+              <!-- ⚠️ IMPORTANT: MB Limit Warning Banner -->
+              <div
+                style="background: rgba(234, 179, 8, 0.12); border: 1px solid rgba(234, 179, 8, 0.5); border-radius: 0.5rem; padding: 0.6rem 0.85rem; margin-bottom: 0.6rem; display:flex; align-items:flex-start; gap:0.5rem;">
+                <span style="font-size:1.2rem; flex-shrink:0;">⚠️</span>
+                <span style="font-size:0.78rem; color:var(--text-primary); line-height:1.5;">
+                  <strong>Límite de adjuntos: 20 MB</strong> en total por correo.
+                  Gmail permite un máximo de 25 MB por envío; dejamos 5 MB de margen para el contenido del mensaje.
+                  Si necesitas enviar archivos más pesados, considera compartirlos vía Google Drive.
+                </span>
+              </div>
+
+              <!-- File Input + Progress -->
+              <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+                <label class="btn-sm btn-secondary"
+                  style="cursor:pointer; display:inline-flex; align-items:center; gap:0.3rem;">
+                  <span class="material-symbols-outlined" style="font-size:1rem;">upload_file</span>
+                  Seleccionar archivos
+                  <input type="file" multiple id="email-attachment-input" @change="handleAttachmentSelect"
+                    style="display:none;" />
+                </label>
+                <span style="font-size:0.75rem; color:var(--text-secondary);">
+                  {{ emailAttachmentSizeMB }} / 20 MB usados
+                </span>
+                <span v-if="emailAttachmentSizeMB > 20" style="font-size:0.75rem; color:#ef4444; font-weight:600;">
+                  ❌ Excede el límite
+                </span>
+              </div>
+
+              <!-- Attached Files List -->
+              <div v-if="emailAttachments.length"
+                style="margin-top:0.5rem; display:flex; flex-direction:column; gap:0.35rem;">
+                <div v-for="(file, idx) in emailAttachments" :key="idx"
+                  style="display:flex; align-items:center; gap:0.5rem; background:var(--bg-elevated, rgba(255,255,255,0.04)); border:1px solid var(--border-color); border-radius:0.4rem; padding:0.4rem 0.65rem;">
+                  <span class="material-symbols-outlined"
+                    style="font-size:1rem; color:var(--accent-info);">description</span>
+                  <span
+                    style="flex:1; font-size:0.8rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{
+                    file.name }}</span>
+                  <span style="font-size:0.7rem; color:var(--text-secondary); flex-shrink:0;">{{ (file.size / 1024 /
+                    1024).toFixed(2) }} MB</span>
+                  <button class="btn-icon" @click="removeAttachment(idx)" style="padding:0.15rem;"
+                    title="Eliminar adjunto">
+                    <span class="material-symbols-outlined" style="font-size:0.95rem; color:#ef4444;">close</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-secondary" @click="closeEmailCompose">Cancelar</button>
+          <button class="btn btn-success" @click="sendEmail"
+            :disabled="sendingEmail || !emailForm.to || !emailForm.subject || emailAttachmentSizeMB > 20">
+            {{ sendingEmail ? 'Enviando...' : '📧 Enviar Correo' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" v-if="toast.show" :class="'toast-' + toast.type">
+      <span>{{ toast.message }}</span>
+    </div>
+  </div>
+
+  <!-- Libraries -->
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
+
+  <?!= include('App') ?>
+</body>
+
+</html>

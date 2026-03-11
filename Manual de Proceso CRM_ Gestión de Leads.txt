@@ -1,0 +1,61 @@
+﻿________________
+Manual de Proceso: Gestión Integral del Lead en el CRM
+1. Captación y Entrada de Datos
+El flujo comienza en la landing page, donde la información se captura de forma automatizada para eliminar errores manuales.
+* Tecnología de Captura: Se utiliza Google Forms integrado directamente al código de la landing, lo que permite prescindir de herramientas intermedias como Zapier.
+
+* Datos Críticos: El sistema captura automáticamente parámetros UTM y el canal de origen (Facebook, Google Ads, TikTok, etc.) para identificar qué campaña generó el lead.
+
+* Limpieza Inicial: Antes de la gestión, los leads se clasifican como "Pruebas", "Duplicados", "Spam" o "Equivocados" para no ensuciar las métricas de rendimiento.
+
+2. Ciclo de Contactabilidad ("Los Toques")
+Una vez validado el lead, el equipo de filtrado inicia una secuencia estructurada de seguimiento para garantizar la máxima tasa de respuesta.
+   * Secuencia de Contacto: Se realizan hasta seis intentos o "toques" antes de dar por perdido un lead.
+
+   * Omnicanalidad: Los toques incluyen una combinación de llamadas telefónicas, mensajes de WhatsApp y correos electrónicos.
+
+   * Registro de Tiempos: Es obligatorio registrar la fecha y hora de cada contacto para alimentar las estadísticas de frecuencia y contactabilidad.
+
+   * Cambio de Estado: Si el lead responde en cualquier punto, el estatus cambia a "Seguimiento" y se detiene la secuencia automática de toques iniciales.
+
+3. Calificación y Filtrado Estratégico
+En esta etapa se determina si el lead tiene el perfil adecuado para pasar al equipo de ventas.
+      * Calidad de Comunicación: Se clasifica si hubo un "Diálogo Completo" o "Intermitente" para medir la efectividad del contacto.
+
+      * Interés Genuino: El lead debe demostrar que entiende la oferta y tiene disposición de avanzar.
+
+      * Criterios de Baja: Si el lead no califica, se documenta la razón específica (ej. falta de cobertura en zonas como Cancún, sin interés o datos incorrectos).
+
+      * Tomador de Decisión: Se identifica si el contacto necesita "tocar base" con alguien más para concretar la compra.
+
+4. Gestión de Ventas y Cierre
+Los leads calificados son entregados a los "closers" o asesores de venta.
+         * Asignación y Carry Over: El sistema identifica si el lead es del mes actual o si es un "Carry Over" (lead de meses anteriores asignado a ventas en el periodo actual).
+
+         * Pipeline de Venta: El asesor gestiona el envío de cotizaciones, negociaciones y seguimientos específicos.
+
+         * Cierre y Montos: Se registra el estatus final ("Vendido") junto con el monto real del cierre para calcular el retorno de inversión.
+
+5. Inteligencia de Negocio y Reporteo
+El CRM genera reportes automáticos en tiempo real para evaluar la salud del embudo.
+Métrica
+	Propósito
+	Leads Totales vs. Contactables
+	Mide la calidad de la base de datos bruta.
+
+
+	Performance por Canal
+	Conecta la inversión de pauta con el CPL (Costo por Lead) y leads asignados.
+
+
+	Semáforo de Contactabilidad
+	Analiza en qué toque (Llamada 1, WhatsApp 1, etc.) se obtiene la mayor respuesta.
+
+
+	Análisis Comparativo
+	Compara el rendimiento contra el mes anterior y el año pasado.
+
+
+	________________
+Desafíos Identificados para el Manual de Mejora
+* Ajustes Manuales: El sistema aún requiere correcciones manuales periódicas para cuadrar discrepancias mínimas en los reportes. * Ayuda Visual: Se recomienda implementar una codificación por colores más evidente para que el equipo operativo identifique estatus a simple vista.

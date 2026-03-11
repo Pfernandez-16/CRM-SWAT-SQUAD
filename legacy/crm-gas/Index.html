@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CRM SWAT Squad</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+    rel="stylesheet">
+  <?!= incluir('Styles') ?>
+</head>
+
+<body>
+  <div id="app">
+    <!-- Vue App mounts here -->
+    <div class="app-loading" v-if="loading">
+      <div class="loader-container">
+        <div class="loader-ring"></div>
+        <p class="loader-text">Cargando CRM...</p>
+      </div>
+    </div>
+
+    <div class="app-layout" v-else>
+      <!-- ========== SIDEBAR ========== -->
+      <aside class="sidebar" :class="{ collapsed: sidebarCollapsed }">
+        <div class="sidebar-header">
+          <div class="logo" v-show="!sidebarCollapsed">
+            <span class="logo-icon">⚡</span>
+            <span class="logo-text">SWAT CRM</span>
+          </div>
+          <button class="btn-icon sidebar-toggle" @click="sidebarCollapsed = !sidebarCollapsed" title="Toggle Sidebar">
+            <span class="material-symbols-outlined">{{ sidebarCollapsed ? 'menu_open' : 'menu' }}</span>
+          </button>
+        </div>
+
+        <nav class="sidebar-nav">
+          <template v-for="item in navItems" :key="item.id">
+            <!-- Role-based visibility: SDR sees leads, pipeline, calendar. AE sees pipeline, calendar. Admin sees all. -->
+            <a v-if="
+              userRole === 'ADMIN' ||
+              (userRole === 'SDR' && ['dashboard','leads','pipeline','calendar','account'].includes(item.id)) ||
+              (userRole === 'AE' && ['dashboard','pipeline','calendar','account'].includes(item.id)) ||
+              userRole === 'GUEST'
+            " class="nav-item" :class="{ active: currentView === item.id }" @click="currentView = item.id"
+              :title="item.label">
+              <span class="material-symbols-outlined nav-icon">{{ item.icon }}</span>
+              <span class="nav-label" v-show="!sidebarCollapsed">{{ item.label }}</span>
+              <span class="nav-badge" v-if="item.badge && !sidebarCollapsed">{{ item.badge }}</span>
+            </a>
+          </template>
+        </nav>
+
+        <div class="sidebar-footer">
+          <div class="user-info" @click="currentView = 'account'">
+            <div class="user-avatar">{{ userInitials }}</div>
+            <div class="user-details" v-show="!sidebarCollapsed">
+              <span class="user-email">{{ currentUser.nombre || currentUser.email || 'Usuario' }}</span>
+              <span style="font-size:0.7rem; opacity:0.6; display:block;">{{ userRole }}</span>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- ========== MAIN CONTENT ========== -->
+      <main class="main-content">
+        <!-- Top Bar -->
+        <header class="top-bar">
+          <div class="top-bar-left">
+            <h1 class="page-title">{{ currentPageTitle }}</h1>
+          </div>
+          <div class="top-bar-right">
+            <!-- Clock-In / Clock-Out -->
+            <div style="display:inline-flex; align-items:center; gap:0.5rem; margin-right:0.75rem;">
+              <button v-if="!userConnected" class="btn-sm btn-primary" @click="handleClockIn" style="font-size:0.8rem;">
+                🟢 Marcar Asistencia
+              </button>
+              <template v-else>
+                <span style="font-size:0.8rem; color:var(--accent-success, #10b981); font-weight:600;">⏱ {{ clockTimer || '0h 00m' }}</span>
+                <button class="btn-sm" @click="handleClockOut" style="font-size:0.75rem; opacity:0.8;"
+                  title="Desconectarse">
+                  🔴 Salir
+                </button>
+              </template>
+            </div>
+            <div class="search-box" v-if="currentView === 'leads' || currentView === 'pipeline'">
+              <span class="material-symbols-outlined search-icon">search</span>
+              <input type="text" v-model="searchQuery" placeholder="Buscar leads..." class="search-input">
+            </div>
+            <button class="btn-icon" @click="toggleTheme" :title="isDark ? 'Modo Claro' : 'Modo Oscuro'">
+              <span class="material-symbols-outlined">{{ isDark ? 'light_mode' : 'dark_mode' }}</span>
+            </button>
+            <button class="btn-icon" @click="refreshData" title="Actualizar datos">
+              <span class="material-symbols-outlined" :class="{ spinning: refreshing }">refresh</span>
+            </button>
+          </div>
+        </header>
+
+        <!-- View Router -->
+        <div class="view-container">
+          <!-- DASHBOARD -->
+          <div v-if="currentView === 'dashboard'" class="view dashboard-view">
+            <div class="stats-grid">
+              <div class="stat-card">
+                <div class="stat-icon accent-primary"><span class="material-symbols-outlined">groups</span></div>
+                <div class="stat-info">
+                  <span class="stat-value">{{ stats.total }}</span>
+                  <span class="stat-label">Total Leads</span>
+                </div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-icon accent-success"><span class="material-symbols-outlined">trending_up</span></div>
+                <div class="stat-info">
+                  <span class="stat-value">{{ stats.thisWeek }}</span>
+                  <span class="stat-label">Esta Semana</span>
+                </div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-icon accent-warning"><span class="material-symbols-outlined">calendar_month</span>
+                </div>
+                <div class="stat-info">
+                  <span class="stat-value">{{ stats.thisMonth }}</span>
+                  <span class="stat-label">Este Mes</span>
+                </div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-icon accent-info"><span class="material-symbols-outlined">handshake</span></div>
+                <div class="stat-info">
+                  <span class="stat-value">{{ stats.byStatus['Paso a Ventas'] || 0 }}</span>
+                  <span class="stat-label">Paso a Ventas</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="charts-grid">
+              <div class="chart-card">
+                <h3 class="chart-title">Leads por Status</h3>
+                <div class="chart-bars">
+                  <div v-for="(count, status) in stats.byStatus" :key="status" class="bar-row">
+                    <span class="bar-label">{{ status }}</span>
+                    <div class="bar-track">
+                      <div class="bar-fill"
+                        :style="{ width: (count / stats.total * 100) + '%', background: getStatusColor(status) }"></div>
+                    </div>
+                    <span class="bar-value">{{ count }}</span>
+                  </div>
+                </div>
+              </div>
+              <div class="chart-card">
+                <h3 class="chart-title">Leads por Vendedor</h3>
+                <div class="chart-bars">
+                  <div v-for="(count, vendedor) in stats.byVendedor" :key="vendedor" class="bar-row">
+                    <span class="bar-label">{{ vendedor }}</span>
+                    <div class="bar-track">
+                      <div class="bar-fill accent-bg-primary" :style="{ width: (count / stats.total * 100) + '%' }">
+                      </div>
+                    </div>
+                    <span class="bar-value">{{ count }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- LEADS LIST -->
+          <div v-if="currentView === 'leads'" class="view leads-view">
+            <div class="leads-toolbar">
+              <span class="leads-count">{{ filteredLeads.length }} {{ userRole === 'AE' ? 'deals' : 'leads' }}</span>
+              <div class="leads-filters">
+                <button class="btn btn-primary" @click="userRole === 'AE' ? openCreateDeal() : openCreateLead()"
+                  style="margin-right: 0.75rem;">
+                  <span class="material-symbols-outlined"
+                    style="font-size:1.1rem; vertical-align:middle; margin-right:0.25rem;">{{ userRole === 'AE' ? 'add_circle' : 'person_add' }}</span>
+                  + Crear {{ userRole === 'AE' ? 'Deal' : 'Lead' }}
+                </button>
+                <select v-model="filterStatus" class="filter-select">
+                  <option value="">Todos los Status</option>
+                  <option
+                    v-for="s in (userRole === 'AE' ? (catalogs['Status de Venta'] || []) : (catalogs['Status'] || []))"
+                    :key="s" :value="s">{{ s }}</option>
+                </select>
+              </div>
+            </div>
+            <div class="leads-table-wrapper">
+              <!-- AE Table -->
+              <table v-if="userRole === 'AE'" class="leads-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Nombre</th>
+                    <th>Empresa</th>
+                    <th>Teléfono</th>
+                    <th>Email</th>
+                    <th>Status de Venta</th>
+                    <th>Monto de Cierre</th>
+                    <th>Fecha de Cierre</th>
+                    <th>Notas Vendedor</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="deal in paginatedLeads" :key="deal._row" @click="openLeadDetail(deal)" class="lead-row">
+                    <td class="col-id">{{ deal._id }}</td>
+                    <td class="col-name">{{ deal._name }}</td>
+                    <td>{{ deal._empresa }}</td>
+                    <td>{{ deal._tel }}</td>
+                    <td>{{ deal._email }}</td>
+                    <td><span class="status-badge" :style="{ background: getStatusColor(deal['Status de Venta']) }">{{ deal['Status de Venta'] || 'N/A' }}</span></td>
+                    <td>{{ deal['Monto de cierre'] ? '$' + Number(deal['Monto de cierre']).toLocaleString() : '—' }}
+                    </td>
+                    <td>{{ deal['Fecha de Cierre'] ? formatDate(deal['Fecha de Cierre']) : '—' }}</td>
+                    <td class="col-notes">{{ (deal['Notas Vendedor'] || '').substring(0, 40) }}{{ (deal['Notas Vendedor'] || '').length > 40 ? '...' : '' }}</td>
+                    <td><button class="btn-sm btn-primary" @click.stop="openLeadDetail(deal)">Ver</button></td>
+                  </tr>
+                </tbody>
+              </table>
+              <!-- SDR Table -->
+              <table v-else class="leads-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Nombre</th>
+                    <th>Empresa</th>
+                    <th>Email</th>
+                    <th>Teléfono</th>
+                    <th>Status</th>
+                    <th>Vendedor</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="lead in paginatedLeads" :key="lead._row" @click="openLeadDetail(lead)" class="lead-row">
+                    <td class="col-id">{{ lead._id }}</td>
+                    <td class="col-name">{{ lead._name }}</td>
+                    <td>{{ lead._empresa }}</td>
+                    <td>{{ lead._email }}</td>
+                    <td>{{ lead._tel }}</td>
+                    <td><span class="status-badge" :style="{ background: getStatusColor(lead._colW_Status) }">{{ lead._colW_Status || 'N/A' }}</span></td>
+                    <td>{{ lead._colAQ_Vendedor }}</td>
+                    <td><button class="btn-sm btn-primary" @click.stop="openLeadDetail(lead)">Ver</button></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="pagination" v-if="totalPages > 1">
+              <button class="btn-sm" :disabled="currentPage === 1" @click="currentPage--">← Anterior</button>
+              <span class="page-info">Página {{ currentPage }} de {{ totalPages }}</span>
+              <button class="btn-sm" :disabled="currentPage === totalPages" @click="currentPage++">Siguiente →</button>
+            </div>
+          </div>
+
+          <!-- PIPELINE (KANBAN) -->
+          <div v-if="currentView === 'pipeline'" class="view pipeline-view">
+            <div style="display:flex; justify-content:flex-end; margin-bottom:1rem;">
+              <button class="btn btn-primary" @click="openCreateDeal">
+                <span class="material-symbols-outlined"
+                  style="font-size:1.1rem; vertical-align:middle; margin-right:0.25rem;">add_circle</span>
+                + Crear Deal
+              </button>
+            </div>
+            <div class="kanban-board" ref="kanbanBoard">
+              <div v-for="status in kanbanStatuses" :key="status" class="kanban-column" :data-status="status">
+                <div class="kanban-column-header" :style="{ borderTopColor: getStatusColor(status) }">
+                  <span class="column-title">{{ status }}</span>
+                  <span class="column-count">{{ getLeadsByStatus(status).length }}</span>
+                </div>
+                <div class="kanban-cards" :data-status="status" :ref="'kanbanCol_' + status">
+                  <div v-for="lead in getFilteredLeadsByStatus(status)" :key="lead._row + '-' + (lead._source || '')"
+                    class="kanban-card" :data-row="lead._row" :data-source="lead._source || 'lead'"
+                    @click="openLeadDetail(lead)">
+                    <div class="card-header">
+                      <span class="card-id">#{{ lead._id }}</span>
+                      <span v-if="lead._source === 'cross_deal'"
+                        style="background: #9c27b0; color: #fff; font-size: 0.65rem; padding: 0.1rem 0.4rem; border-radius: 4px; margin-left: 0.25rem;"
+                        title="Deal (AE)">🟣 Deal</span>
+                      <span v-else-if="lead._source === 'cross_lead'"
+                        style="background: #2196f3; color: #fff; font-size: 0.65rem; padding: 0.1rem 0.4rem; border-radius: 4px; margin-left: 0.25rem;"
+                        title="Lead (SDR)">🔵 Lead</span>
+                      <span class="card-calidad" :class="'calidad-' + (lead._colX_Calidad || '').toLowerCase()">{{ lead._colX_Calidad || '—' }}</span>
+                    </div>
+                    <h4 class="card-name">{{ lead._name || 'Sin nombre' }}</h4>
+                    <p class="card-empresa" v-if="lead._empresa">{{ lead._empresa }}</p>
+                    <div class="card-footer">
+                      <span class="card-contact" v-if="lead._tel" title="Teléfono">📞 {{ lead._tel }}</span>
+                      <span class="card-contact" v-if="lead._email" title="Email">📧</span>
+                      <span class="card-vendedor" v-if="lead._colAQ_Vendedor">👤 {{ lead._colAQ_Vendedor }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- CALENDAR -->
+          <div v-if="currentView === 'calendar'" class="view calendar-view">
+            <div class="calendar-header-bar">
+              <button class="btn-sm" @click="calendarPrev">← Anterior</button>
+              <h2 class="calendar-month-title">{{ calendarMonthName }} {{ calendarYear }}</h2>
+              <button class="btn-sm" @click="calendarNext">Siguiente →</button>
+            </div>
+            <div class="calendar-grid">
+              <div class="cal-day-header" v-for="d in ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom']" :key="d">{{ d }}
+              </div>
+              <div v-for="(day, idx) in calendarDays" :key="idx" class="cal-day"
+                :class="{ 'cal-day-empty': !day.date, 'cal-day-today': day.isToday, 'cal-day-has-events': day.events && day.events.length }">
+                <span class="cal-day-num" v-if="day.date">{{ day.date }}</span>
+                <div class="cal-events" v-if="day.events">
+                  <div v-for="(ev, ei) in day.events.slice(0, 3)" :key="ei" class="cal-event-dot"
+                    :title="ev.lead + ': ' + ev.type">
+                    {{ ev.type.substring(0, 15) }}
+                  </div>
+                  <span v-if="day.events.length > 3" class="cal-more">+{{ day.events.length - 3 }} más</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- CONFIGURATION -->
+          <div v-if="currentView === 'config'" class="view config-view">
+            <!-- Master Category Tabs -->
+            <div class="config-categories">
+              <button v-for="cat in configCategories" :key="cat.id" class="config-category-btn"
+                :class="{ active: activeConfigCategory === cat.id }"
+                @click="activeConfigCategory = cat.id; activeCatalog = ''">
+                {{ cat.label }}
+              </button>
+            </div>
+
+            <!-- Sub-catalog Tabs (filtered by category) -->
+            <div class="config-subcatalogs" v-if="filteredCatalogNames.length">
+              <button v-for="cat in filteredCatalogNames" :key="cat" class="config-tab"
+                :class="{ active: activeCatalog === cat }" @click="activeCatalog = cat">
+                {{ cat }}
+              </button>
+            </div>
+            <div class="config-empty-cat" v-else>
+              <span class="material-symbols-outlined empty-icon">category</span>
+              <p>No hay catálogos en esta categoría.</p>
+            </div>
+
+            <!-- Catalog Editor -->
+            <div class="config-editor" v-if="activeCatalog">
+              <div class="config-editor-header">
+                <h3>{{ activeCatalog }}</h3>
+                <span class="config-item-count">{{ editingCatalogValues.length }} valores</span>
+              </div>
+              <div class="config-values">
+                <div v-for="(val, idx) in editingCatalogValues" :key="idx" class="config-value-row">
+                  <span class="config-value-num">{{ idx + 1 }}</span>
+                  <input type="text" v-model="editingCatalogValues[idx]" class="config-input" />
+                  <button class="btn-icon btn-danger-icon" @click="editingCatalogValues.splice(idx, 1)"
+                    title="Eliminar">
+                    <span class="material-symbols-outlined">delete</span>
+                  </button>
+                </div>
+              </div>
+              <div class="config-actions">
+                <button class="btn-sm btn-primary" @click="editingCatalogValues.push('')">+ Agregar Valor</button>
+                <button class="btn btn-success" @click="saveCatalog" :disabled="savingCatalog">
+                  {{ savingCatalog ? 'Guardando...' : '💾 Guardar Catálogo' }}
+                </button>
+              </div>
+            </div>
+          </div>
+
+
+          <!-- ACCOUNT -->
+          <div v-if="currentView === 'account'" class="view account-view">
+            <div class="account-card">
+              <div class="account-avatar-lg">{{ userInitials }}</div>
+              <h2>{{ currentUser.email }}</h2>
+              <div class="account-settings">
+                <div class="setting-row">
+                  <span class="setting-label">Tema</span>
+                  <div class="theme-toggle-group">
+                    <button class="btn-sm" :class="{ 'btn-primary': isDark }" @click="setTheme('dark')">🌙
+                      Oscuro</button>
+                    <button class="btn-sm" :class="{ 'btn-primary': !isDark }" @click="setTheme('light')">☀️
+                      Claro</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- ========== LEAD DETAIL MODAL ========== -->
+    <div class="modal-overlay" v-if="showLeadModal" @click.self="closeLeadModal">
+      <div class="modal-panel">
+        <div class="modal-header">
+          <div>
+            <h2 class="modal-title" v-if="isCreating">{{ creationType === 'deal' ? '✨ Nuevo Deal' : '✨ Nuevo Lead' }}
+            </h2>
+            <h2 class="modal-title" v-else>Lead #{{ selectedLead._id }} — {{ selectedLead._name }}</h2>
+            <span class="status-badge" :style="{ background: getStatusColor(editLead['Status']) }">{{ editLead['Status'] }}</span>
+          </div>
+          <button class="btn-icon" @click="closeLeadModal"><span class="material-symbols-outlined">close</span></button>
+        </div>
+
+        <div class="modal-tabs">
+          <template v-if="isCreating">
+            <button v-for="tab in ['Lead', 'Deal']" :key="tab" class="modal-tab" :class="{ active: modalTab === tab }"
+              @click="modalTab = tab">{{ tab }}</button>
+          </template>
+          <template v-else>
+            <button v-for="tab in ['Lead', 'Deal', '⏱️ Logs de Toques', 'Historial', 'Notas']" :key="tab"
+              class="modal-tab" :class="{ active: modalTab === tab }" @click="modalTab = tab">{{ tab }}</button>
+          </template>
+        </div>
+
+        <div class="modal-body">
+          <!-- TAB: Lead -->
+          <div v-if="modalTab === 'Lead'" class="tab-content">
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Timestamp</label>
+                <input type="text" :value="formatDate(editLead['Timestamp'])" class="form-input" disabled />
+              </div>
+              <div class="form-group">
+                <label>ID</label>
+                <input type="text" :value="editLead['ID']" class="form-input" disabled />
+              </div>
+              <div class="form-group">
+                <label>Nombre</label>
+                <input type="text" v-model="editLead['Nombre']" class="form-input" />
+              </div>
+              <div class="form-group">
+                <label>Apellido</label>
+                <input type="text" v-model="editLead['Apellido']" class="form-input" />
+              </div>
+              <div class="form-group">
+                <label>Email</label>
+                <input type="email" v-model="editLead['Email']" class="form-input" />
+              </div>
+              <div class="form-group">
+                <label>Teléfono</label>
+                <input type="text" v-model="editLead['Teléfono']" class="form-input" />
+              </div>
+              <div class="form-group">
+                <label>Teléfono 2</label>
+                <input type="text" v-model="editLead['Teléfono 2']" class="form-input" />
+              </div>
+              <div class="form-group">
+                <label>Empresa</label>
+                <input type="text" v-model="editLead['empresa']" class="form-input" />
+              </div>
+              <div class="form-group">
+                <label>Area</label>
+                <input type="text" v-model="editLead['Area']" class="form-input" />
+              </div>
+              <div class="form-group">
+                <label>Source</label>
+                <input type="text" v-model="editLead['source']" class="form-input" />
+              </div>
+              <div class="form-group">
+                <label>Medium</label>
+                <input type="text" v-model="editLead['medium']" class="form-input" />
+              </div>
+              <div class="form-group">
+                <label>Campaign</label>
+                <input type="text" v-model="editLead['campaign']" class="form-input" />
+              </div>
+              <div class="form-group">
+                <label>Term</label>
+                <input type="text" v-model="editLead['term']" class="form-input" />
+              </div>
+              <div class="form-group">
+                <label>Content</label>
+                <input type="text" v-model="editLead['content']" class="form-input" />
+              </div>
+              <div class="form-group">
+                <label>Nivel</label>
+                <input type="text" v-model="editLead['Nivel']" class="form-input" />
+              </div>
+              <div class="form-group">
+                <label>fbclid</label>
+                <input type="text" v-model="editLead['fbclid']" class="form-input" />
+              </div>
+              <div class="form-group">
+                <label>Servicio</label>
+                <input type="text" v-model="editLead['Servicio']" class="form-input" />
+              </div>
+              <div class="form-group">
+                <label>IP</label>
+                <input type="text" v-model="editLead['Ip']" class="form-input" disabled />
+              </div>
+              <div class="form-group">
+                <label>Link</label>
+                <input type="text" v-model="editLead['Link']" class="form-input" />
+              </div>
+              <div class="form-group">
+                <label>País</label>
+                <input type="text" v-model="editLead['Pais']" class="form-input" />
+              </div>
+              <div class="form-group">
+                <label>Empleados</label>
+                <input type="text" v-model="editLead['Empleados']" class="form-input" />
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB: Deal -->
+          <div v-if="modalTab === 'Deal'" class="tab-content">
+            <div class="form-grid">
+              <!-- Status & Contactación -->
+              <div class="form-group">
+                <label>Status</label>
+                <select v-model="editLead['Status']" class="form-select">
+                  <option v-for="s in (catalogs['Status'] || [])" :key="s" :value="s">{{ s }}</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Calidad de Contacto</label>
+                <select v-model="editLead['Calidad de Contacto']" class="form-select">
+                  <option value="">— Seleccionar —</option>
+                  <option v-for="s in (catalogs['Calidad de Contacto'] || [])" :key="s" :value="s">{{ s }}</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Toques de Contactación</label>
+                <select v-model="editLead['Toques de Contactación']" class="form-select">
+                  <option value="">— Seleccionar —</option>
+                  <option v-for="s in (catalogs['Toques de Contactación'] || [])" :key="s" :value="s">{{ s }}</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>time stamp (contacto)</label>
+                <input type="text" :value="formatDate(editLead['time stamp'])" class="form-input" disabled />
+              </div>
+              <div class="form-group">
+                <label>¿En qué toque va?</label>
+                <select v-if="catalogs['¿En qué toque va?']?.length" v-model="editLead['¿En qué toque va?']"
+                  class="form-select">
+                  <option value="">— Seleccionar —</option>
+                  <option v-for="s in catalogs['¿En qué toque va?']" :key="s" :value="s">{{ s }}</option>
+                </select>
+                <input v-else type="text" v-model="editLead['¿En qué toque va?']" class="form-input" />
+              </div>
+
+              <div class="form-divider"></div>
+
+              <!-- Seguimiento -->
+              <div class="form-group">
+                <label>Tipo de Seguimiento</label>
+                <select v-model="editLead['Tipo de Seguimiento']" class="form-select">
+                  <option value="">— Seleccionar —</option>
+                  <option v-for="s in (catalogs['Tipo de Seguimiento'] || [])" :key="s" :value="s">{{ s }}</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Toques de Seguimiento</label>
+                <select v-model="editLead['Toques de Seguimiento']" class="form-select">
+                  <option value="">— Seleccionar —</option>
+                  <option v-for="s in (catalogs['Toques de Seguimiento'] || [])" :key="s" :value="s">{{ s }}</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Status del Seguimiento</label>
+                <select v-model="editLead['Status del Seguimiento']" class="form-select">
+                  <option value="">— Seleccionar —</option>
+                  <option v-for="s in (catalogs['Status del Seguimiento'] || [])" :key="s" :value="s">{{ s }}</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Razón de pérdida</label>
+                <select v-model="editLead['Razón de pérdida']" class="form-select">
+                  <option value="">— Seleccionar —</option>
+                  <option v-for="s in (catalogs['Razón de pérdida'] || [])" :key="s" :value="s">{{ s }}</option>
+                </select>
+              </div>
+
+              <div class="form-divider"></div>
+
+              <!-- Calificación -->
+              <div class="form-group">
+                <label>¿Entendió el Marketing?</label>
+                <select v-model="editLead['¿Entendió la información de Marketing?']" class="form-select">
+                  <option value="">—</option>
+                  <option>Si</option>
+                  <option>No</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>¿Mostró Interés genuino?</label>
+                <select v-model="editLead['¿Mostró Interés genuino?']" class="form-select">
+                  <option value="">—</option>
+                  <option>Si</option>
+                  <option>No</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>¿Cuál es tu necesidad puntual?</label>
+                <select v-model="editLead['¿Cuál es tu necesidad puntual?']" class="form-select">
+                  <option value="">— Seleccionar —</option>
+                  <option v-for="s in (catalogs['¿Cuál es tu necesidad puntual?'] || [])" :key="s" :value="s">{{ s }}
+                  </option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>¿El perfil del prospecto es el adecuado?</label>
+                <select v-model="editLead['¿El perfil del prospecto es el adecuado?']" class="form-select">
+                  <option value="">—</option>
+                  <option>Si</option>
+                  <option>No</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>¿Necesitas tocar base con alguién para decidir?</label>
+                <select v-model="editLead['¿Necesitas tocar base con alguién para decidir la compra?']"
+                  class="form-select">
+                  <option value="">—</option>
+                  <option>Si</option>
+                  <option>No</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>¿Presupuesto asignado?</label>
+                <select v-model="editLead['¿Tienes presupuesto asignado para este proyecto, en este año?']"
+                  class="form-select">
+                  <option value="">—</option>
+                  <option>Si</option>
+                  <option>No</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>¿Han sido parte de alguna asociación?</label>
+                <select v-model="editLead['¿han sido parte de alguna asociación de la industria?']" class="form-select">
+                  <option value="">—</option>
+                  <option>Si</option>
+                  <option>No</option>
+                </select>
+              </div>
+
+              <div class="form-divider"></div>
+
+              <!-- Pricing & Membresía -->
+              <div class="form-group">
+                <label>¿Cual es su región?</label>
+                <select v-model="editLead['¿Cual es su región?']" class="form-select">
+                  <option value="">— Seleccionar —</option>
+                  <option v-for="r in uniqueRegions" :key="r" :value="r">{{ r }}</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>¿Que tipo de membresía es?</label>
+                <select v-model="editLead['¿Que tipo de membresía es?']" class="form-select">
+                  <option value="">— Seleccionar —</option>
+                  <option v-for="m in uniqueMembershipTypes" :key="m" :value="m">{{ m }}</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Pricing Tier</label>
+                <select v-model="editLead['Pricing Tier']" class="form-select">
+                  <option value="">— Seleccionar —</option>
+                  <option v-for="a in uniqueAttractions" :key="a" :value="a">{{ a }}</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>¿Cuánto?</label>
+                <select v-if="catalogs['¿Cuánto?']?.length" v-model="editLead['¿Cuánto?']" class="form-select">
+                  <option value="">— Seleccionar —</option>
+                  <option v-for="s in catalogs['¿Cuánto?']" :key="s" :value="s">{{ s }}</option>
+                </select>
+                <input v-else type="text" v-model="editLead['¿Cuánto?']" class="form-input" />
+              </div>
+              <div class="pricing-result" v-if="computedPricing" style="grid-column: 1 / -1;">
+                <div class="pricing-card">
+                  <span class="pricing-label">1 Año</span>
+                  <span class="pricing-value">${{ computedPricing.oneYear.toLocaleString() }}</span>
+                </div>
+                <div class="pricing-card">
+                  <span class="pricing-label">2 Años</span>
+                  <span class="pricing-value">${{ computedPricing.twoYear.toLocaleString() }}</span>
+                </div>
+              </div>
+
+              <div class="form-divider"></div>
+
+              <!-- Vendedor & Asignación -->
+              <div class="form-group">
+                <label>Vendedor Asignado para Seguimiento</label>
+                <select v-model="editLead['Vendedor Asignado para Seguimiento']" class="form-select">
+                  <option value="">— Sin asignar —</option>
+                  <option v-for="s in (catalogs['Vendedor Asignado para Seguimiento'] || [])" :key="s" :value="s">{{ s }}</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Fecha y Hora de Asignación</label>
+                <input type="text" :value="formatDate(editLead['Fecha y Hora de Asignación'])" class="form-input"
+                  disabled />
+              </div>
+
+              <div class="form-divider"></div>
+
+              <!-- Notas del Deal -->
+              <div class="form-group" style="grid-column: 1 / -1;">
+                <label>Notas</label>
+                <textarea v-model="editLead['Notas']" class="notes-textarea" rows="3"
+                  placeholder="Notas del deal..."></textarea>
+              </div>
+
+              <div class="form-divider"></div>
+
+              <!-- Ventas -->
+              <div class="form-group">
+                <label>Status de Venta</label>
+                <select v-if="catalogs['Status de Venta']?.length" v-model="editLead['Status de Venta']"
+                  class="form-select">
+                  <option value="">— Seleccionar —</option>
+                  <option v-for="s in catalogs['Status de Venta']" :key="s" :value="s">{{ s }}</option>
+                </select>
+                <input v-else type="text" v-model="editLead['Status de Venta']" class="form-input" />
+              </div>
+              <div class="form-group">
+                <label>¿Ventas Contactó Cliente?</label>
+                <select v-model="editLead['¿Ventas Contactó Cliente?']" class="form-select">
+                  <option value="">—</option>
+                  <option>Si</option>
+                  <option>No</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Fecha de Reagenda</label>
+                <input type="date" v-model="editLead['Fecha de Reagenda']" class="form-input" />
+              </div>
+              <div class="form-group">
+                <label>Hora de Reagenda</label>
+                <input type="time" v-model="editLead['Hora de Reagenda']" class="form-input" />
+              </div>
+              <div class="form-group">
+                <label>Index</label>
+                <select v-if="catalogs['Index']?.length" v-model="editLead['Index']" class="form-select">
+                  <option value="">— Seleccionar —</option>
+                  <option v-for="s in catalogs['Index']" :key="s" :value="s">{{ s }}</option>
+                </select>
+                <input v-else type="text" v-model="editLead['Index']" class="form-input" />
+              </div>
+              <div class="form-group">
+                <label>1 Year Mem</label>
+                <select v-if="catalogs['1 Year Mem']?.length" v-model="editLead['1 Year Mem']" class="form-select">
+                  <option value="">— Seleccionar —</option>
+                  <option v-for="s in catalogs['1 Year Mem']" :key="s" :value="s">{{ s }}</option>
+                </select>
+                <input v-else type="text" v-model="editLead['1 Year Mem']" class="form-input" />
+              </div>
+              <div class="form-group">
+                <label>2 Year Mem</label>
+                <select v-if="catalogs['2 Year Mem']?.length" v-model="editLead['2 Year Mem']" class="form-select">
+                  <option value="">— Seleccionar —</option>
+                  <option v-for="s in catalogs['2 Year Mem']" :key="s" :value="s">{{ s }}</option>
+                </select>
+                <input v-else type="text" v-model="editLead['2 Year Mem']" class="form-input" />
+              </div>
+              <div class="form-group">
+                <label>Descuento</label>
+                <select v-if="catalogs['Descuento']?.length" v-model="editLead['Descuento']" class="form-select">
+                  <option value="">— Seleccionar —</option>
+                  <option v-for="s in catalogs['Descuento']" :key="s" :value="s">{{ s }}</option>
+                </select>
+                <input v-else type="text" v-model="editLead['Descuento']" class="form-input" />
+              </div>
+              <div class="form-group" style="grid-column: 1 / -1;">
+                <label>¿Por qué perdimos la venta?</label>
+                <select v-if="catalogs['¿Por qué perdimos la venta?']?.length"
+                  v-model="editLead['¿Por qué perdimos la venta?']" class="form-select">
+                  <option value="">— Seleccionar —</option>
+                  <option v-for="s in catalogs['¿Por qué perdimos la venta?']" :key="s" :value="s">{{ s }}</option>
+                </select>
+                <textarea v-else v-model="editLead['¿Por qué perdimos la venta?']" class="notes-textarea" rows="2"
+                  placeholder="Razón de pérdida de la venta..."></textarea>
+              </div>
+
+              <!-- ===== CAMPOS EXCLUSIVOS AE ===== -->
+              <div class="form-divider" v-if="userRole === 'AE' || userRole === 'ADMIN'"></div>
+
+              <template v-if="userRole === 'AE' || userRole === 'ADMIN'">
+                <div class="form-group">
+                  <label>Toque AE</label>
+                  <input type="text" v-model="editLead['Toque']" class="form-input" />
+                </div>
+                <div class="form-group">
+                  <label>Fecha 1er Contacto AE</label>
+                  <input type="date" v-model="editLead['Fecha de primer contacto AE']" class="form-input" />
+                </div>
+                <div class="form-group">
+                  <label>Número de Toque</label>
+                  <input type="number" v-model="editLead['Numero de toque']" class="form-input" />
+                </div>
+
+                <div class="form-group">
+                  <label>Proyección</label>
+                  <select v-model="editLead['Proyeccion']" class="form-select">
+                    <option value="">—</option>
+                    <option v-for="s in (catalogs['Proyeccion'] || [])" :key="s" :value="s">{{ s }}</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Monto de proyección</label>
+                  <input type="number" step="0.01" v-model="editLead['Monto de proyección']" class="form-input"
+                    placeholder="$0.00" />
+                </div>
+                <div class="form-group">
+                  <label>Monto de Apartado</label>
+                  <input type="number" step="0.01" v-model="editLead['Monto de Apartado']" class="form-input"
+                    placeholder="$0.00" />
+                </div>
+                <div class="form-group">
+                  <label>Monto de cierre</label>
+                  <input type="number" step="0.01" v-model="editLead['Monto de cierre']" class="form-input"
+                    placeholder="$0.00" />
+                </div>
+                <div class="form-group">
+                  <label>Producto de Cierre</label>
+                  <input type="text" v-model="editLead['Producto de Cierre']" class="form-input" />
+                </div>
+                <div class="form-group">
+                  <label>Fecha de Cierre</label>
+                  <input type="date" v-model="editLead['Fecha de Cierre']" class="form-input" />
+                </div>
+
+                <div class="form-group">
+                  <label>¿Cross Selling?</label>
+                  <select v-model="editLead['Cross Selling?']" class="form-select">
+                    <option value="">—</option>
+                    <option>Si</option>
+                    <option>No</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>¿Es cliente activo?</label>
+                  <select v-model="editLead['¿Es cliente activo?']" class="form-select">
+                    <option value="">—</option>
+                    <option>Si</option>
+                    <option>No</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>¿Es recompra?</label>
+                  <select v-model="editLead['¿Es recompra?']" class="form-select">
+                    <option value="">—</option>
+                    <option>Si</option>
+                    <option>No</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label>Producto de Recompra</label>
+                  <input type="text" v-model="editLead['Producto de Recompra']" class="form-input" />
+                </div>
+                <div class="form-group">
+                  <label>Valor de compra</label>
+                  <input type="number" step="0.01" v-model="editLead['Valor de compra']" class="form-input"
+                    placeholder="$0.00" />
+                </div>
+                <div class="form-group">
+                  <label>Fecha de compra</label>
+                  <input type="date" v-model="editLead['Fecha de compra']" class="form-input" />
+                </div>
+
+                <div class="form-group">
+                  <label>Tipo de Transacción</label>
+                  <input type="text" v-model="editLead['Tipo de Transacción']" class="form-input" />
+                </div>
+                <div class="form-group">
+                  <label>Fuente de origen</label>
+                  <input type="text" v-model="editLead['Fuente de origen']" class="form-input" />
+                </div>
+                <div class="form-group">
+                  <label>Deal Code</label>
+                  <input type="text" v-model="editLead['Deal Code']" class="form-input" />
+                </div>
+                <div class="form-group" style="grid-column: 1 / -1;">
+                  <label>Notas Vendedor AE</label>
+                  <textarea v-model="editLead['Notas Vendedor']" class="notes-textarea" rows="2"
+                    placeholder="Notas exclusivas AE..."></textarea>
+                </div>
+              </template>
+
+              <div class="form-divider"></div>
+
+              <div class="form-group">
+                <label>City</label>
+                <select v-if="catalogs['City']?.length" v-model="editLead['City']" class="form-select">
+                  <option value="">— Seleccionar —</option>
+                  <option v-for="s in catalogs['City']" :key="s" :value="s">{{ s }}</option>
+                </select>
+                <input v-else type="text" v-model="editLead['City']" class="form-input" />
+              </div>
+              <div class="form-group">
+                <label>Country</label>
+                <select v-if="catalogs['Country']?.length" v-model="editLead['Country']" class="form-select">
+                  <option value="">— Seleccionar —</option>
+                  <option v-for="s in catalogs['Country']" :key="s" :value="s">{{ s }}</option>
+                </select>
+                <input v-else type="text" v-model="editLead['Country']" class="form-input" />
+              </div>
+              <div class="form-group">
+                <label>Link de Pago</label>
+                <select v-if="catalogs['Link de Pago']?.length" v-model="editLead['Link de Pago']" class="form-select">
+                  <option value="">— Seleccionar —</option>
+                  <option v-for="s in catalogs['Link de Pago']" :key="s" :value="s">{{ s }}</option>
+                </select>
+                <input v-else type="text" v-model="editLead['Link de Pago']" class="form-input" />
+              </div>
+              <div class="form-group">
+                <label>Renovación</label>
+                <select v-if="catalogs['Renovación']?.length" v-model="editLead['Renovación']" class="form-select">
+                  <option value="">— Seleccionar —</option>
+                  <option v-for="s in catalogs['Renovación']" :key="s" :value="s">{{ s }}</option>
+                </select>
+                <input v-else type="text" v-model="editLead['Renovación']" class="form-input" />
+              </div>
+              <div class="form-group">
+                <label>Soporte de pago</label>
+                <select v-if="catalogs['Soporte de pago']?.length" v-model="editLead['Soporte de pago']"
+                  class="form-select">
+                  <option value="">— Seleccionar —</option>
+                  <option v-for="s in catalogs['Soporte de pago']" :key="s" :value="s">{{ s }}</option>
+                </select>
+                <input v-else type="text" v-model="editLead['Soporte de pago']" class="form-input" />
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB: Logs de Toques -->
+          <div v-if="modalTab === '⏱️ Logs de Toques'" class="tab-content">
+            <h4 style="color: var(--accent-primary); margin-bottom: 0.75rem;">
+              <span class="material-symbols-outlined" style="font-size:1.1rem; vertical-align:middle;">history</span>
+              Logs de Interacción Registrados
+            </h4>
+            <div v-if="editLead._history && editLead._history.length" class="timeline">
+              <div v-for="(log, i) in editLead._history" :key="'log'+i" class="timeline-item">
+                <div class="timeline-dot" style="background: var(--text-secondary);"></div>
+                <div class="timeline-content">
+                  <span class="timeline-type">{{ log.type }}</span>
+                  <span class="timeline-date">{{ formatDate(log.date) }}</span>
+                </div>
+              </div>
+            </div>
+            <p v-else style="color: var(--text-secondary); font-size:0.85rem;">No hay logs registrados todavía.</p>
+          </div>
+
+          <!-- TAB: Historial -->
+          <div v-if="modalTab === 'Historial'" class="tab-content">
+            <!-- Loading spinner -->
+            <div v-if="leadHistory.loading" style="text-align:center; padding: 2rem;">
+              <span class="material-symbols-outlined"
+                style="font-size:2rem; animation: spin 1s linear infinite;">progress_activity</span>
+              <p style="color: var(--text-secondary); margin-top: 0.5rem;">Cargando historial...</p>
+            </div>
+            <div v-else>
+              <!-- Section 1: Pipeline Changes -->
+              <div class="history-section">
+                <h4 style="color: var(--accent-primary); margin-bottom: 0.75rem;">
+                  <span class="material-symbols-outlined"
+                    style="font-size:1.1rem; vertical-align:middle;">swap_horiz</span>
+                  Cambios de Pipeline (Status)
+                </h4>
+                <div v-if="leadHistory.pipeline.length" class="timeline">
+                  <div v-for="(e, i) in leadHistory.pipeline" :key="'p'+i" class="timeline-item">
+                    <div class="timeline-dot" style="background: var(--accent-primary);"></div>
+                    <div class="timeline-content">
+                      <span class="timeline-type">{{ e.Status_Anterior || '—' }} → {{ e.Status_Nuevo || '—' }}</span>
+                      <span class="timeline-date">{{ formatDate(e.Timestamp) }} · {{ e.Usuario }}</span>
+                    </div>
+                  </div>
+                </div>
+                <p v-else style="color: var(--text-secondary); font-size:0.85rem;">Sin registros de pipeline.</p>
+              </div>
+
+              <!-- Section 2: Lead Field Changes -->
+              <div class="history-section" style="margin-top: 1.25rem;">
+                <h4 style="color: var(--accent-info, #3b82f6); margin-bottom: 0.75rem;">
+                  <span class="material-symbols-outlined" style="font-size:1.1rem; vertical-align:middle;">person</span>
+                  Cambios de Información del Lead
+                </h4>
+                <div v-if="leadHistory.leads.length" class="timeline">
+                  <div v-for="(e, i) in leadHistory.leads" :key="'l'+i" class="timeline-item">
+                    <div class="timeline-dot" style="background: var(--accent-info, #3b82f6);"></div>
+                    <div class="timeline-content">
+                      <span class="timeline-type"><strong>{{ e.Campo }}</strong>: {{ e.Valor_Anterior || '(vacío)' }} →
+                        {{ e.Valor_Nuevo || '(vacío)' }}</span>
+                      <span class="timeline-date">{{ formatDate(e.Timestamp) }} · {{ e.Usuario }}</span>
+                    </div>
+                  </div>
+                </div>
+                <p v-else style="color: var(--text-secondary); font-size:0.85rem;">Sin cambios de lead registrados.</p>
+              </div>
+
+              <!-- Section 3: Deal Field Changes -->
+              <div class="history-section" style="margin-top: 1.25rem;">
+                <h4 style="color: var(--accent-warning, #f59e0b); margin-bottom: 0.75rem;">
+                  <span class="material-symbols-outlined"
+                    style="font-size:1.1rem; vertical-align:middle;">handshake</span>
+                  Cambios del Deal
+                </h4>
+                <div v-if="leadHistory.deals.length" class="timeline">
+                  <div v-for="(e, i) in leadHistory.deals" :key="'d'+i" class="timeline-item">
+                    <div class="timeline-dot" style="background: var(--accent-warning, #f59e0b);"></div>
+                    <div class="timeline-content">
+                      <span class="timeline-type"><strong>{{ e.Campo }}</strong>: {{ e.Valor_Anterior || '(vacío)' }} →
+                        {{ e.Valor_Nuevo || '(vacío)' }}</span>
+                      <span class="timeline-date">{{ formatDate(e.Timestamp) }} · {{ e.Usuario }}</span>
+                    </div>
+                  </div>
+                </div>
+                <p v-else style="color: var(--text-secondary); font-size:0.85rem;">Sin cambios de deal registrados.</p>
+              </div>
+
+              <!-- Section 4: Contact History (existing) -->
+              <div class="history-section" style="margin-top: 1.25rem;">
+                <h4 style="color: var(--accent-success, #10b981); margin-bottom: 0.75rem;">
+                  <span class="material-symbols-outlined" style="font-size:1.1rem; vertical-align:middle;">call</span>
+                  Historial de Contacto
+                </h4>
+                <div v-if="selectedLead._history && selectedLead._history.length" class="timeline">
+                  <div v-for="(entry, idx) in selectedLead._history" :key="'h'+idx" class="timeline-item">
+                    <div class="timeline-dot" :class="entry.type.includes('Contestó') ? 'dot-success' : 'dot-danger'">
+                    </div>
+                    <div class="timeline-content">
+                      <span class="timeline-type">{{ entry.type }}</span>
+                      <span class="timeline-date">{{ formatDate(entry.date) }}</span>
+                    </div>
+                  </div>
+                </div>
+                <p v-else style="color: var(--text-secondary); font-size:0.85rem;">Sin historial de contacto.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB: Notas -->
+          <div v-if="modalTab === 'Notas'" class="tab-content">
+            <textarea v-model="editLead['Notas']" class="notes-textarea"
+              placeholder="Escribe notas sobre este lead..."></textarea>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-secondary" @click="closeLeadModal">Cancelar</button>
+          <button v-if="isCreating" class="btn btn-success" @click="submitCreation" :disabled="saving">
+            {{ saving ? 'Creando...' : (creationType === 'deal' ? '✨ Crear Deal' : '✨ Crear Lead') }}
+          </button>
+          <button v-else class="btn btn-success" @click="saveLeadChanges" :disabled="saving">
+            {{ saving ? 'Guardando...' : '💾 Guardar Cambios' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" v-if="toast.show" :class="'toast-' + toast.type">
+      <span>{{ toast.message }}</span>
+    </div>
+  </div>
+
+  <!-- Libraries -->
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+
+  <?!= incluir('App') ?>
+</body>
+
+</html>

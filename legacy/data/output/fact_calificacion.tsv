@@ -1,0 +1,194 @@
+id_calificacion	id_lead	entendio_info_marketing	mostro_interes_genuino	necesidad_puntual	perfil_adecuado	necesita_decision_tercero	tiene_presupuesto	monto_presupuesto	asociacion_industria	region	tipo_membresia	fecha_calificacion
+1	2	Parcialmente	No	Quiere expandir mercado	Sí	Parcialmente	No	$5,000-$20,000		Latinoamérica	Manufacturers	2026-01-19 22:16:18
+2	3	Sí	Sí	Quiere capacitación	Sí	Parcialmente	No	$5,000-$20,000	Parcialmente	Asia-Pacífico	Attraction	2026-01-05 19:17:48
+3	4	No	Parcialmente	Necesita certificación	Parcialmente	Sí	No	< $5,000	No	Norteamérica	Manufacturers	2026-02-03 19:09:38
+4	5	Sí	Parcialmente	Busca proveedores	No	Sí	No	$5,000-$20,000	Parcialmente	Europa	Attraction	2026-01-31 22:43:48
+5	6	Parcialmente	No	Busca networking	Sí	Parcialmente	No	< $5,000	Parcialmente	Latinoamérica	Individuals	2026-02-11 23:13:45
+6	7	Parcialmente	Parcialmente	Quiere expandir mercado	Sí	Sí	Sí	> $50,000		Asia-Pacífico	Individuals	2026-01-16 12:21:52
+7	9	Sí	Sí	Necesita certificación	Sí	Sí	Sí	$20,000-$50,000		Europa	Individuals	2026-02-09 00:36:26
+8	13	Sí	Sí	Busca proveedores	Sí	Sí	Sí	< $5,000		Europa	Manufacturers	2026-02-02 00:03:15
+9	14	No	Sí	Quiere capacitación	Sí	Parcialmente	Parcialmente	> $50,000		Norteamérica	Manufacturers	2026-01-16 12:12:20
+10	16	No	No	Busca membresía	No	No	Sí	$20,000-$50,000	No	Europa	Manufacturers	2026-02-02 16:23:04
+11	17	Sí	No	Quiere capacitación	No	Sí	No	< $5,000	Sí	Norteamérica	Manufacturers	2026-01-17 10:09:17
+12	18	Sí	Sí	Quiere expandir mercado	Sí	Parcialmente	Sí	$5,000-$20,000	No	Europa	Manufacturers	2026-02-01 10:14:04
+13	19	Sí	No	Necesita CRM	Sí	Sí	No	< $5,000	Sí	Asia-Pacífico	Attraction	2026-02-11 08:08:20
+14	20	No	Sí	Busca membresía	Parcialmente	Parcialmente	No	< $5,000	Sí	Norteamérica	Attraction	2026-01-15 06:42:23
+15	21	Parcialmente	Parcialmente	Necesita CRM	Sí	Sí	Sí	> $50,000	Parcialmente	Europa	Manufacturers	2026-01-19 01:14:27
+16	22	Parcialmente	No	Necesita CRM	No	No	Parcialmente	> $50,000	Sí	Norteamérica	Manufacturers	2026-01-23 01:29:45
+17	23	Sí	No	Busca networking	No	No	Sí	$20,000-$50,000	No	Norteamérica	Individuals	2026-02-09 00:43:03
+18	24	Sí	Sí	Busca proveedores	Sí	No	Sí	$5,000-$20,000	No	Norteamérica	Manufacturers	2026-01-08 01:14:24
+19	26	Sí	Sí	Quiere capacitación	Sí	Parcialmente	Parcialmente	$20,000-$50,000		Latinoamérica	Manufacturers	2026-01-22 20:37:15
+20	28	Sí	Parcialmente	Busca proveedores	Sí	No	Sí	$5,000-$20,000	Sí	Asia-Pacífico	Manufacturers	2026-02-01 21:09:25
+21	29	Sí	Sí	Necesita CRM	Sí	No	Parcialmente	> $50,000	Sí	Latinoamérica	Attraction	2026-01-12 17:35:10
+22	30	Parcialmente	No	Busca membresía	No	Sí	Parcialmente	< $5,000		Norteamérica	Manufacturers	2026-01-18 06:14:10
+23	31	No	Parcialmente	Busca proveedores	No	Sí	Parcialmente	< $5,000	Parcialmente	Asia-Pacífico	Manufacturers	2026-01-22 13:33:54
+24	33	Sí	Sí	Busca membresía	No	Sí	Sí	$5,000-$20,000	No	Latinoamérica	Manufacturers	2026-02-03 09:32:49
+25	34	Parcialmente	No	Busca membresía	No	Parcialmente	Sí	$5,000-$20,000	Parcialmente	Latinoamérica	Individuals	2026-01-26 11:58:47
+26	35	Parcialmente	Sí	Quiere capacitación	Sí	Parcialmente	No	$5,000-$20,000	No	Norteamérica	Individuals	2026-01-13 11:07:18
+27	36	Parcialmente	No	Busca proveedores	No	Sí	No	< $5,000	No	Asia-Pacífico	Manufacturers	2026-01-26 04:01:36
+28	37	No	Sí	Busca networking	No	No	Sí	$20,000-$50,000		Norteamérica	Individuals	2026-01-25 09:21:37
+29	39	No	No	Busca proveedores	Sí	No	No	< $5,000		Norteamérica	Individuals	2026-01-30 12:19:09
+30	40	Sí	No	Necesita certificación	Sí	Parcialmente	No	< $5,000	Sí	Latinoamérica	Attraction	2026-01-27 16:19:11
+31	42	Sí	Sí	Necesita certificación	Sí	Sí	No	< $5,000	No	Asia-Pacífico	Individuals	2026-01-12 12:17:54
+32	44	Parcialmente	No	Necesita certificación	No	No	No	$5,000-$20,000	Sí	Europa	Manufacturers	2026-01-22 22:13:21
+33	45	Parcialmente	Sí	Quiere expandir mercado	No	Sí	Sí	$5,000-$20,000	No	Latinoamérica	Manufacturers	2026-01-26 04:44:44
+34	47	Sí	No	Busca networking	Sí	No	No	$5,000-$20,000		Asia-Pacífico	Manufacturers	2026-01-12 01:40:52
+35	48	Sí	Sí	Busca membresía	Sí	Parcialmente	Parcialmente	< $5,000	Sí	Asia-Pacífico	Manufacturers	2026-02-04 04:40:23
+36	50	Sí	Parcialmente	Necesita certificación	Sí	Sí	No	< $5,000	No	Europa	Manufacturers	2026-01-09 15:02:32
+37	52	Parcialmente	No	Busca proveedores	Parcialmente	Sí	Parcialmente	$20,000-$50,000	Sí	Norteamérica	Manufacturers	2026-01-23 10:55:12
+38	54	No	No	Necesita certificación	Parcialmente	No	No	$5,000-$20,000		Latinoamérica	Manufacturers	2026-02-14 08:19:55
+39	55	No	Sí	Quiere expandir mercado	No	No	Sí	> $50,000		Latinoamérica	Attraction	2026-01-31 20:39:16
+40	56	No	No	Necesita CRM	Sí	Parcialmente	Sí	$20,000-$50,000	No	Asia-Pacífico	Individuals	2026-02-05 08:19:51
+41	57	Parcialmente	Sí	Quiere capacitación	No	Parcialmente	Parcialmente	$20,000-$50,000	Parcialmente	Asia-Pacífico	Individuals	2026-02-03 22:03:46
+42	58	Sí	Sí	Busca membresía	Sí	Parcialmente	No	$5,000-$20,000		Latinoamérica	Individuals	2026-02-13 23:21:15
+43	59	No	Sí	Necesita certificación	Parcialmente	Sí	No	$5,000-$20,000	Sí	Norteamérica	Manufacturers	2026-01-10 01:47:54
+44	60	Parcialmente	Parcialmente	Quiere expandir mercado	No	No	Parcialmente	< $5,000	Parcialmente	Asia-Pacífico	Attraction	2026-01-17 16:08:48
+45	61	Sí	No	Busca membresía	No	Parcialmente	Sí	$5,000-$20,000	Sí	Europa	Manufacturers	2026-01-28 20:45:01
+46	63	Parcialmente	Sí	Busca membresía	Sí	Parcialmente	Parcialmente	$20,000-$50,000		Norteamérica	Manufacturers	2026-02-01 21:59:46
+47	66	No	Sí	Quiere expandir mercado	Sí	Parcialmente	Parcialmente	$20,000-$50,000		Europa	Individuals	2026-01-13 16:17:20
+48	67	Sí	Sí	Busca proveedores	Sí	No	Parcialmente	$20,000-$50,000	Sí	Norteamérica	Individuals	2026-01-24 16:50:51
+49	69	Parcialmente	Sí	Quiere capacitación	No	No	Sí	$20,000-$50,000		Europa	Individuals	2026-01-19 09:30:48
+50	70	Sí	Sí	Quiere expandir mercado	No	Parcialmente	Parcialmente	$20,000-$50,000	No	Asia-Pacífico	Individuals	2026-01-16 07:27:28
+51	71	No	Sí	Necesita certificación	Sí	Sí	Parcialmente	$20,000-$50,000		Latinoamérica	Attraction	2026-01-28 10:11:30
+52	73	Sí	Sí	Busca proveedores	Sí	No	No	< $5,000	No	Latinoamérica	Individuals	2026-01-19 00:08:42
+53	77	Sí	Sí	Busca membresía	Sí	Sí	Sí	< $5,000	Parcialmente	Latinoamérica	Attraction	2026-02-11 21:41:17
+54	79	No	No	Busca proveedores	Sí	No	Sí	> $50,000		Europa	Individuals	2026-01-30 11:12:43
+55	80	Sí	Sí	Quiere capacitación	Sí	No	No	$5,000-$20,000	Parcialmente	Norteamérica	Attraction	2026-01-08 15:32:29
+56	81	Parcialmente	Sí	Quiere expandir mercado	Sí	Sí	Parcialmente	> $50,000	Parcialmente	Norteamérica	Individuals	2026-02-23 03:30:49
+57	82	Sí	Sí	Busca networking	No	Parcialmente	Sí	> $50,000		Asia-Pacífico	Manufacturers	2026-02-06 21:25:27
+58	84	Sí	Sí	Quiere expandir mercado	No	No	Sí	$20,000-$50,000	Sí	Europa	Individuals	2026-02-20 05:42:09
+59	88	Parcialmente	Sí	Quiere capacitación	No	No	No	$5,000-$20,000	Parcialmente	Europa	Manufacturers	2026-02-13 10:19:48
+60	89	Sí	Sí	Necesita certificación	Sí	No	Parcialmente	< $5,000	Sí	Norteamérica	Manufacturers	2026-02-26 00:58:22
+61	90	Sí	Sí	Quiere expandir mercado	Sí	Sí	Sí	> $50,000	Sí	Europa	Manufacturers	2026-02-16 17:27:12
+62	91	Parcialmente	Parcialmente	Busca proveedores	No	Sí	Sí	$20,000-$50,000	No	Norteamérica	Manufacturers	2026-02-21 09:54:35
+63	92	Sí	Parcialmente	Busca networking	Sí	No	Parcialmente	$5,000-$20,000	No	Europa	Attraction	2026-03-05 23:08:34
+64	94	Sí	Parcialmente	Necesita CRM	No	Sí	Parcialmente	< $5,000	Parcialmente	Norteamérica	Manufacturers	2026-03-02 03:41:39
+65	98	Sí	No	Busca membresía	Sí	Sí	No	$5,000-$20,000		Latinoamérica	Manufacturers	2026-02-28 04:55:13
+66	100	Sí	Sí	Necesita certificación	Sí	Sí	Sí	$5,000-$20,000		Norteamérica	Individuals	2026-03-08 07:18:30
+67	101	Sí	No	Quiere expandir mercado	No	Sí	No	< $5,000	No	Norteamérica	Manufacturers	2026-02-22 19:16:04
+68	102	Sí	Parcialmente	Quiere expandir mercado	No	Sí	Sí	< $5,000	Parcialmente	Latinoamérica	Manufacturers	2026-03-04 10:17:29
+69	103	No	No	Necesita CRM	Parcialmente	Sí	Parcialmente	> $50,000	Sí	Norteamérica	Individuals	2026-02-16 06:52:01
+70	104	Parcialmente	Parcialmente	Busca membresía	No	Parcialmente	Parcialmente	$20,000-$50,000	Parcialmente	Latinoamérica	Manufacturers	2026-02-16 20:20:21
+71	106	No	Sí	Busca networking	Parcialmente	Parcialmente	No	< $5,000		Norteamérica	Manufacturers	2026-03-10 01:35:28
+72	107	No	No	Necesita CRM	No	Parcialmente	Parcialmente	< $5,000	No	Norteamérica	Manufacturers	2026-02-27 11:42:34
+73	108	Sí	Sí	Quiere capacitación	Sí	No	Sí	> $50,000	No	Europa	Attraction	2026-03-03 18:45:27
+74	109	Parcialmente	No	Quiere expandir mercado	Sí	Parcialmente	No	$5,000-$20,000	Sí	Latinoamérica	Manufacturers	2026-02-09 06:50:14
+75	110	Parcialmente	No	Busca networking	Sí	Parcialmente	Sí	$5,000-$20,000	Sí	Norteamérica	Attraction	2026-02-17 03:33:43
+76	112	Sí	Sí	Busca membresía	Sí	No	Parcialmente	> $50,000	No	Europa	Attraction	2026-03-06 03:54:37
+77	117	Sí	Sí	Busca networking	Sí	Sí	Parcialmente	< $5,000		Asia-Pacífico	Manufacturers	2026-03-01 10:49:00
+78	118	No	No	Busca networking	Sí	Parcialmente	Parcialmente	< $5,000		Latinoamérica	Individuals	2026-02-23 02:28:51
+79	121	No	No	Quiere expandir mercado	No	No	No	< $5,000		Europa	Manufacturers	2026-03-03 10:20:36
+80	122	No	Sí	Necesita CRM	Sí	No	Sí	> $50,000	No	Latinoamérica	Manufacturers	2026-03-01 01:21:15
+81	125	Sí	Sí	Busca membresía	Sí	Sí	No	< $5,000	Sí	Latinoamérica	Manufacturers	2026-02-14 17:04:23
+82	126	Sí	No	Busca proveedores	Sí	Parcialmente	Parcialmente	$5,000-$20,000	No	Europa	Manufacturers	2026-03-02 16:03:26
+83	127	No	No	Busca membresía	Sí	No	No	$5,000-$20,000	Sí	Asia-Pacífico	Manufacturers	2026-03-01 12:53:13
+84	129	Sí	Sí	Quiere expandir mercado	Sí	No	Parcialmente	> $50,000	Sí	Asia-Pacífico	Manufacturers	2026-03-01 17:34:51
+85	130	Sí	No	Necesita CRM	No	No	No	$5,000-$20,000	Sí	Asia-Pacífico	Manufacturers	2026-02-23 00:48:09
+86	131	Sí	Sí	Necesita CRM	Sí	No	Sí	$5,000-$20,000	Sí	Asia-Pacífico	Manufacturers	2026-02-12 06:59:53
+87	132	No	No	Quiere expandir mercado	No	Sí	No	< $5,000		Europa	Individuals	2026-03-08 23:57:41
+88	133	Sí	Parcialmente	Busca networking	Sí	Parcialmente	No	< $5,000		Europa	Manufacturers	2026-02-26 15:10:42
+89	134	Sí	No	Quiere expandir mercado	No	Sí	No	< $5,000		Europa	Manufacturers	2026-02-14 18:45:12
+90	135	Parcialmente	Sí	Busca networking	No	No	No	< $5,000		Asia-Pacífico	Individuals	2026-02-14 09:05:55
+91	136	No	Parcialmente	Busca membresía	Sí	No	Sí	$5,000-$20,000	No	Latinoamérica	Individuals	2026-02-13 00:12:53
+92	137	Sí	Parcialmente	Busca membresía	No	Parcialmente	Parcialmente	> $50,000	No	Asia-Pacífico	Manufacturers	2026-02-28 13:13:01
+93	139	No	No	Necesita certificación	No	Sí	Parcialmente	$5,000-$20,000		Asia-Pacífico	Manufacturers	2026-02-24 16:47:51
+94	141	Parcialmente	Parcialmente	Quiere expandir mercado	Sí	No	Parcialmente	$5,000-$20,000		Latinoamérica	Manufacturers	2026-02-15 02:16:31
+95	143	Parcialmente	Sí	Busca proveedores	Sí	Sí	No	< $5,000	Sí	Norteamérica	Manufacturers	2026-02-13 00:27:44
+96	144	No	Parcialmente	Busca membresía	Sí	Sí	No	< $5,000	Sí	Europa	Individuals	2026-02-10 20:06:57
+97	146	Parcialmente	Parcialmente	Quiere capacitación	Sí	No	Parcialmente	< $5,000	No	Latinoamérica	Manufacturers	2026-02-20 04:05:18
+98	148	Parcialmente	Sí	Necesita CRM	No	Parcialmente	Sí	$5,000-$20,000		Norteamérica	Individuals	2026-02-08 12:08:29
+99	150	No	Sí	Necesita certificación	Parcialmente	Sí	No	$5,000-$20,000	Parcialmente	Asia-Pacífico	Individuals	2026-02-27 16:23:19
+100	151	No	Sí	Quiere capacitación	Sí	No	No	< $5,000	No	Latinoamérica	Individuals	2026-02-21 01:01:08
+101	152	Sí	Sí	Quiere expandir mercado	Sí	Parcialmente	Parcialmente	< $5,000	Parcialmente	Asia-Pacífico	Manufacturers	2026-03-01 18:02:32
+102	153	Sí	Sí	Necesita certificación	Sí	No	Parcialmente	< $5,000		Europa	Attraction	2026-03-01 20:25:54
+103	154	Sí	Parcialmente	Necesita CRM	Parcialmente	Parcialmente	Parcialmente	$20,000-$50,000		Norteamérica	Manufacturers	2026-02-25 18:54:50
+104	157	No	No	Busca networking	Sí	Parcialmente	No	< $5,000		Norteamérica	Individuals	2026-03-05 11:58:38
+105	160	Sí	Sí	Busca membresía	No	Sí	Parcialmente	$20,000-$50,000	Parcialmente	Latinoamérica	Manufacturers	2026-02-28 17:28:18
+106	162	Sí	Sí	Busca proveedores	Sí	No	Sí	< $5,000	No	Norteamérica	Manufacturers	2026-02-25 22:26:48
+107	164	Sí	Sí	Necesita CRM	Sí	Sí	Parcialmente	$20,000-$50,000	Sí	Latinoamérica	Individuals	2026-03-10 21:30:15
+108	166	Sí	Sí	Busca membresía	Sí	No	Sí	< $5,000	No	Norteamérica	Individuals	2026-02-09 09:38:04
+109	168	Parcialmente	No	Quiere capacitación	No	Sí	Sí	$5,000-$20,000		Latinoamérica	Individuals	2026-02-12 05:33:06
+110	169	Sí	No	Necesita certificación	No	Parcialmente	Parcialmente	< $5,000		Latinoamérica	Manufacturers	2026-02-05 19:07:43
+111	170	Parcialmente	Parcialmente	Quiere expandir mercado	No	Sí	No	< $5,000	No	Latinoamérica	Individuals	2026-03-05 01:08:21
+112	171	Sí	Parcialmente	Quiere capacitación	Sí	No	No	< $5,000	No	Norteamérica	Individuals	2026-02-25 18:44:44
+113	172	Sí	Sí	Quiere capacitación	Sí	Sí	No	$5,000-$20,000	Sí	Asia-Pacífico	Manufacturers	2026-02-20 03:53:05
+114	173	Sí	Sí	Quiere expandir mercado	Sí	No	Parcialmente	$20,000-$50,000		Europa	Individuals	2026-03-02 12:22:26
+115	174	Sí	Sí	Necesita certificación	Sí	Sí	No	< $5,000	Sí	Europa	Manufacturers	2026-02-14 01:39:31
+116	175	Parcialmente	Parcialmente	Busca membresía	No	Sí	Sí	> $50,000		Norteamérica	Attraction	2026-02-15 11:23:18
+117	177	Parcialmente	Sí	Busca networking	No	No	Sí	$5,000-$20,000	No	Latinoamérica	Manufacturers	2026-02-25 20:46:34
+118	178	Sí	Sí	Busca networking	Sí	No	Sí	> $50,000	No	Europa	Individuals	2026-02-26 14:55:23
+119	180	Parcialmente	Sí	Busca proveedores	Parcialmente	Parcialmente	Sí	$5,000-$20,000		Norteamérica	Manufacturers	2026-03-01 03:38:48
+120	182	Parcialmente	Sí	Busca proveedores	Sí	No	No	< $5,000		Asia-Pacífico	Manufacturers	2026-03-10 16:46:54
+121	184	No	Parcialmente	Busca networking	No	Parcialmente	Parcialmente	< $5,000	No	Europa	Manufacturers	2026-03-10 01:55:55
+122	185	Sí	No	Busca networking	No	Sí	Sí	$20,000-$50,000		Latinoamérica	Manufacturers	2026-03-12 10:49:04
+123	186	Sí	Parcialmente	Quiere expandir mercado	Sí	Parcialmente	Parcialmente	$5,000-$20,000	No	Europa	Individuals	2026-03-16 15:54:39
+124	188	Sí	Sí	Necesita CRM	Sí	Sí	No	< $5,000	Sí	Asia-Pacífico	Individuals	2026-03-13 21:41:43
+125	189	Parcialmente	No	Quiere capacitación	No	Parcialmente	Parcialmente	< $5,000		Asia-Pacífico	Individuals	2026-03-08 14:16:19
+126	191	Sí	Sí	Quiere expandir mercado	No	No	Sí	< $5,000	Parcialmente	Europa	Individuals	2026-03-13 19:32:24
+127	192	Sí	Sí	Busca proveedores	No	Parcialmente	Sí	$5,000-$20,000	Sí	Europa	Individuals	2026-03-15 04:45:51
+128	193	Sí	No	Quiere capacitación	Parcialmente	Parcialmente	No	< $5,000	No	Latinoamérica	Manufacturers	2026-03-04 07:58:57
+129	194	Parcialmente	Sí	Busca networking	Sí	Sí	Sí	> $50,000	No	Asia-Pacífico	Individuals	2026-03-08 22:23:49
+130	196	No	No	Busca networking	Sí	Parcialmente	Parcialmente	$20,000-$50,000	No	Latinoamérica	Manufacturers	2026-03-06 17:53:13
+131	199	Parcialmente	Sí	Necesita certificación	Sí	Parcialmente	No	< $5,000		Europa	Manufacturers	2026-03-11 21:01:02
+132	200	No	Parcialmente	Quiere expandir mercado	Sí	Sí	No	$5,000-$20,000	No	Asia-Pacífico	Manufacturers	2026-03-08 21:53:13
+133	203	Parcialmente	No	Necesita CRM	Sí	No	Parcialmente	> $50,000	Parcialmente	Norteamérica	Manufacturers	2026-03-12 22:21:10
+134	205	No	Parcialmente	Busca proveedores	Sí	Parcialmente	Sí	$5,000-$20,000		Latinoamérica	Manufacturers	2026-03-11 00:43:58
+135	207	Sí	Sí	Necesita CRM	Sí	No	No	< $5,000	No	Latinoamérica	Attraction	2026-03-06 05:50:13
+136	208	Sí	Parcialmente	Busca networking	No	No	Parcialmente	< $5,000		Norteamérica	Manufacturers	2026-03-16 16:34:06
+137	210	No	No	Necesita certificación	Sí	Sí	Parcialmente	$5,000-$20,000		Latinoamérica	Manufacturers	2026-03-06 14:16:46
+138	212	Sí	Sí	Busca proveedores	Sí	Sí	Sí	$5,000-$20,000	Parcialmente	Europa	Manufacturers	2026-03-11 13:30:51
+139	214	Sí	Parcialmente	Busca membresía	Sí	Sí	No	< $5,000	Sí	Norteamérica	Manufacturers	2026-03-06 05:01:08
+140	215	Parcialmente	No	Quiere capacitación	Sí	Sí	Parcialmente	> $50,000	Sí	Latinoamérica	Individuals	2026-03-10 19:29:42
+141	217	Sí	Sí	Busca proveedores	Sí	No	Sí	$20,000-$50,000	No	Asia-Pacífico	Attraction	2026-03-12 04:41:06
+142	218	Parcialmente	Parcialmente	Necesita certificación	Sí	Sí	No	$5,000-$20,000	Parcialmente	Latinoamérica	Manufacturers	2026-03-05 23:42:58
+143	219	Sí	Parcialmente	Necesita CRM	Sí	Sí	No	< $5,000		Asia-Pacífico	Individuals	2026-03-06 07:05:40
+144	222	Parcialmente	Sí	Busca networking	Sí	Sí	Parcialmente	< $5,000	Parcialmente	Norteamérica	Attraction	2026-03-08 22:30:31
+145	224	Sí	Sí	Necesita CRM	Sí	Sí	Sí	< $5,000	Sí	Latinoamérica	Manufacturers	2026-03-13 20:14:43
+146	225	Sí	Parcialmente	Quiere expandir mercado	No	Parcialmente	No	$5,000-$20,000	No	Latinoamérica	Manufacturers	2026-03-15 20:46:20
+147	226	No	Sí	Busca membresía	Parcialmente	Parcialmente	Sí	< $5,000	Sí	Norteamérica	Attraction	2026-03-09 04:35:44
+148	227	No	No	Busca proveedores	Sí	Sí	Parcialmente	$5,000-$20,000	No	Asia-Pacífico	Individuals	2026-03-14 01:29:45
+149	229	No	Parcialmente	Busca proveedores	No	Sí	Parcialmente	< $5,000	Parcialmente	Europa	Manufacturers	2026-03-09 02:02:11
+150	230	No	No	Quiere capacitación	Sí	No	No	$5,000-$20,000	Parcialmente	Asia-Pacífico	Manufacturers	2026-03-12 21:08:07
+151	231	No	No	Quiere expandir mercado	Sí	Parcialmente	No	$5,000-$20,000		Europa	Attraction	2026-03-06 21:46:13
+152	232	Sí	Sí	Busca proveedores	Sí	Sí	No	$5,000-$20,000	No	Norteamérica	Manufacturers	2026-03-14 11:58:41
+153	235	Sí	Sí	Busca proveedores	Sí	Sí	Sí	> $50,000	Sí	Norteamérica	Manufacturers	2026-03-14 00:34:19
+154	239	Parcialmente	Sí	Busca proveedores	Sí	Parcialmente	Parcialmente	$20,000-$50,000		Norteamérica	Manufacturers	2026-03-09 11:08:37
+155	240	Parcialmente	Parcialmente	Quiere expandir mercado	Sí	Parcialmente	No	< $5,000	No	Asia-Pacífico	Manufacturers	2026-03-18 06:43:12
+156	241	Sí	Sí	Necesita CRM	Sí	Sí	Sí	$20,000-$50,000	No	Asia-Pacífico	Manufacturers	2026-03-10 09:04:13
+157	242	Sí	Sí	Quiere capacitación	Sí	No	Sí	< $5,000	No	Latinoamérica	Individuals	2026-03-16 23:26:31
+158	244	Sí	Parcialmente	Quiere expandir mercado	Sí	Sí	Sí	$20,000-$50,000	Parcialmente	Asia-Pacífico	Manufacturers	2026-03-11 19:02:40
+159	246	No	No	Quiere capacitación	Parcialmente	Sí	Sí	$20,000-$50,000	Sí	Europa	Individuals	2026-03-10 02:52:14
+160	247	Sí	No	Necesita CRM	No	Parcialmente	No	< $5,000	Sí	Asia-Pacífico	Individuals	2026-03-05 03:14:18
+161	249	Sí	Sí	Busca networking	Sí	No	No	$5,000-$20,000	Parcialmente	Latinoamérica	Individuals	2026-03-11 10:58:09
+162	251	Parcialmente	Sí	Quiere expandir mercado	No	No	Sí	$5,000-$20,000	Sí	Asia-Pacífico	Manufacturers	2026-03-06 11:09:52
+163	252	Parcialmente	Parcialmente	Quiere expandir mercado	No	Parcialmente	Parcialmente	< $5,000	Parcialmente	Norteamérica	Individuals	2026-03-14 07:44:40
+164	253	Parcialmente	Sí	Necesita certificación	Sí	No	Parcialmente	$20,000-$50,000		Norteamérica	Individuals	2026-03-06 15:01:15
+165	254	No	Sí	Busca proveedores	Sí	No	Parcialmente	$5,000-$20,000		Norteamérica	Manufacturers	2026-03-08 19:43:50
+166	255	Parcialmente	Sí	Busca membresía	No	No	Sí	$5,000-$20,000	No	Norteamérica	Manufacturers	2026-03-10 10:23:20
+167	256	Parcialmente	Sí	Busca networking	Sí	No	No	< $5,000	Parcialmente	Asia-Pacífico	Individuals	2026-03-12 13:27:39
+168	260	Sí	Parcialmente	Necesita CRM	No	No	Sí	< $5,000	No	Norteamérica	Individuals	2026-03-15 10:21:39
+169	261	Sí	Sí	Necesita certificación	No	No	Sí	> $50,000	Sí	Norteamérica	Manufacturers	2026-03-08 23:24:49
+170	264	Parcialmente	Parcialmente	Necesita CRM	No	Sí	No	$5,000-$20,000	Sí	Norteamérica	Manufacturers	2026-03-08 17:46:31
+171	266	No	Parcialmente	Busca proveedores	No	No	No	< $5,000	No	Latinoamérica	Individuals	2026-03-13 12:08:30
+172	267	Sí	Sí	Quiere expandir mercado	No	No	Sí	$5,000-$20,000	No	Norteamérica	Manufacturers	2026-03-08 07:46:07
+173	268	Sí	Parcialmente	Busca networking	Sí	No	Parcialmente	< $5,000		Norteamérica	Attraction	2026-03-10 00:26:52
+174	270	No	No	Quiere expandir mercado	No	Parcialmente	Sí	$5,000-$20,000		Asia-Pacífico	Individuals	2026-03-15 23:42:26
+175	274	Parcialmente	Parcialmente	Busca networking	No	No	Sí	< $5,000		Norteamérica	Individuals	2026-03-16 14:46:06
+176	276	Sí	Sí	Quiere capacitación	Sí	Parcialmente	No	< $5,000	Parcialmente	Europa	Individuals	2026-03-16 12:53:29
+177	277	Sí	Parcialmente	Busca networking	No	Sí	Sí	$20,000-$50,000	Sí	Asia-Pacífico	Attraction	2026-03-14 13:38:46
+178	278	Sí	Sí	Necesita certificación	Sí	Parcialmente	Parcialmente	$5,000-$20,000	Parcialmente	Europa	Attraction	2026-03-16 15:07:25
+179	279	Sí	Sí	Quiere capacitación	Sí	Sí	Parcialmente	> $50,000	No	Latinoamérica	Individuals	2026-03-15 05:59:21
+180	281	Sí	Sí	Necesita CRM	Sí	Sí	Sí	$20,000-$50,000	No	Latinoamérica	Individuals	2026-03-15 14:20:01
+181	282	Sí	Parcialmente	Busca networking	Sí	No	No	$5,000-$20,000	Parcialmente	Asia-Pacífico	Manufacturers	2026-03-09 23:44:37
+182	283	Sí	Sí	Necesita CRM	Sí	Sí	No	< $5,000	No	Europa	Attraction	2026-03-13 15:33:34
+183	284	Sí	Parcialmente	Busca networking	Sí	Parcialmente	Sí	> $50,000	Sí	Asia-Pacífico	Manufacturers	2026-03-09 21:33:42
+184	286	No	Sí	Necesita CRM	Sí	Sí	No	$5,000-$20,000	Parcialmente	Latinoamérica	Individuals	2026-03-16 23:51:51
+185	287	Parcialmente	No	Quiere capacitación	No	Sí	No	$5,000-$20,000	Parcialmente	Europa	Manufacturers	2026-03-09 19:01:34
+186	289	Sí	Sí	Necesita certificación	Sí	No	Sí	$20,000-$50,000	No	Latinoamérica	Individuals	2026-03-12 07:32:38
+187	290	No	No	Necesita CRM	No	No	Sí	< $5,000	No	Asia-Pacífico	Manufacturers	2026-03-13 10:36:11
+188	291	Parcialmente	No	Busca membresía	Sí	Sí	No	$5,000-$20,000	Parcialmente	Asia-Pacífico	Individuals	2026-03-13 13:59:50
+189	294	No	Sí	Busca networking	Sí	Sí	Sí	> $50,000		Latinoamérica	Individuals	2026-03-11 19:45:00
+190	295	Parcialmente	Sí	Busca networking	Sí	No	No	$5,000-$20,000	Parcialmente	Europa	Manufacturers	2026-03-12 13:45:37
+191	297	Parcialmente	Sí	Necesita certificación	Sí	No	Sí	> $50,000	No	Asia-Pacífico	Manufacturers	2026-03-12 13:31:06
+192	299	Sí	Sí	Necesita certificación	Sí	No	No	< $5,000	Sí	Latinoamérica	Individuals	2026-03-08 15:39:22
+193	300	No	Sí	Necesita CRM	Sí	No	Sí	> $50,000		Asia-Pacífico	Attraction	2026-03-05 02:01:14

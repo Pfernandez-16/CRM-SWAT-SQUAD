@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx claude-code-templates@latest --skill=development/senior-frontend --yes)",
+      "Bash(clasp:*)",
+      "mcp__ide__executeCode",
+      "Skill(gsd:new-project)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "WebSearch",
+      "Skill(gsd:progress)",
+      "Skill(gsd:discuss-phase)",
+      "Bash(test:*)"
+    ]
+  }
+}

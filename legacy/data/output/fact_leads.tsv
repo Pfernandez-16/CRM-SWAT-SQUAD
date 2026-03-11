@@ -1,0 +1,301 @@
+id_lead	id_contacto	id_campana	id_vendedor_sdr	status	calidad_contacto	servicio_interes	fecha_ingreso	fecha_asignacion	fecha_ultimo_contacto	numero_toques	tipo_seguimiento	status_seguimiento	notas
+1	1	6	5	Duplicado	Regular	Consultoría	2026-01-31 22:53:03	2026-02-01 06:53:03	2026-02-03 22:53:03	2	WhatsApp	Cancelado	
+2	2	16	4	En Seguimiento	Malo	Consultoría	2026-01-07 22:16:18	2026-01-09 03:16:18	2026-01-13 22:16:18	4	Email	Cancelado	
+3	3	19	1	En Seguimiento	Regular		2026-01-01 19:17:48	2026-01-03 02:17:48	2026-01-28 19:17:48	5	WhatsApp	Esperando respuesta	Muy interesado, buen perfil
+4	4	6	4	Perdido	Regular	Software CRM	2026-01-26 19:09:38	2026-01-29 17:09:38	2026-01-29 19:09:38	2	Reunión presencial	Pausado	
+5	5	18	1	Perdido	Malo	Capacitación	2026-01-21 22:43:48	2026-01-24 22:43:48	2026-02-02 22:43:48	7	Llamada	Esperando respuesta	Quiere reunión presencial
+6	6	8	4	Perdido	Regular	Consultoría	2026-01-28 23:13:45	2026-01-29 17:13:45	2026-02-02 23:13:45	7	Email	Cancelado	Comparando con competidores
+7	7	30	1	En Seguimiento	Sin Calificar	Membresía Enterprise	2026-01-13 12:21:52	2026-01-14 18:21:52	2026-02-05 12:21:52	2	Llamada	Esperando respuesta	Referido por cliente actual
+8	8	4	5	Nuevo	Malo	Capacitación	2026-01-16 08:03:07	2026-01-18 18:03:07		0			No contesta llamadas
+9	9	4	2	Calificado	Regular	Membresía Premium	2026-01-27 00:36:26	2026-01-29 12:36:26	2026-02-16 00:36:26	5	Email	Cancelado	Necesita aprobación de directivos
+10	10	14	5	Perdido	Regular	Membresía Premium	2026-01-28 03:23:29	2026-01-30 22:23:29	2026-02-07 03:23:29	5	Videollamada	Cerrado	Respondió por WhatsApp, positivo
+11	11	24	2	Perdido	Malo	Capacitación	2026-01-12 03:42:10	2026-01-14 18:42:10	2026-01-16 03:42:10	3	WhatsApp	Esperando respuesta	Respondió por WhatsApp, positivo
+12	12	26	3	Perdido	Malo	Capacitación	2026-01-03 12:38:45	2026-01-04 14:38:45	2026-01-24 12:38:45	7	Llamada	Activo	Quiere demo del producto
+13	13	16	5	Calificado	Excelente	Membresía Básica	2026-01-19 00:03:15	2026-01-19 16:03:15	2026-02-12 00:03:15	3	Reunión presencial	Cancelado	
+14	14	21	5	En Seguimiento	Sin Calificar		2026-01-09 12:12:20	2026-01-12 09:12:20	2026-01-10 12:12:20	5	WhatsApp	Esperando respuesta	Callback la próxima semana
+15	15	7	1	Perdido	Regular	Capacitación	2026-01-12 05:54:58	2026-01-13 08:54:58	2026-01-24 05:54:58	1	WhatsApp	Activo	Presupuesto limitado
+16	16	3	3	Perdido	Regular	Membresía Enterprise	2026-01-20 16:23:04	2026-01-21 23:23:04	2026-02-13 16:23:04	1	Llamada	Activo	Necesita cotización personalizada
+17	17	10	5	Perdido	Regular	Software CRM	2026-01-14 10:09:17	2026-01-15 20:09:17	2026-01-29 10:09:17	4	Reunión presencial	Esperando respuesta	Agenda reunión próxima semana
+18	18	9	2	Calificado	Bueno		2026-01-25 10:14:04	2026-01-27 05:14:04	2026-01-29 10:14:04	5	Videollamada	Cerrado	Necesita cotización personalizada
+19	19	27	5	En Seguimiento	Regular	Membresía Enterprise	2026-01-28 08:08:20	2026-01-31 03:08:20	2026-02-22 08:08:20	3	Email	Cancelado	
+20	20	15	5	Perdido	Regular	Membresía Premium	2026-01-04 06:42:23	2026-01-06 12:42:23	2026-01-26 06:42:23	4	WhatsApp	Cerrado	Quiere reunión presencial
+21	21	12	5	No Calificado	Malo	Membresía Premium	2026-01-13 01:14:27	2026-01-14 19:14:27	2026-01-26 01:14:27	3	Email	Activo	Necesita cotización personalizada
+22	22	30	2	No Calificado	Regular	Consultoría	2026-01-14 01:29:45	2026-01-15 06:29:45	2026-01-30 01:29:45	4	WhatsApp	Pausado	Comparando con competidores
+23	23	28	3	En Seguimiento	Bueno	Membresía Básica	2026-01-31 00:43:03	2026-02-02 03:43:03	2026-02-25 00:43:03	3	Llamada	Activo	Pidió propuesta formal
+24	24	22	4	Paso a Ventas	Malo	Consultoría	2026-01-03 01:14:24	2026-01-05 20:14:24	2026-01-23 01:14:24	5	Email	Cancelado	
+25	25	28	3	No Calificado	Sin Calificar	Consultoría	2026-01-14 14:32:03	2026-01-16 22:32:03	2026-02-08 14:32:03	4	Videollamada	Pausado	Sin interés en este momento
+26	26	17	4	No Calificado	Regular	Consultoría	2026-01-17 20:37:15	2026-01-20 04:37:15	2026-02-01 20:37:15	4	Llamada	Esperando respuesta	Esperando presupuesto Q2
+27	27	11	1	Nuevo	Bueno	Consultoría	2026-01-05 21:22:47	2026-01-07 20:22:47		0			No contesta llamadas
+28	28	20	3	En Seguimiento	Bueno	Membresía Premium	2026-01-23 21:09:25	2026-01-25 22:09:25	2026-01-29 21:09:25	4	Reunión presencial	Cancelado	Necesita aprobación de directivos
+29	29	14	3	Calificado	Regular	Membresía Enterprise	2026-01-09 17:35:10	2026-01-10 15:35:10	2026-02-05 17:35:10	4	Llamada	Cerrado	Comparando con competidores
+30	30	18	4	Perdido	Bueno	Software CRM	2026-01-08 06:14:10	2026-01-11 00:14:10	2026-01-14 06:14:10	1	Reunión presencial	Cancelado	Quiere demo del producto
+31	31	29	5	No Calificado	Regular	Membresía Enterprise	2026-01-15 13:33:54	2026-01-17 03:33:54	2026-01-28 13:33:54	3	Llamada	Pausado	Sin interés en este momento
+32	32	7	3	No Calificado	Malo	Membresía Enterprise	2026-01-17 05:54:11	2026-01-18 20:54:11	2026-01-29 05:54:11	5	Videollamada	Esperando respuesta	Pide más información
+33	33	12	1	Calificado	Regular	Capacitación	2026-01-30 09:32:49	2026-01-31 16:32:49	2026-02-24 09:32:49	4	Email	Cerrado	Interesado en membership premium
+34	34	22	5	No Calificado	Malo		2026-01-19 11:58:47	2026-01-21 05:58:47	2026-02-09 11:58:47	6	WhatsApp	Pausado	
+35	35	26	3	Calificado	Malo	Membresía Enterprise	2026-01-04 11:07:18	2026-01-05 03:07:18	2026-01-15 11:07:18	4	WhatsApp	Cerrado	Interesado en membership premium
+36	36	21	3	Perdido	Malo	Membresía Enterprise	2026-01-14 04:01:36	2026-01-16 18:01:36	2026-02-07 04:01:36	6	Videollamada	Esperando respuesta	Esperando presupuesto Q2
+37	37	14	2	En Seguimiento	Excelente	Capacitación	2026-01-12 09:21:37	2026-01-13 23:21:37	2026-01-19 09:21:37	2	WhatsApp	Cancelado	Muy interesado, buen perfil
+38	38	4	1	Duplicado	Regular		2026-01-02 06:43:02	2026-01-04 14:43:02	2026-01-06 06:43:02	1	Email	Esperando respuesta	Quiere demo del producto
+39	39	3	4	En Seguimiento	Bueno	Membresía Premium	2026-01-22 12:19:09	2026-01-23 10:19:09	2026-02-08 12:19:09	3	WhatsApp	Activo	Sin interés en este momento
+40	40	22	3	Perdido	Regular	Membresía Enterprise	2026-01-23 16:19:11	2026-01-25 08:19:11	2026-01-28 16:19:11	8	Videollamada	Pausado	
+41	41	20	4	Paso a Ventas	Malo	Consultoría	2026-01-22 02:47:07	2026-01-23 23:47:07	2026-02-07 02:47:07	5	Videollamada	Pausado	Pidió propuesta formal
+42	42	15	3	Calificado	Bueno	Membresía Premium	2026-01-01 12:17:54	2026-01-01 18:17:54	2026-01-13 12:17:54	4	Email	Cancelado	Necesita cotización personalizada
+43	43	1	4	Duplicado	Regular		2026-01-21 21:29:36	2026-01-23 16:29:36	2026-02-16 21:29:36	1	Llamada	Esperando respuesta	No contesta llamadas
+44	44	7	4	Perdido	Regular	Membresía Básica	2026-01-08 22:13:21	2026-01-11 05:13:21	2026-01-16 22:13:21	7	Email	Activo	Quiere reunión presencial
+45	45	21	2	No Calificado	Malo	Consultoría	2026-01-14 04:44:44	2026-01-15 22:44:44	2026-01-28 04:44:44	5	WhatsApp	Activo	Presupuesto limitado
+46	46	5	3	Contactado	Regular	Membresía Enterprise	2026-01-14 05:03:33	2026-01-17 01:03:33	2026-01-25 05:03:33	1	Llamada	Pausado	Sin interés en este momento
+47	47	18	1	En Seguimiento	Bueno	Membresía Premium	2026-01-07 01:40:52	2026-01-09 15:40:52	2026-01-15 01:40:52	2	Llamada	Pausado	Agenda reunión próxima semana
+48	48	16	2	Calificado	Regular	Software CRM	2026-01-25 04:40:23	2026-01-27 09:40:23	2026-02-17 04:40:23	6	Llamada	Cerrado	Pidió propuesta formal
+49	49	27	2	Contactado	Malo		2026-01-27 08:51:52	2026-01-30 02:51:52	2026-02-03 08:51:52	1	Email	Cancelado	Agenda reunión próxima semana
+50	50	4	2	Calificado	Sin Calificar	Membresía Básica	2026-01-02 15:02:32	2026-01-03 22:02:32	2026-01-26 15:02:32	6	Llamada	Esperando respuesta	
+51	51	7	4	Calificado	Sin Calificar	Membresía Premium	2026-01-08 16:47:44	2026-01-09 03:47:44	2026-01-17 16:47:44	3	Reunión presencial	Cerrado	Necesita aprobación de directivos
+52	52	12	1	Perdido	Bueno		2026-01-12 10:55:12	2026-01-14 23:55:12	2026-01-13 10:55:12	6	WhatsApp	Cerrado	
+53	53	4	4	Perdido	Excelente		2026-01-29 05:00:13	2026-01-31 23:00:13	2026-02-10 05:00:13	3	Llamada	Pausado	Presupuesto limitado
+54	54	16	1	Perdido	Regular	Software CRM	2026-01-31 08:19:55	2026-01-31 21:19:55	2026-02-12 08:19:55	1	WhatsApp	Esperando respuesta	Muy interesado, buen perfil
+55	55	5	4	En Seguimiento	Sin Calificar	Software CRM	2026-01-17 20:39:16	2026-01-20 10:39:16	2026-01-18 20:39:16	3	Reunión presencial	Cerrado	Quiere demo del producto
+56	56	9	1	No Calificado	Regular	Membresía Premium	2026-01-27 08:19:51	2026-01-30 04:19:51	2026-02-15 08:19:51	4	WhatsApp	Esperando respuesta	No contesta llamadas
+57	57	11	4	En Seguimiento	Malo	Software CRM	2026-01-27 22:03:46	2026-01-29 00:03:46	2026-02-13 22:03:46	2	WhatsApp	Cancelado	Callback la próxima semana
+58	58	27	3	No Calificado	Regular	Software CRM	2026-01-31 23:21:15	2026-02-03 21:21:15	2026-02-24 23:21:15	6	WhatsApp	Activo	
+59	59	28	3	Perdido	Bueno	Capacitación	2026-01-04 01:47:54	2026-01-06 08:47:54	2026-01-21 01:47:54	4	Reunión presencial	Esperando respuesta	Quiere demo del producto
+60	60	20	3	En Seguimiento	Malo		2026-01-05 16:08:48	2026-01-08 16:08:48	2026-01-07 16:08:48	2	WhatsApp	Pausado	Sin interés en este momento
+61	61	7	1	No Calificado	Excelente	Consultoría	2026-01-19 20:45:01	2026-01-22 16:45:01	2026-01-21 20:45:01	5	Email	Pausado	
+62	62	23	1	Nuevo	Sin Calificar	Capacitación	2026-01-24 20:31:44	2026-01-25 12:31:44		0			Esperando presupuesto Q2
+63	63	26	1	Calificado	Malo	Membresía Enterprise	2026-01-18 21:59:46	2026-01-19 10:59:46	2026-02-04 21:59:46	5	Llamada	Activo	Callback la próxima semana
+64	64	3	2	Duplicado	Excelente	Capacitación	2026-01-12 05:09:19	2026-01-14 12:09:19	2026-01-19 05:09:19	1	Videollamada	Pausado	
+65	65	21	2	Contactado sin Respuesta	Regular	Capacitación	2026-01-06 02:55:58	2026-01-08 05:55:58	2026-01-29 02:55:58	5	Reunión presencial	Activo	Presupuesto limitado
+66	66	26	2	No Calificado	Regular	Capacitación	2026-01-08 16:17:20	2026-01-11 06:17:20	2026-02-06 16:17:20	5	Email	Esperando respuesta	Interesado en membership premium
+67	67	28	3	Calificado	Malo	Software CRM	2026-01-16 16:50:51	2026-01-18 04:50:51	2026-01-29 16:50:51	4	Videollamada	Cerrado	No contesta llamadas
+68	68	15	4	Duplicado	Excelente		2026-01-14 19:26:44	2026-01-15 03:26:44	2026-02-12 19:26:44	1	Email	Activo	Callback la próxima semana
+69	69	8	2	Perdido	Excelente	Software CRM	2026-01-14 09:30:48	2026-01-17 08:30:48	2026-01-18 09:30:48	3	Llamada	Cancelado	No contesta llamadas
+70	70	5	2	En Seguimiento	Sin Calificar	Membresía Básica	2026-01-12 07:27:28	2026-01-13 21:27:28	2026-01-15 07:27:28	4	Videollamada	Cancelado	
+71	71	30	2	Perdido	Malo	Software CRM	2026-01-24 10:11:30	2026-01-25 14:11:30	2026-02-20 10:11:30	8	Videollamada	Activo	
+72	72	21	3	Nuevo	Malo	Membresía Enterprise	2026-01-04 19:25:58	2026-01-05 08:25:58		0			Interesado en membership premium
+73	73	12	4	Calificado	Sin Calificar	Software CRM	2026-01-12 00:08:42	2026-01-12 07:08:42	2026-01-14 00:08:42	6	Email	Esperando respuesta	Sin interés en este momento
+74	74	11	5	Contactado sin Respuesta	Regular	Capacitación	2026-01-11 17:14:50	2026-01-12 18:14:50	2026-02-02 17:14:50	2	Reunión presencial	Cancelado	
+75	75	19	5	Contactado	Regular	Software CRM	2026-01-20 03:25:08	2026-01-21 03:25:08	2026-01-31 03:25:08	1	Llamada	Cancelado	
+76	76	24	1	No Calificado	Bueno	Membresía Enterprise	2026-01-25 08:39:58	2026-01-27 21:39:58	2026-02-19 08:39:58	4	WhatsApp	Cancelado	Necesita cotización personalizada
+77	77	7	4	Calificado	Regular	Consultoría	2026-01-30 21:41:17	2026-02-01 10:41:17	2026-02-02 21:41:17	4	Email	Cancelado	Interesado en membership premium
+78	78	22	5	Contactado	Malo	Membresía Enterprise	2026-01-18 17:34:03	2026-01-20 19:34:03	2026-01-29 17:34:03	1	Email	Esperando respuesta	
+79	79	1	3	En Seguimiento	Regular	Software CRM	2026-01-22 11:12:43	2026-01-23 11:12:43	2026-01-24 11:12:43	5	WhatsApp	Pausado	
+80	80	12	2	Perdido	Sin Calificar		2026-01-03 15:32:29	2026-01-05 04:32:29	2026-01-31 15:32:29	3	Email	Activo	Interesado en membership premium
+81	81	23	1	En Seguimiento	Regular	Membresía Premium	2026-02-11 03:30:49	2026-02-12 12:30:49	2026-03-01 03:30:49	3	Videollamada	Cerrado	Necesita cotización personalizada
+82	82	16	5	Paso a Ventas	Excelente	Capacitación	2026-02-01 21:25:27	2026-02-04 03:25:27	2026-03-02 21:25:27	7	Videollamada	Activo	Pide más información
+83	83	6	1	En Seguimiento	Malo	Consultoría	2026-02-14 04:03:56	2026-02-14 16:03:56	2026-03-07 04:03:56	5	Llamada	Activo	Respondió por WhatsApp, positivo
+84	84	22	3	Paso a Ventas	Sin Calificar	Membresía Premium	2026-02-06 05:42:09	2026-02-06 13:42:09	2026-03-06 05:42:09	5	Reunión presencial	Pausado	Respondió por WhatsApp, positivo
+85	85	17	1	Perdido	Regular	Consultoría	2026-02-26 19:18:46	2026-02-27 12:18:46	2026-03-05 19:18:46	3	Videollamada	Cancelado	Necesita cotización personalizada
+86	86	30	1	Nuevo	Sin Calificar	Membresía Premium	2026-02-17 04:38:12	2026-02-20 00:38:12		0			Respondió por WhatsApp, positivo
+87	87	24	2	Nuevo	Malo	Membresía Premium	2026-02-15 16:14:08	2026-02-17 04:14:08		0			Referido por cliente actual
+88	88	9	1	Paso a Ventas	Sin Calificar	Software CRM	2026-02-02 10:19:48	2026-02-04 03:19:48	2026-02-07 10:19:48	4	Email	Cancelado	
+89	89	5	1	Paso a Ventas	Regular	Capacitación	2026-02-12 00:58:22	2026-02-14 11:58:22	2026-03-03 00:58:22	4	WhatsApp	Cancelado	Callback la próxima semana
+90	90	30	5	En Seguimiento	Regular	Membresía Básica	2026-02-07 17:27:12	2026-02-09 00:27:12	2026-02-17 17:27:12	3	Videollamada	Pausado	Quiere reunión presencial
+91	91	30	2	Paso a Ventas	Regular	Membresía Básica	2026-02-16 09:54:35	2026-02-16 23:54:35	2026-03-06 09:54:35	7	Llamada	Pausado	Interesado en membership premium
+92	92	27	2	Paso a Ventas	Malo	Membresía Enterprise	2026-02-20 23:08:34	2026-02-22 19:08:34	2026-03-16 23:08:34	6	Email	Pausado	Necesita aprobación de directivos
+93	93	4	2	En Seguimiento	Malo	Consultoría	2026-02-13 22:55:02	2026-02-15 09:55:02	2026-02-21 22:55:02	3	Llamada	Cerrado	Pidió propuesta formal
+94	94	23	4	En Seguimiento	Malo	Membresía Enterprise	2026-02-19 03:41:39	2026-02-20 08:41:39	2026-03-07 03:41:39	5	Reunión presencial	Pausado	Presupuesto limitado
+95	95	7	2	Nuevo	Malo		2026-02-14 02:24:29	2026-02-16 12:24:29		0			Comparando con competidores
+96	96	24	2	Perdido	Excelente	Membresía Enterprise	2026-02-24 18:49:29	2026-02-26 17:49:29	2026-03-25 18:49:29	8	WhatsApp	Cancelado	Respondió por WhatsApp, positivo
+97	97	25	1	Contactado sin Respuesta	Malo	Capacitación	2026-02-16 04:33:07	2026-02-18 12:33:07	2026-03-05 04:33:07	2	Llamada	Cancelado	Esperando presupuesto Q2
+98	98	27	1	Perdido	Bueno	Consultoría	2026-02-20 04:55:13	2026-02-20 15:55:13	2026-03-09 04:55:13	7	Llamada	Pausado	Callback la próxima semana
+99	99	15	4	Perdido	Malo	Membresía Premium	2026-02-23 09:30:30	2026-02-24 12:30:30	2026-03-05 09:30:30	7	Videollamada	Activo	Referido por cliente actual
+100	100	29	2	Calificado	Regular		2026-02-25 07:18:30	2026-02-26 03:18:30	2026-03-22 07:18:30	4	Videollamada	Esperando respuesta	Quiere demo del producto
+101	101	13	4	En Seguimiento	Excelente	Membresía Enterprise	2026-02-10 19:16:04	2026-02-13 11:16:04	2026-02-19 19:16:04	2	Email	Pausado	Muy interesado, buen perfil
+102	102	3	1	Paso a Ventas	Regular		2026-02-26 10:17:29	2026-02-28 17:17:29	2026-03-18 10:17:29	7	WhatsApp	Cancelado	Necesita cotización personalizada
+103	103	13	1	Perdido	Sin Calificar	Consultoría	2026-02-08 06:52:01	2026-02-09 08:52:01	2026-02-14 06:52:01	3	Llamada	Cancelado	Callback la próxima semana
+104	104	10	4	En Seguimiento	Bueno	Membresía Básica	2026-02-10 20:20:21	2026-02-11 02:20:21	2026-02-11 20:20:21	4	Reunión presencial	Cancelado	Excelente prospecto
+105	105	18	1	Contactado sin Respuesta	Regular	Membresía Básica	2026-02-24 02:14:40	2026-02-26 18:14:40	2026-03-11 02:14:40	5	Llamada	Esperando respuesta	
+106	106	1	2	Perdido	Bueno	Capacitación	2026-02-28 01:35:28	2026-03-01 09:35:28	2026-03-06 01:35:28	1	WhatsApp	Activo	
+107	107	12	1	En Seguimiento	Excelente	Consultoría	2026-02-15 11:42:34	2026-02-17 11:42:34	2026-02-17 11:42:34	2	Llamada	Cancelado	Presupuesto limitado
+108	108	6	3	Paso a Ventas	Malo	Consultoría	2026-02-28 18:45:27	2026-03-01 22:45:27	2026-03-24 18:45:27	6	Videollamada	Cerrado	Sin interés en este momento
+109	109	3	3	En Seguimiento	Sin Calificar	Software CRM	2026-02-04 06:50:14	2026-02-06 18:50:14	2026-02-14 06:50:14	2	Reunión presencial	Pausado	Muy interesado, buen perfil
+110	110	23	3	En Seguimiento	Regular	Membresía Básica	2026-02-11 03:33:43	2026-02-11 16:33:43	2026-03-02 03:33:43	2	Videollamada	Activo	Excelente prospecto
+111	111	24	5	Duplicado	Sin Calificar	Membresía Premium	2026-02-21 17:33:12	2026-02-23 15:33:12	2026-03-10 17:33:12	2	Videollamada	Esperando respuesta	No contesta llamadas
+112	112	30	2	Paso a Ventas	Regular	Capacitación	2026-02-25 03:54:37	2026-02-28 00:54:37	2026-03-26 03:54:37	4	Videollamada	Pausado	Callback la próxima semana
+113	113	7	1	Contactado	Regular	Software CRM	2026-02-06 17:23:36	2026-02-08 01:23:36	2026-02-20 17:23:36	2	Llamada	Cerrado	No contesta llamadas
+114	114	18	2	Nuevo	Bueno	Membresía Premium	2026-02-13 08:25:04	2026-02-13 22:25:04		0			Callback la próxima semana
+115	115	10	5	No Calificado	Malo		2026-02-17 04:18:09	2026-02-19 05:18:09	2026-03-13 04:18:09	6	Videollamada	Esperando respuesta	Agenda reunión próxima semana
+116	116	27	2	En Seguimiento	Malo	Capacitación	2026-02-24 06:12:05	2026-02-27 00:12:05	2026-03-17 06:12:05	2	WhatsApp	Cancelado	Quiere demo del producto
+117	117	21	4	Perdido	Regular	Membresía Premium	2026-02-23 10:49:00	2026-02-25 20:49:00	2026-03-22 10:49:00	1	Videollamada	Cerrado	
+118	118	24	3	No Calificado	Excelente	Consultoría	2026-02-17 02:28:51	2026-02-19 05:28:51	2026-02-22 02:28:51	3	Email	Activo	Interesado en membership premium
+119	119	13	5	Perdido	Regular	Membresía Enterprise	2026-02-10 02:18:44	2026-02-10 22:18:44	2026-03-05 02:18:44	5	Email	Activo	Pide más información
+120	120	14	1	No Calificado	Bueno	Membresía Enterprise	2026-02-15 16:35:16	2026-02-17 01:35:16	2026-02-21 16:35:16	5	Llamada	Cerrado	Sin interés en este momento
+121	121	25	2	Perdido	Regular		2026-02-24 10:20:36	2026-02-27 08:20:36	2026-03-03 10:20:36	3	Email	Cancelado	Referido por cliente actual
+122	122	10	3	En Seguimiento	Sin Calificar	Software CRM	2026-02-26 01:21:15	2026-02-26 23:21:15	2026-03-22 01:21:15	3	Llamada	Cancelado	Respondió por WhatsApp, positivo
+123	123	23	5	Contactado	Bueno		2026-02-05 05:27:02	2026-02-07 05:27:02	2026-03-06 05:27:02	2	Llamada	Activo	Referido por cliente actual
+124	124	25	3	Nuevo	Malo	Capacitación	2026-02-11 04:29:16	2026-02-13 03:29:16		0			Necesita aprobación de directivos
+125	125	7	3	En Seguimiento	Bueno	Membresía Enterprise	2026-02-06 17:04:23	2026-02-08 09:04:23	2026-02-12 17:04:23	3	Email	Activo	Agenda reunión próxima semana
+126	126	20	5	No Calificado	Bueno	Membresía Premium	2026-02-27 16:03:26	2026-03-01 14:03:26	2026-03-04 16:03:26	5	Email	Esperando respuesta	Comparando con competidores
+127	127	6	1	En Seguimiento	Sin Calificar	Consultoría	2026-02-22 12:53:13	2026-02-23 00:53:13	2026-02-23 12:53:13	3	Reunión presencial	Activo	Muy interesado, buen perfil
+128	128	13	1	Contactado	Bueno	Capacitación	2026-02-22 15:26:12	2026-02-24 18:26:12	2026-03-05 15:26:12	2	WhatsApp	Esperando respuesta	Pidió propuesta formal
+129	129	30	4	No Calificado	Excelente	Software CRM	2026-02-23 17:34:51	2026-02-24 11:34:51	2026-03-05 17:34:51	6	Reunión presencial	Cancelado	Comparando con competidores
+130	130	8	2	Perdido	Regular	Membresía Premium	2026-02-20 00:48:09	2026-02-21 05:48:09	2026-03-18 00:48:09	6	Email	Cancelado	Excelente prospecto
+131	131	1	1	Calificado	Bueno	Membresía Enterprise	2026-02-09 06:59:53	2026-02-11 00:59:53	2026-03-01 06:59:53	5	Videollamada	Pausado	Referido por cliente actual
+132	132	4	4	Perdido	Malo	Membresía Premium	2026-02-27 23:57:41	2026-02-28 14:57:41	2026-03-17 23:57:41	5	Reunión presencial	Cancelado	
+133	133	14	2	Paso a Ventas	Regular	Membresía Enterprise	2026-02-19 15:10:42	2026-02-20 05:10:42	2026-02-26 15:10:42	5	Videollamada	Cancelado	Quiere reunión presencial
+134	134	19	3	No Calificado	Bueno	Capacitación	2026-02-04 18:45:12	2026-02-07 14:45:12	2026-02-23 18:45:12	3	Videollamada	Cancelado	Interesado en membership premium
+135	135	18	1	Perdido	Bueno	Membresía Enterprise	2026-02-04 09:05:55	2026-02-05 04:05:55	2026-02-15 09:05:55	7	Reunión presencial	Activo	Pidió propuesta formal
+136	136	7	2	Perdido	Sin Calificar	Capacitación	2026-02-01 00:12:53	2026-02-02 00:12:53	2026-02-16 00:12:53	3	Videollamada	Cerrado	Respondió por WhatsApp, positivo
+137	137	20	5	Calificado	Bueno	Membresía Premium	2026-02-15 13:13:01	2026-02-17 09:13:01	2026-03-10 13:13:01	6	Email	Activo	
+138	138	1	5	Inválido	Regular	Membresía Básica	2026-02-15 06:44:59	2026-02-15 19:44:59	2026-03-16 06:44:59	2	Videollamada	Activo	Agenda reunión próxima semana
+139	139	23	5	Perdido	Bueno	Software CRM	2026-02-14 16:47:51	2026-02-15 01:47:51	2026-02-28 16:47:51	4	Videollamada	Cancelado	
+140	140	11	4	Calificado	Regular	Membresía Básica	2026-02-09 10:02:14	2026-02-12 04:02:14	2026-02-16 10:02:14	4	Videollamada	Cancelado	No contesta llamadas
+141	141	27	4	En Seguimiento	Sin Calificar	Capacitación	2026-02-07 02:16:31	2026-02-08 01:16:31	2026-02-10 02:16:31	2	Llamada	Pausado	Excelente prospecto
+142	142	22	4	Inválido	Excelente	Membresía Básica	2026-02-21 04:30:24	2026-02-23 20:30:24	2026-03-13 04:30:24	2	WhatsApp	Cancelado	Referido por cliente actual
+143	143	14	5	Perdido	Bueno	Membresía Básica	2026-02-10 00:27:44	2026-02-12 12:27:44	2026-03-01 00:27:44	1	Reunión presencial	Pausado	Referido por cliente actual
+144	144	9	4	Perdido	Regular		2026-02-02 20:06:57	2026-02-05 15:06:57	2026-02-06 20:06:57	6	Videollamada	Cancelado	Pidió propuesta formal
+145	145	5	5	Inválido	Sin Calificar	Software CRM	2026-02-14 13:32:53	2026-02-17 06:32:53	2026-03-03 13:32:53	1	Videollamada	Activo	Comparando con competidores
+146	146	16	1	Paso a Ventas	Regular	Consultoría	2026-02-16 04:05:18	2026-02-16 16:05:18	2026-03-06 04:05:18	5	Llamada	Cancelado	Esperando presupuesto Q2
+147	147	17	4	Contactado sin Respuesta	Bueno	Membresía Premium	2026-02-15 07:15:17	2026-02-17 02:15:17	2026-02-17 07:15:17	3	Videollamada	Cerrado	
+148	148	9	1	Paso a Ventas	Regular	Consultoría	2026-02-03 12:08:29	2026-02-05 07:08:29	2026-02-04 12:08:29	7	Email	Cancelado	Pidió propuesta formal
+149	149	5	5	Contactado	Malo	Membresía Premium	2026-02-07 10:25:07	2026-02-09 03:25:07	2026-03-07 10:25:07	2	Email	Activo	Muy interesado, buen perfil
+150	150	20	2	Perdido	Malo	Capacitación	2026-02-22 16:23:19	2026-02-24 21:23:19	2026-03-03 16:23:19	3	WhatsApp	Cancelado	Presupuesto limitado
+151	151	26	5	Perdido	Bueno		2026-02-08 01:01:08	2026-02-09 02:01:08	2026-03-05 01:01:08	8	Reunión presencial	Cancelado	Comparando con competidores
+152	152	22	4	Paso a Ventas	Bueno	Consultoría	2026-02-17 18:02:32	2026-02-18 06:02:32	2026-03-14 18:02:32	5	Llamada	Activo	Presupuesto limitado
+153	153	15	4	Calificado	Regular	Software CRM	2026-02-26 20:25:54	2026-02-28 07:25:54	2026-03-20 20:25:54	6	Reunión presencial	Cancelado	Pide más información
+154	154	5	5	Perdido	Excelente	Software CRM	2026-02-22 18:54:50	2026-02-25 00:54:50	2026-03-11 18:54:50	6	Llamada	Activo	Necesita cotización personalizada
+155	155	21	3	Duplicado	Regular	Capacitación	2026-02-14 05:35:27	2026-02-16 05:35:27	2026-02-23 05:35:27	2	Llamada	Cerrado	
+156	156	19	4	Calificado	Malo	Membresía Básica	2026-02-10 11:06:17	2026-02-13 11:06:17	2026-03-04 11:06:17	5	WhatsApp	Cerrado	Necesita cotización personalizada
+157	157	1	1	Perdido	Excelente		2026-02-26 11:58:38	2026-02-27 06:58:38	2026-03-10 11:58:38	8	WhatsApp	Cerrado	Pide más información
+158	158	7	1	Nuevo	Excelente	Consultoría	2026-02-11 12:37:08	2026-02-12 09:37:08		0			Muy interesado, buen perfil
+159	159	3	5	Contactado	Malo	Capacitación	2026-02-28 11:31:04	2026-03-01 16:31:04	2026-03-23 11:31:04	1	WhatsApp	Cerrado	Callback la próxima semana
+160	160	15	1	Paso a Ventas	Sin Calificar	Membresía Premium	2026-02-21 17:28:18	2026-02-23 16:28:18	2026-02-27 17:28:18	5	Llamada	Cerrado	Sin interés en este momento
+161	161	13	4	Calificado	Excelente	Software CRM	2026-02-13 20:21:24	2026-02-15 00:21:24	2026-02-16 20:21:24	6	Reunión presencial	Pausado	
+162	162	13	2	Paso a Ventas	Excelente	Consultoría	2026-02-21 22:26:48	2026-02-23 07:26:48	2026-03-14 22:26:48	7	Llamada	Cancelado	Pide más información
+163	163	4	1	Contactado	Regular	Membresía Premium	2026-02-22 15:29:24	2026-02-22 23:29:24	2026-02-27 15:29:24	2	Llamada	Activo	
+164	164	13	3	En Seguimiento	Bueno	Membresía Enterprise	2026-02-28 21:30:15	2026-03-01 03:30:15	2026-03-16 21:30:15	5	Reunión presencial	Cancelado	Pidió propuesta formal
+165	165	18	2	Nuevo	Sin Calificar	Software CRM	2026-02-24 09:38:52	2026-02-25 06:38:52		0			
+166	166	18	3	Calificado	Bueno		2026-02-05 09:38:04	2026-02-07 13:38:04	2026-02-08 09:38:04	5	Reunión presencial	Cerrado	
+167	167	7	2	No Calificado	Sin Calificar	Capacitación	2026-02-10 06:32:05	2026-02-12 02:32:05	2026-03-11 06:32:05	6	Llamada	Cerrado	Excelente prospecto
+168	168	3	4	Perdido	Excelente	Membresía Básica	2026-02-02 05:33:06	2026-02-03 17:33:06	2026-02-15 05:33:06	8	Llamada	Esperando respuesta	
+169	169	10	4	No Calificado	Malo	Membresía Enterprise	2026-02-01 19:07:43	2026-02-02 05:07:43	2026-02-03 19:07:43	5	Email	Activo	Respondió por WhatsApp, positivo
+170	170	4	2	Perdido	Malo	Membresía Enterprise	2026-02-27 01:08:21	2026-02-28 02:08:21	2026-03-29 01:08:21	4	Llamada	Activo	Quiere demo del producto
+171	171	16	1	Calificado	Sin Calificar		2026-02-12 18:44:44	2026-02-13 16:44:44	2026-02-18 18:44:44	3	Llamada	Cerrado	Muy interesado, buen perfil
+172	172	15	5	En Seguimiento	Regular	Software CRM	2026-02-06 03:53:05	2026-02-06 23:53:05	2026-02-26 03:53:05	5	Videollamada	Pausado	Pidió propuesta formal
+173	173	26	2	Calificado	Malo	Capacitación	2026-02-20 12:22:26	2026-02-22 11:22:26	2026-03-14 12:22:26	3	Videollamada	Esperando respuesta	Quiere demo del producto
+174	174	11	2	Perdido	Regular	Membresía Premium	2026-02-04 01:39:31	2026-02-04 22:39:31	2026-02-09 01:39:31	5	Reunión presencial	Pausado	No contesta llamadas
+175	175	18	2	Calificado	Sin Calificar		2026-02-07 11:23:18	2026-02-08 05:23:18	2026-03-04 11:23:18	6	WhatsApp	Activo	Excelente prospecto
+176	176	3	1	Nuevo	Sin Calificar	Capacitación	2026-02-14 18:34:16	2026-02-17 05:34:16		0			Excelente prospecto
+177	177	23	2	En Seguimiento	Regular	Consultoría	2026-02-22 20:46:34	2026-02-25 06:46:34	2026-02-28 20:46:34	3	Videollamada	Activo	
+178	178	6	4	Paso a Ventas	Excelente	Software CRM	2026-02-15 14:55:23	2026-02-17 16:55:23	2026-02-16 14:55:23	6	Videollamada	Pausado	Necesita aprobación de directivos
+179	179	4	5	Inválido	Regular	Software CRM	2026-02-27 04:49:21	2026-03-02 02:49:21	2026-03-14 04:49:21	1	WhatsApp	Cerrado	Sin interés en este momento
+180	180	7	1	Perdido	Malo	Membresía Enterprise	2026-02-25 03:38:48	2026-02-26 07:38:48	2026-03-19 03:38:48	3	Llamada	Activo	
+181	181	12	3	En Seguimiento	Bueno	Consultoría	2026-03-03 17:59:39	2026-03-04 04:59:39	2026-03-27 17:59:39	2	Llamada	Esperando respuesta	Presupuesto limitado
+182	182	6	1	Calificado	Excelente	Membresía Básica	2026-03-03 16:46:54	2026-03-05 15:46:54	2026-03-10 16:46:54	6	Email	Pausado	Muy interesado, buen perfil
+183	183	11	2	Contactado	Regular	Software CRM	2026-03-02 05:07:14	2026-03-04 11:07:14	2026-03-05 05:07:14	1	Reunión presencial	Esperando respuesta	Excelente prospecto
+184	184	2	4	En Seguimiento	Sin Calificar	Membresía Enterprise	2026-03-02 01:55:55	2026-03-04 08:55:55	2026-03-07 01:55:55	4	Reunión presencial	Pausado	
+185	185	12	3	En Seguimiento	Excelente	Capacitación	2026-03-04 10:49:04	2026-03-04 23:49:04	2026-03-09 10:49:04	4	Llamada	Cancelado	Esperando presupuesto Q2
+186	186	14	2	Paso a Ventas	Bueno	Membresía Premium	2026-03-04 15:54:39	2026-03-05 17:54:39	2026-04-02 15:54:39	7	WhatsApp	Esperando respuesta	Necesita cotización personalizada
+187	187	28	2	Contactado	Malo	Membresía Enterprise	2026-03-02 07:31:18	2026-03-05 01:31:18	2026-03-11 07:31:18	2	Llamada	Cancelado	Comparando con competidores
+188	188	8	3	Calificado	Bueno	Consultoría	2026-03-01 21:41:43	2026-03-02 03:41:43	2026-03-03 21:41:43	6	Llamada	Cancelado	Referido por cliente actual
+189	189	2	4	No Calificado	Bueno	Software CRM	2026-03-01 14:16:19	2026-03-04 05:16:19	2026-03-09 14:16:19	6	Llamada	Esperando respuesta	Agenda reunión próxima semana
+190	190	23	4	Duplicado	Excelente	Membresía Premium	2026-03-02 10:48:57	2026-03-03 03:48:57	2026-03-18 10:48:57	1	Email	Pausado	Esperando presupuesto Q2
+191	191	28	5	Paso a Ventas	Excelente	Membresía Enterprise	2026-03-03 19:32:24	2026-03-04 18:32:24	2026-03-09 19:32:24	6	Email	Cancelado	
+192	192	1	1	Calificado	Regular	Consultoría	2026-03-01 04:45:51	2026-03-02 23:45:51	2026-03-26 04:45:51	6	Email	Esperando respuesta	Necesita cotización personalizada
+193	193	19	2	Perdido	Excelente	Membresía Premium	2026-03-01 07:58:57	2026-03-04 06:58:57	2026-03-30 07:58:57	6	Llamada	Activo	Respondió por WhatsApp, positivo
+194	194	12	4	Paso a Ventas	Bueno	Membresía Básica	2026-03-04 22:23:49	2026-03-05 12:23:49	2026-03-27 22:23:49	7	WhatsApp	Pausado	Interesado en membership premium
+195	195	8	5	Contactado	Bueno	Software CRM	2026-03-04 12:29:09	2026-03-05 20:29:09	2026-03-15 12:29:09	1	Email	Cerrado	Referido por cliente actual
+196	196	22	4	En Seguimiento	Excelente	Membresía Premium	2026-03-03 17:53:13	2026-03-06 13:53:13	2026-03-19 17:53:13	2	Videollamada	Esperando respuesta	Callback la próxima semana
+197	197	15	5	Calificado	Regular	Capacitación	2026-03-01 09:33:27	2026-03-02 15:33:27	2026-03-04 09:33:27	6	Llamada	Cancelado	Presupuesto limitado
+198	198	10	1	Contactado	Bueno	Capacitación	2026-03-01 21:32:50	2026-03-04 18:32:50	2026-03-29 21:32:50	1	WhatsApp	Esperando respuesta	
+199	199	1	3	Calificado	Regular	Membresía Básica	2026-03-03 21:01:02	2026-03-05 23:01:02	2026-03-18 21:01:02	6	Llamada	Cerrado	Necesita aprobación de directivos
+200	200	3	1	Perdido	Bueno	Consultoría	2026-03-04 21:53:13	2026-03-06 21:53:13	2026-03-23 21:53:13	7	Email	Cerrado	Excelente prospecto
+201	201	19	5	Perdido	Bueno	Membresía Premium	2026-03-04 10:36:43	2026-03-05 08:36:43	2026-03-10 10:36:43	5	Email	Pausado	Excelente prospecto
+202	202	12	3	Paso a Ventas	Excelente	Membresía Premium	2026-03-02 17:24:58	2026-03-05 09:24:58	2026-03-22 17:24:58	4	WhatsApp	Esperando respuesta	Callback la próxima semana
+203	203	6	2	Perdido	Regular	Capacitación	2026-03-01 22:21:10	2026-03-03 00:21:10	2026-03-05 22:21:10	4	Llamada	Cerrado	
+204	204	5	4	En Seguimiento	Excelente	Consultoría	2026-03-01 05:03:07	2026-03-03 03:03:07	2026-03-06 05:03:07	4	Email	Cancelado	Necesita cotización personalizada
+205	205	6	5	En Seguimiento	Sin Calificar	Membresía Enterprise	2026-03-04 00:43:58	2026-03-05 00:43:58	2026-04-03 00:43:58	5	Email	Pausado	Agenda reunión próxima semana
+206	206	24	5	Inválido	Bueno	Capacitación	2026-03-02 19:02:36	2026-03-05 13:02:36	2026-03-27 19:02:36	2	Videollamada	Pausado	
+207	207	24	4	Calificado	Excelente	Membresía Enterprise	2026-03-01 05:50:13	2026-03-02 04:50:13	2026-03-11 05:50:13	3	Llamada	Cancelado	
+208	208	27	2	Calificado	Excelente		2026-03-04 16:34:06	2026-03-05 22:34:06	2026-03-30 16:34:06	4	Email	Pausado	Agenda reunión próxima semana
+209	209	3	5	Perdido	Regular		2026-03-04 02:32:04	2026-03-06 10:32:04	2026-03-20 02:32:04	4	Email	Esperando respuesta	
+210	210	17	1	Perdido	Bueno	Membresía Básica	2026-03-03 14:16:46	2026-03-05 19:16:46	2026-03-15 14:16:46	7	Llamada	Cerrado	No contesta llamadas
+211	211	12	3	Inválido	Malo		2026-03-02 07:24:46	2026-03-04 21:24:46	2026-03-28 07:24:46	2	Reunión presencial	Cerrado	Presupuesto limitado
+212	212	26	4	Paso a Ventas	Bueno	Software CRM	2026-03-04 13:30:51	2026-03-05 06:30:51	2026-03-11 13:30:51	4	Email	Cancelado	Referido por cliente actual
+213	213	11	1	Duplicado	Regular	Membresía Enterprise	2026-03-01 12:52:52	2026-03-01 18:52:52	2026-03-22 12:52:52	2	Email	Cancelado	Presupuesto limitado
+214	214	18	4	Paso a Ventas	Malo	Membresía Básica	2026-03-02 05:01:08	2026-03-03 10:01:08	2026-03-12 05:01:08	6	Videollamada	Cancelado	Sin interés en este momento
+215	215	27	3	Perdido	Bueno	Consultoría	2026-03-03 19:29:42	2026-03-05 05:29:42	2026-03-29 19:29:42	1	Llamada	Pausado	Pide más información
+216	216	10	4	Contactado	Regular	Membresía Premium	2026-03-03 12:45:10	2026-03-04 16:45:10	2026-04-02 12:45:10	2	WhatsApp	Activo	Muy interesado, buen perfil
+217	217	25	3	Calificado	Sin Calificar	Consultoría	2026-03-03 04:41:06	2026-03-05 23:41:06	2026-03-31 04:41:06	6	Email	Cancelado	Muy interesado, buen perfil
+218	218	12	5	Paso a Ventas	Excelente	Membresía Premium	2026-03-01 23:42:58	2026-03-02 12:42:58	2026-03-12 23:42:58	4	Reunión presencial	Pausado	No contesta llamadas
+219	219	6	1	En Seguimiento	Bueno	Membresía Premium	2026-03-01 07:05:40	2026-03-03 02:05:40	2026-03-18 07:05:40	4	Llamada	Esperando respuesta	Necesita aprobación de directivos
+220	220	25	2	Paso a Ventas	Regular	Membresía Básica	2026-03-04 07:11:01	2026-03-06 06:11:01	2026-03-31 07:11:01	5	Email	Cerrado	
+221	221	23	3	Contactado	Regular	Software CRM	2026-03-01 20:55:49	2026-03-02 03:55:49	2026-03-18 20:55:49	1	Email	Cerrado	Excelente prospecto
+222	222	14	3	Perdido	Excelente	Membresía Básica	2026-03-01 22:30:31	2026-03-04 20:30:31	2026-03-28 22:30:31	4	WhatsApp	Esperando respuesta	
+223	223	23	5	Perdido	Regular	Capacitación	2026-03-01 16:35:51	2026-03-04 03:35:51	2026-03-31 16:35:51	8	Llamada	Activo	Quiere demo del producto
+224	224	30	1	Calificado	Bueno	Membresía Premium	2026-03-01 20:14:43	2026-03-04 10:14:43	2026-03-07 20:14:43	5	Email	Activo	Muy interesado, buen perfil
+225	225	8	2	Perdido	Excelente	Membresía Básica	2026-03-02 20:46:20	2026-03-03 18:46:20	2026-03-07 20:46:20	4	Llamada	Cancelado	Muy interesado, buen perfil
+226	226	3	1	Perdido	Malo		2026-03-02 04:35:44	2026-03-02 23:35:44	2026-03-28 04:35:44	1	Videollamada	Esperando respuesta	Sin interés en este momento
+227	227	16	1	Perdido	Excelente	Membresía Premium	2026-03-01 01:29:45	2026-03-01 19:29:45	2026-03-31 01:29:45	2	Videollamada	Pausado	
+228	228	29	2	En Seguimiento	Bueno		2026-03-01 21:11:53	2026-03-03 14:11:53	2026-03-13 21:11:53	4	WhatsApp	Esperando respuesta	
+229	229	8	5	No Calificado	Excelente	Consultoría	2026-03-01 02:02:11	2026-03-02 11:02:11	2026-03-11 02:02:11	4	WhatsApp	Esperando respuesta	Agenda reunión próxima semana
+230	230	24	1	Perdido	Sin Calificar	Software CRM	2026-03-03 21:08:07	2026-03-06 01:08:07	2026-03-18 21:08:07	3	Llamada	Pausado	No contesta llamadas
+231	231	13	4	En Seguimiento	Bueno		2026-03-02 21:46:13	2026-03-03 18:46:13	2026-03-06 21:46:13	5	Videollamada	Pausado	Excelente prospecto
+232	232	25	3	Paso a Ventas	Regular		2026-03-01 11:58:41	2026-03-03 10:58:41	2026-03-05 11:58:41	6	Reunión presencial	Cerrado	Esperando presupuesto Q2
+233	233	20	3	Paso a Ventas	Malo	Membresía Básica	2026-03-04 08:40:11	2026-03-06 18:40:11	2026-04-01 08:40:11	5	Reunión presencial	Pausado	Pidió propuesta formal
+234	234	29	4	Duplicado	Bueno		2026-03-03 23:36:05	2026-03-04 18:36:05	2026-03-18 23:36:05	2	Videollamada	Activo	Muy interesado, buen perfil
+235	235	5	4	Calificado	Regular		2026-03-02 00:34:19	2026-03-02 14:34:19	2026-03-09 00:34:19	5	Email	Pausado	
+236	236	28	4	Contactado	Malo	Capacitación	2026-03-04 00:41:17	2026-03-05 17:41:17	2026-03-29 00:41:17	2	Reunión presencial	Cerrado	Excelente prospecto
+237	237	22	5	Duplicado	Sin Calificar	Consultoría	2026-03-02 16:36:59	2026-03-03 16:36:59	2026-03-06 16:36:59	2	Llamada	Cerrado	Excelente prospecto
+238	238	16	2	Paso a Ventas	Excelente		2026-03-01 07:41:49	2026-03-01 21:41:49	2026-03-23 07:41:49	6	Llamada	Pausado	Respondió por WhatsApp, positivo
+239	239	20	3	En Seguimiento	Regular		2026-03-01 11:08:37	2026-03-04 11:08:37	2026-03-27 11:08:37	5	Reunión presencial	Pausado	Callback la próxima semana
+240	240	22	4	Calificado	Bueno	Membresía Premium	2026-03-04 06:43:12	2026-03-04 14:43:12	2026-03-18 06:43:12	3	Llamada	Cancelado	Esperando presupuesto Q2
+241	241	11	4	Calificado	Excelente	Membresía Básica	2026-03-04 09:04:13	2026-03-06 05:04:13	2026-03-20 09:04:13	4	Reunión presencial	Pausado	Callback la próxima semana
+242	242	23	4	Calificado	Excelente	Capacitación	2026-03-03 23:26:31	2026-03-06 17:26:31	2026-03-21 23:26:31	6	WhatsApp	Esperando respuesta	Sin interés en este momento
+243	243	13	3	Calificado	Sin Calificar	Consultoría	2026-03-03 03:22:29	2026-03-04 21:22:29	2026-03-05 03:22:29	5	Llamada	Esperando respuesta	Sin interés en este momento
+244	244	5	3	Calificado	Regular		2026-03-04 19:02:40	2026-03-06 20:02:40	2026-03-08 19:02:40	6	Reunión presencial	Cerrado	No contesta llamadas
+245	245	14	3	Nuevo	Bueno	Membresía Básica	2026-03-04 22:23:02	2026-03-06 19:23:02		0			
+246	246	3	1	Perdido	Excelente	Membresía Básica	2026-03-01 02:52:14	2026-03-03 01:52:14	2026-03-16 02:52:14	1	Reunión presencial	Esperando respuesta	Referido por cliente actual
+247	247	29	4	En Seguimiento	Regular	Consultoría	2026-03-01 03:14:18	2026-03-03 01:14:18	2026-03-20 03:14:18	5	Reunión presencial	Cerrado	
+248	248	4	4	Contactado	Regular	Membresía Premium	2026-03-04 00:20:30	2026-03-06 22:20:30	2026-03-10 00:20:30	2	Videollamada	Cerrado	No contesta llamadas
+249	249	14	2	Calificado	Malo	Software CRM	2026-03-01 10:58:09	2026-03-02 19:58:09	2026-03-10 10:58:09	5	Llamada	Cerrado	
+250	250	13	2	Paso a Ventas	Sin Calificar	Capacitación	2026-03-04 12:12:19	2026-03-05 06:12:19	2026-03-15 12:12:19	7	Email	Activo	
+251	251	26	5	Calificado	Bueno	Software CRM	2026-03-01 11:09:52	2026-03-03 07:09:52	2026-03-15 11:09:52	5	Videollamada	Cerrado	Necesita aprobación de directivos
+252	252	14	4	En Seguimiento	Regular	Capacitación	2026-03-04 07:44:40	2026-03-05 12:44:40	2026-03-25 07:44:40	2	Videollamada	Pausado	
+253	253	16	2	Paso a Ventas	Malo	Membresía Enterprise	2026-03-02 15:01:15	2026-03-05 04:01:15	2026-03-26 15:01:15	7	Llamada	Esperando respuesta	Necesita aprobación de directivos
+254	254	12	4	En Seguimiento	Excelente	Capacitación	2026-03-02 19:43:50	2026-03-05 08:43:50	2026-03-13 19:43:50	5	Llamada	Pausado	Quiere reunión presencial
+255	255	9	3	Paso a Ventas	Bueno	Consultoría	2026-03-02 10:23:20	2026-03-04 19:23:20	2026-03-06 10:23:20	4	WhatsApp	Pausado	Agenda reunión próxima semana
+256	256	8	3	Calificado	Regular	Membresía Enterprise	2026-03-03 13:27:39	2026-03-03 23:27:39	2026-03-09 13:27:39	4	Email	Pausado	Agenda reunión próxima semana
+257	257	9	3	Paso a Ventas	Excelente	Software CRM	2026-03-01 06:09:01	2026-03-04 02:09:01	2026-03-03 06:09:01	3	Llamada	Cerrado	
+258	258	10	1	Perdido	Bueno	Membresía Premium	2026-03-04 23:44:42	2026-03-05 16:44:42	2026-03-31 23:44:42	7	WhatsApp	Pausado	Muy interesado, buen perfil
+259	259	19	5	Duplicado	Regular	Software CRM	2026-03-04 12:31:47	2026-03-06 02:31:47	2026-04-02 12:31:47	2	Llamada	Pausado	
+260	260	4	3	Calificado	Regular	Membresía Enterprise	2026-03-02 10:21:39	2026-03-04 22:21:39	2026-03-07 10:21:39	4	Llamada	Pausado	Necesita aprobación de directivos
+261	261	9	4	Calificado	Malo		2026-03-03 23:24:49	2026-03-06 04:24:49	2026-03-14 23:24:49	3	Videollamada	Cancelado	Excelente prospecto
+262	262	22	2	Duplicado	Malo	Membresía Básica	2026-03-03 04:51:55	2026-03-05 22:51:55	2026-03-30 04:51:55	2	Email	Activo	
+263	263	29	5	Nuevo	Regular	Software CRM	2026-03-01 07:57:44	2026-03-02 19:57:44		0			Pide más información
+264	264	18	4	En Seguimiento	Sin Calificar	Membresía Premium	2026-03-01 17:46:31	2026-03-03 05:46:31	2026-03-14 17:46:31	5	Llamada	Cancelado	Pide más información
+265	265	10	1	Duplicado	Malo	Membresía Premium	2026-03-02 06:38:23	2026-03-03 08:38:23	2026-03-23 06:38:23	2	Email	Cancelado	Sin interés en este momento
+266	266	9	1	Perdido	Sin Calificar	Membresía Enterprise	2026-03-03 12:08:30	2026-03-05 12:08:30	2026-04-01 12:08:30	7	Llamada	Pausado	Pide más información
+267	267	17	1	Calificado	Regular	Software CRM	2026-03-04 07:46:07	2026-03-06 06:46:07	2026-03-27 07:46:07	6	Llamada	Activo	
+268	268	21	2	Paso a Ventas	Malo	Membresía Básica	2026-03-01 00:26:52	2026-03-03 09:26:52	2026-03-22 00:26:52	4	Email	Cerrado	
+269	269	3	1	En Seguimiento	Regular	Software CRM	2026-03-04 22:32:37	2026-03-05 20:32:37	2026-03-30 22:32:37	5	Email	Cancelado	Excelente prospecto
+270	270	28	2	En Seguimiento	Regular	Software CRM	2026-03-02 23:42:26	2026-03-04 17:42:26	2026-03-05 23:42:26	3	Reunión presencial	Cerrado	Presupuesto limitado
+271	271	13	4	Duplicado	Malo	Membresía Básica	2026-03-01 03:01:10	2026-03-01 11:01:10	2026-03-31 03:01:10	1	Llamada	Cancelado	Necesita aprobación de directivos
+272	272	9	2	Nuevo	Regular	Consultoría	2026-03-02 13:53:17	2026-03-03 14:53:17		0			Pidió propuesta formal
+273	273	12	2	Duplicado	Excelente	Capacitación	2026-03-04 04:34:50	2026-03-06 17:34:50	2026-03-31 04:34:50	2	Reunión presencial	Activo	Comparando con competidores
+274	274	23	2	En Seguimiento	Malo	Software CRM	2026-03-02 14:46:06	2026-03-04 08:46:06	2026-03-15 14:46:06	5	WhatsApp	Cancelado	Necesita aprobación de directivos
+275	275	20	2	Inválido	Bueno	Capacitación	2026-03-02 03:34:40	2026-03-04 14:34:40	2026-03-16 03:34:40	1	WhatsApp	Activo	Callback la próxima semana
+276	276	9	2	Paso a Ventas	Sin Calificar	Membresía Premium	2026-03-04 12:53:29	2026-03-07 04:53:29	2026-03-05 12:53:29	3	Reunión presencial	Pausado	Interesado en membership premium
+277	277	23	4	Paso a Ventas	Regular	Capacitación	2026-03-03 13:38:46	2026-03-05 03:38:46	2026-03-07 13:38:46	3	Videollamada	Activo	Sin interés en este momento
+278	278	11	2	Calificado	Bueno	Consultoría	2026-03-04 15:07:25	2026-03-05 02:07:25	2026-03-13 15:07:25	3	Videollamada	Esperando respuesta	Respondió por WhatsApp, positivo
+279	279	10	4	Paso a Ventas	Excelente	Consultoría	2026-03-01 05:59:21	2026-03-02 09:59:21	2026-03-07 05:59:21	5	Videollamada	Cancelado	Interesado en membership premium
+280	280	29	4	Contactado	Bueno	Consultoría	2026-03-03 15:02:59	2026-03-04 15:02:59	2026-03-07 15:02:59	2	Email	Activo	Quiere demo del producto
+281	281	16	3	Paso a Ventas	Sin Calificar	Membresía Premium	2026-03-02 14:20:01	2026-03-04 05:20:01	2026-03-13 14:20:01	7	Reunión presencial	Pausado	Interesado en membership premium
+282	282	24	4	Paso a Ventas	Excelente	Software CRM	2026-03-04 23:44:37	2026-03-07 13:44:37	2026-03-11 23:44:37	3	WhatsApp	Activo	Comparando con competidores
+283	283	6	1	Calificado	Excelente	Membresía Enterprise	2026-03-03 15:33:34	2026-03-04 11:33:34	2026-03-05 15:33:34	6	Reunión presencial	Cerrado	Necesita cotización personalizada
+284	284	16	4	Calificado	Malo	Software CRM	2026-03-01 21:33:42	2026-03-02 18:33:42	2026-03-04 21:33:42	5	WhatsApp	Cerrado	Presupuesto limitado
+285	285	27	2	Paso a Ventas	Malo	Consultoría	2026-03-04 13:17:43	2026-03-05 22:17:43	2026-03-05 13:17:43	7	Videollamada	Esperando respuesta	Presupuesto limitado
+286	286	14	1	En Seguimiento	Bueno		2026-03-02 23:51:51	2026-03-03 08:51:51	2026-03-24 23:51:51	4	Llamada	Cancelado	No contesta llamadas
+287	287	19	1	Perdido	Excelente		2026-03-03 19:01:34	2026-03-06 14:01:34	2026-03-24 19:01:34	8	Email	Esperando respuesta	
+288	288	1	3	Duplicado	Regular	Membresía Enterprise	2026-03-02 23:19:09	2026-03-03 21:19:09	2026-03-30 23:19:09	1	Llamada	Cerrado	Interesado en membership premium
+289	289	26	1	Paso a Ventas	Regular	Consultoría	2026-03-03 07:32:38	2026-03-04 00:32:38	2026-03-12 07:32:38	6	WhatsApp	Pausado	Respondió por WhatsApp, positivo
+290	290	3	1	Perdido	Excelente	Software CRM	2026-03-03 10:36:11	2026-03-05 04:36:11	2026-03-07 10:36:11	3	Email	Cancelado	Quiere reunión presencial
+291	291	24	3	Perdido	Regular	Membresía Premium	2026-03-01 13:59:50	2026-03-03 18:59:50	2026-03-17 13:59:50	4	Reunión presencial	Cancelado	Excelente prospecto
+292	292	9	5	Contactado sin Respuesta	Excelente	Membresía Enterprise	2026-03-03 05:37:41	2026-03-04 10:37:41	2026-03-24 05:37:41	5	Reunión presencial	Activo	Sin interés en este momento
+293	293	17	3	Inválido	Regular	Capacitación	2026-03-01 22:35:01	2026-03-04 19:35:01	2026-03-11 22:35:01	1	Reunión presencial	Cancelado	Pidió propuesta formal
+294	294	30	4	En Seguimiento	Sin Calificar	Capacitación	2026-03-02 19:45:00	2026-03-04 08:45:00	2026-03-12 19:45:00	5	Videollamada	Activo	Necesita cotización personalizada
+295	295	3	1	Calificado	Regular	Membresía Enterprise	2026-03-01 13:45:37	2026-03-04 06:45:37	2026-03-13 13:45:37	5	Email	Esperando respuesta	Pidió propuesta formal
+296	296	25	5	Nuevo	Regular	Membresía Enterprise	2026-03-02 02:08:57	2026-03-03 07:08:57		0			Respondió por WhatsApp, positivo
+297	297	2	1	Calificado	Regular	Membresía Premium	2026-03-04 13:31:06	2026-03-07 05:31:06	2026-03-24 13:31:06	6	Email	Cerrado	Presupuesto limitado
+298	298	7	2	Contactado	Sin Calificar	Membresía Premium	2026-03-01 15:29:07	2026-03-04 04:29:07	2026-03-02 15:29:07	1	Reunión presencial	Activo	Agenda reunión próxima semana
+299	299	6	4	Calificado	Bueno	Capacitación	2026-03-04 15:39:22	2026-03-07 11:39:22	2026-03-24 15:39:22	5	Videollamada	Cerrado	
+300	300	23	4	Perdido	Excelente	Membresía Básica	2026-03-01 02:01:14	2026-03-02 08:01:14	2026-03-28 02:01:14	2	Llamada	Pausado	Agenda reunión próxima semana

@@ -1,0 +1,55 @@
+id_deal	id_lead	id_contacto	id_vendedor_ae	id_producto	status_venta	proyeccion	monto_proyeccion	monto_apartado	monto_cierre	fecha_pase_ventas	fecha_primer_contacto_ae	fecha_cierre	razon_perdida	descuento_pct	es_recompra	es_cliente_activo	producto_cierre	fuente_origen	tipo_transaccion	notas_vendedor
+1	24	24	7	31	Perdido	Alta	40370	0	0	2026-01-10 20:14:24	2026-01-12 09:14:24	2026-02-05 20:14:24	Producto no se ajusta	0	False	False		Outbound	Cross-sell	Compara con 2 competidores
+2	33	33	6	17	Vendido	Media	31694	0	24973	2026-02-03 16:32:49	2026-02-04 13:32:49	2026-02-15 16:32:49		0	False	False	1 Year Membership	Inbound	Nueva venta	Muy interesado, buen perfil
+3	41	41	6	19	Propuesta enviada	Media	13005	0	0	2026-01-24 23:47:07	2026-01-25 04:47:07			20	False	False		Inbound	Cross-sell	Necesita aprobación de junta
+4	48	48	6	50	Propuesta enviada	Media	49396	0	0	2026-01-28 09:40:23	2026-01-28 22:40:23			10	False	False		Inbound	Cross-sell	
+5	77	77	7	10	Recien llegado	Alta	41909	0	0	2026-02-03 10:41:17	2026-02-05 02:41:17			20	False	False		Inbound	Nueva venta	Quiere cerrar antes de fin de mes
+6	82	82	6	41	Apartado	Alta	6395	1279	0	2026-02-05 03:25:27	2026-02-05 07:25:27			0	False	False		Referido	Nueva venta	Referido de cliente satisfecho
+7	84	84	7	57	Propuesta enviada	Baja	36056	0	0	2026-02-08 13:42:09	2026-02-10 07:42:09			10	False	False		Evento	Renovación	Pidió descuento adicional
+8	88	88	6	33	Contactado	Alta	4386	0	0	2026-02-05 03:19:48	2026-02-05 11:19:48			10	False	False		Inbound	Re-compra	Pidió descuento adicional
+9	89	89	7	20	En negociación	Media	33930	0	0	2026-02-15 11:58:22	2026-02-15 16:58:22			0	False	False		Inbound	Cross-sell	
+10	91	91	6	42	Stand-by	Media	18023	0	0	2026-02-17 23:54:35	2026-02-18 04:54:35			0	False	False		Outbound	Upgrade	En proceso de evaluación interna
+11	92	92	6	30	Perdido	Alta	18080	0	0	2026-02-23 19:08:34	2026-02-25 15:08:34	2026-03-05 19:08:34	No responde	0	False	False		Partner	Cross-sell	Compara con 2 competidores
+12	102	102	7	53	Propuesta enviada	Media	4655	0	0	2026-03-03 17:17:29	2026-03-04 01:17:29			0	False	False		Outbound	Nueva venta	Compara con 2 competidores
+13	108	108	6	48	Apartado	Media	5924	0	0	2026-03-05 22:45:27	2026-03-06 15:45:27			15	False	True		Outbound	Cross-sell	Interesado en paquete premium
+14	112	112	7	40	En negociación	Media	5336	0	0	2026-03-04 00:54:37	2026-03-05 17:54:37			0	False	False		Outbound	Renovación	Tiene urgencia por certificación
+15	133	133	6	10	Reagendado	Media	23636	0	0	2026-02-25 05:10:42	2026-02-26 13:10:42			15	False	False		Inbound	Re-compra	Compara con 2 competidores
+16	146	146	6	3	Vendido	Alta	10712	0	8842	2026-02-17 16:05:18	2026-02-18 22:05:18	2026-02-28 16:05:18		5	False	False	2 Year Membership	Inbound	Nueva venta	
+17	148	148	6	17	Stand-by	Alta	16358	0	0	2026-02-08 07:08:29	2026-02-08 21:08:29			15	False	False		Outbound	Cross-sell	Empresa en crecimiento, buen momento
+18	152	152	7	55	Propuesta enviada	Media	39817	0	0	2026-02-22 06:02:32	2026-02-23 21:02:32			20	False	False		Outbound	Nueva venta	Tiene urgencia por certificación
+19	160	160	7	52	Propuesta enviada	Alta	16824	0	0	2026-02-23 16:28:18	2026-02-24 23:28:18			5	False	False		Outbound	Re-compra	Pidió descuento adicional
+20	161	161	7	52	Recien llegado	Alta	11697	0	0	2026-02-19 00:21:24	2026-02-19 18:21:24			20	False	False		Inbound	Re-compra	Compara con 2 competidores
+21	162	162	7	27	Stand-by	Media	39130	0	0	2026-02-25 07:26:48	2026-02-26 06:26:48			0	False	False		Webinar	Upgrade	
+22	178	178	6	27	Propuesta enviada	Alta	23874	0	0	2026-02-19 16:55:23	2026-02-20 03:55:23			0	False	False		Outbound	Re-compra	Empresa en crecimiento, buen momento
+23	182	182	7	55	Perdido	Alta	42014	0	0	2026-03-06 15:46:54	2026-03-07 16:46:54	2026-03-18 15:46:54	Producto no se ajusta	10	False	False		Inbound	Cross-sell	Muy interesado, buen perfil
+24	186	186	6	35	En negociación	Alta	47703	0	0	2026-03-10 17:54:39	2026-03-11 06:54:39			0	True	False		Inbound	Re-compra	En proceso de evaluación interna
+25	191	191	7	43	Propuesta enviada	Alta	12827	0	0	2026-03-06 18:32:24	2026-03-07 19:32:24			0	True	False		Webinar	Upgrade	
+26	194	194	6	58	En negociación	Media	9047	0	0	2026-03-07 12:23:49	2026-03-09 05:23:49			0	False	False		Partner	Nueva venta	Compara con 2 competidores
+27	202	202	6	42	Apartado	Baja	8299	1659	0	2026-03-09 09:24:58	2026-03-10 03:24:58			15	False	False		Outbound	Nueva venta	Interesado en paquete premium
+28	212	212	7	19	Propuesta enviada	Media	29392	0	0	2026-03-06 06:30:51	2026-03-07 05:30:51			15	False	False		Inbound	Nueva venta	Compara con 2 competidores
+29	214	214	6	38	Contactado	Alta	9056	0	0	2026-03-06 10:01:08	2026-03-06 22:01:08			0	False	False		Outbound	Nueva venta	Quiere cerrar antes de fin de mes
+30	218	218	7	27	Vendido	Baja	45795	13738	42077	2026-03-04 12:42:58	2026-03-05 05:42:58	2026-03-26 12:42:58		15	True	False	2 Year Membership	Outbound	Nueva venta	
+31	220	220	7	25	Perdido	Media	32376	0	0	2026-03-11 06:11:01	2026-03-12 11:11:01	2026-04-09 06:11:01	Se fue con otra solución	5	False	False		Webinar	Renovación	En proceso de evaluación interna
+32	232	232	6	1	Stand-by	Alta	18423	0	0	2026-03-06 10:58:41	2026-03-06 19:58:41			5	False	False		Inbound	Nueva venta	Referido de cliente satisfecho
+33	233	233	7	18	Contactado	Baja	13830	0	0	2026-03-09 18:40:11	2026-03-10 00:40:11			20	True	False		Outbound	Upgrade	En proceso de evaluación interna
+34	235	235	7	50	Stand-by	Baja	15219	0	0	2026-03-03 14:34:19	2026-03-04 03:34:19			0	False	False		Evento	Nueva venta	Pidió descuento adicional
+35	238	238	6	28	Apartado	Baja	4583	916	0	2026-03-06 21:41:49	2026-03-08 14:41:49			10	False	False		Outbound	Nueva venta	Muy interesado, buen perfil
+36	250	250	6	60	Perdido	Baja	16607	0	0	2026-03-08 06:12:19	2026-03-09 02:12:19	2026-03-24 06:12:19	Se fue con otra solución	20	True	False		Partner	Nueva venta	Necesita aprobación de junta
+37	251	251	6	3	Perdido	Media	17661	0	0	2026-03-06 07:09:52	2026-03-06 11:09:52	2026-03-26 07:09:52	Sin presupuesto	0	False	False		Evento	Renovación	Pidió descuento adicional
+38	253	253	6	33	Stand-by	Baja	43944	0	0	2026-03-07 04:01:15	2026-03-08 22:01:15			15	True	False		Inbound	Upgrade	Necesita aprobación de junta
+39	255	255	6	55	Perdido	Media	38749	0	0	2026-03-09 19:23:20	2026-03-10 20:23:20	2026-03-21 19:23:20	Producto no se ajusta	0	True	False		Outbound	Nueva venta	Interesado en paquete premium
+40	256	256	6	60	Apartado	Media	13077	1307	0	2026-03-08 23:27:39	2026-03-09 19:27:39			5	False	False		Evento	Nueva venta	
+41	257	257	7	20	No interesado	Baja	37958	0	0	2026-03-09 02:09:01	2026-03-09 10:09:01			0	False	False		Partner	Nueva venta	Quiere cerrar antes de fin de mes
+42	260	260	7	12	Vendido	Media	24120	0	20505	2026-03-08 22:21:39	2026-03-10 07:21:39	2026-03-31 22:21:39		0	False	False	1 Year Membership	Outbound	Nueva venta	Presupuesto limitado este trimestre
+43	267	267	7	47	Vendido	Baja	7663	0	5737	2026-03-08 06:46:07	2026-03-08 20:46:07	2026-03-31 06:46:07		20	False	False	Premium Package	Inbound	Cross-sell	
+44	268	268	7	7	Apartado	Media	15917	0	0	2026-03-04 09:26:52	2026-03-06 04:26:52			15	False	False		Referido	Re-compra	Esperando respuesta de dirección
+45	276	276	6	54	Propuesta enviada	Media	38533	0	0	2026-03-10 04:53:29	2026-03-11 08:53:29			0	False	False		Inbound	Renovación	Muy interesado, buen perfil
+46	277	277	7	2	No contesta	Media	44514	0	0	2026-03-07 03:38:46	2026-03-08 09:38:46			15	False	False		Partner	Nueva venta	
+47	278	278	6	38	Vendido	Media	38279	11483	35131	2026-03-07 02:07:25	2026-03-07 13:07:25	2026-04-02 02:07:25		20	True	False	Premium Package	Inbound	Renovación	Pidió descuento adicional
+48	279	279	7	3	Stand-by	Alta	21674	0	0	2026-03-07 09:59:21	2026-03-07 21:59:21			15	False	False		Inbound	Nueva venta	Pidió descuento adicional
+49	281	281	6	34	En negociación	Media	22210	0	0	2026-03-09 05:20:01	2026-03-10 04:20:01			5	True	False		Outbound	Upgrade	
+50	282	282	6	60	Propuesta enviada	Baja	8561	0	0	2026-03-09 13:44:37	2026-03-10 00:44:37			0	False	False		Outbound	Nueva venta	Empresa en crecimiento, buen momento
+51	283	283	6	15	Vendido	Media	38058	11417	37064	2026-03-04 11:33:34	2026-03-06 02:33:34	2026-03-29 11:33:34		20	False	False	Premium Package	Inbound	Renovación	Muy interesado, buen perfil
+52	285	285	7	6	Propuesta enviada	Media	5411	0	0	2026-03-06 22:17:43	2026-03-07 06:17:43			0	False	False		Inbound	Renovación	Interesado en paquete premium
+53	289	289	7	26	Propuesta enviada	Media	12407	0	0	2026-03-08 00:32:38	2026-03-09 15:32:38			20	False	False		Inbound	Re-compra	Esperando respuesta de dirección
+54	299	299	6	47	Apartado	Alta	46724	14017	0	2026-03-08 11:39:22	2026-03-09 17:39:22			0	False	False		Referido	Upgrade	

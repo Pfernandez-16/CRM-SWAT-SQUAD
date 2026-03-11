@@ -251,7 +251,7 @@ function buildSegmentedAmountWithDelta_(currentLeads, previousLeads, calificacio
 function calculateEmbudoGeneral_(currentLeads, previousLeads, allLeads, contactosIdx, interaccionesIdx, calificacionIdx, deals, dateIn, dateOut, prevDateIn, prevDateOut) {
 
   // --- Helper: check if lead has consecutive Contesto toques ---
-  var hasConsecutiveContesto_ = function(leadId) {
+  var hasConsecutiveContesto_ = function (leadId) {
     var interactions = interaccionesIdx[String(leadId)] || [];
     var contestoToques = [];
     for (var i = 0; i < interactions.length; i++) {
@@ -263,7 +263,7 @@ function calculateEmbudoGeneral_(currentLeads, previousLeads, allLeads, contacto
       }
     }
     if (contestoToques.length < 2) return false;
-    contestoToques.sort(function(a, b) { return a - b; });
+    contestoToques.sort(function (a, b) { return a - b; });
     for (var j = 1; j < contestoToques.length; j++) {
       if (contestoToques[j] - contestoToques[j - 1] === 1) return true;
     }
@@ -271,7 +271,7 @@ function calculateEmbudoGeneral_(currentLeads, previousLeads, allLeads, contacto
   };
 
   // --- Helper: check if lead has at least one Contesto ---
-  var hasAnyContesto_ = function(leadId) {
+  var hasAnyContesto_ = function (leadId) {
     var interactions = interaccionesIdx[String(leadId)] || [];
     for (var i = 0; i < interactions.length; i++) {
       if (String(interactions[i].resultado || '').trim() === 'Contesto') return true;
@@ -298,12 +298,12 @@ function calculateEmbudoGeneral_(currentLeads, previousLeads, allLeads, contacto
   }
 
   // --- 1. totalLeads ---
-  var totalLeads = buildSegmentedMetricWithDelta_(currentLeads, previousLeads, calificacionIdx, function(lead) {
+  var totalLeads = buildSegmentedMetricWithDelta_(currentLeads, previousLeads, calificacionIdx, function (lead) {
     return true;
   });
 
   // --- 2. contactables ---
-  var contactables = buildSegmentedMetricWithDelta_(currentLeads, previousLeads, calificacionIdx, function(lead) {
+  var contactables = buildSegmentedMetricWithDelta_(currentLeads, previousLeads, calificacionIdx, function (lead) {
     var idContacto = String(lead.id_contacto || '');
     var contacto = contactosIdx[idContacto];
     if (!contacto) return false;
@@ -313,42 +313,43 @@ function calculateEmbudoGeneral_(currentLeads, previousLeads, allLeads, contacto
   });
 
   // --- 3. contactados ---
-  var contactados = buildSegmentedMetricWithDelta_(currentLeads, previousLeads, calificacionIdx, function(lead) {
+  var contactados = buildSegmentedMetricWithDelta_(currentLeads, previousLeads, calificacionIdx, function (lead) {
     var idLead = String(lead.id_lead || '');
     var interactions = interaccionesIdx[idLead] || [];
     return interactions.length > 0;
   });
 
   // --- 4. conRespuesta ---
-  var conRespuesta = buildSegmentedMetricWithDelta_(currentLeads, previousLeads, calificacionIdx, function(lead) {
+  var conRespuesta = buildSegmentedMetricWithDelta_(currentLeads, previousLeads, calificacionIdx, function (lead) {
     return hasAnyContesto_(lead.id_lead);
   });
 
   // --- 5. dialogoCompleto ---
-  var dialogoCompleto = buildSegmentedMetricWithDelta_(currentLeads, previousLeads, calificacionIdx, function(lead) {
+  var dialogoCompleto = buildSegmentedMetricWithDelta_(currentLeads, previousLeads, calificacionIdx, function (lead) {
     return hasConsecutiveContesto_(lead.id_lead);
   });
 
   // --- 6. dialogoIntermitente ---
-  var dialogoIntermitente = buildSegmentedMetricWithDelta_(currentLeads, previousLeads, calificacionIdx, function(lead) {
+  var dialogoIntermitente = buildSegmentedMetricWithDelta_(currentLeads, previousLeads, calificacionIdx, function (lead) {
     return hasAnyContesto_(lead.id_lead) && !hasConsecutiveContesto_(lead.id_lead);
   });
 
   // --- 7. interes ---
-  var interes = buildSegmentedMetricWithDelta_(currentLeads, previousLeads, calificacionIdx, function(lead) {
+  var interes = buildSegmentedMetricWithDelta_(currentLeads, previousLeads, calificacionIdx, function (lead) {
     var idLead = String(lead.id_lead || '');
     var cal = calificacionIdx[idLead];
     if (!cal) return false;
-    return String(cal.mostro_interes_genuino || '').trim() === 'Si';
+    var val = String(cal.mostro_interes_genuino || '').trim();
+    return val === 'Si' || val === 'Sí';
   });
 
   // --- 8. descartados ---
-  var descartados = buildSegmentedMetricWithDelta_(currentLeads, previousLeads, calificacionIdx, function(lead) {
+  var descartados = buildSegmentedMetricWithDelta_(currentLeads, previousLeads, calificacionIdx, function (lead) {
     return String(lead.status || '').trim() === 'Perdido';
   });
 
   // --- 9. asignadosVentas ---
-  var asignadosVentas = buildSegmentedMetricWithDelta_(currentLeads, previousLeads, calificacionIdx, function(lead) {
+  var asignadosVentas = buildSegmentedMetricWithDelta_(currentLeads, previousLeads, calificacionIdx, function (lead) {
     return String(lead.status || '').trim() === 'Paso a Ventas';
   });
 
@@ -378,7 +379,7 @@ function calculateEmbudoGeneral_(currentLeads, previousLeads, allLeads, contacto
       }
     }
   }
-  var carryOver = buildSegmentedMetricWithDelta_(currentCarryLeads, previousCarryLeads, calificacionIdx, function(lead) {
+  var carryOver = buildSegmentedMetricWithDelta_(currentCarryLeads, previousCarryLeads, calificacionIdx, function (lead) {
     return true;
   });
 
@@ -386,7 +387,7 @@ function calculateEmbudoGeneral_(currentLeads, previousLeads, allLeads, contacto
   // Build deal-as-lead proxy arrays for amount helpers
   // We need to pass deals through amount helpers but segmentation uses lead's segment
   // So we create proxy objects that carry both deal data and lead id for segment lookup
-  var buildDealProxies_ = function(dealSubset) {
+  var buildDealProxies_ = function (dealSubset) {
     var proxies = [];
     for (var i = 0; i < dealSubset.length; i++) {
       var deal = dealSubset[i];
@@ -402,7 +403,7 @@ function calculateEmbudoGeneral_(currentLeads, previousLeads, allLeads, contacto
   var currentDealProxies = buildDealProxies_(currentDeals);
   var previousDealProxies = buildDealProxies_(previousDeals);
 
-  var montosInversion = buildSegmentedAmountWithDelta_(currentDealProxies, previousDealProxies, calificacionIdx, function(proxy) {
+  var montosInversion = buildSegmentedAmountWithDelta_(currentDealProxies, previousDealProxies, calificacionIdx, function (proxy) {
     return Number(proxy._deal.monto_proyeccion) || 0;
   });
 
@@ -420,12 +421,12 @@ function calculateEmbudoGeneral_(currentLeads, previousLeads, allLeads, contacto
     }
   }
 
-  var dealsCerrados = buildSegmentedMetricWithDelta_(currentVendidos, previousVendidos, calificacionIdx, function(proxy) {
+  var dealsCerrados = buildSegmentedMetricWithDelta_(currentVendidos, previousVendidos, calificacionIdx, function (proxy) {
     return true;
   });
 
   // --- 13. montoCierres ---
-  var montoCierres = buildSegmentedAmountWithDelta_(currentVendidos, previousVendidos, calificacionIdx, function(proxy) {
+  var montoCierres = buildSegmentedAmountWithDelta_(currentVendidos, previousVendidos, calificacionIdx, function (proxy) {
     return Number(proxy._deal.monto_cierre) || 0;
   });
 
@@ -457,13 +458,14 @@ function calculateEmbudoGeneral_(currentLeads, previousLeads, allLeads, contacto
  */
 function calculateIncontactables_(currentLeads, previousLeads, calificacionIdx) {
   // Duplicado: leads with status 'Duplicado'
-  var duplicado = buildSegmentedMetricWithDelta_(currentLeads, previousLeads, calificacionIdx, function(lead) {
+  var duplicado = buildSegmentedMetricWithDelta_(currentLeads, previousLeads, calificacionIdx, function (lead) {
     return String(lead.status || '').trim() === 'Duplicado';
   });
 
   // Equivocado: mapped to status 'Invalido' (closest match in data)
-  var equivocado = buildSegmentedMetricWithDelta_(currentLeads, previousLeads, calificacionIdx, function(lead) {
-    return String(lead.status || '').trim() === 'Invalido';
+  var equivocado = buildSegmentedMetricWithDelta_(currentLeads, previousLeads, calificacionIdx, function (lead) {
+    var st = String(lead.status || '').trim();
+    return st === 'Invalido' || st === 'Inválido';
   });
 
   // SPAM: no data source exists, return zeroed structure
@@ -490,7 +492,7 @@ function calculateIncontactables_(currentLeads, previousLeads, calificacionIdx) 
  */
 function calculateCrossSelling_(currentLeads, previousLeads, calificacionIdx, deals) {
   // Build deal proxies that carry segment info from their lead
-  var buildDealProxiesForCrossSell_ = function(leadsSubset) {
+  var buildDealProxiesForCrossSell_ = function (leadsSubset) {
     // Build explicit leadIds set
     var leadIds = {};
     for (var i = 0; i < leadsSubset.length; i++) {
@@ -518,7 +520,7 @@ function calculateCrossSelling_(currentLeads, previousLeads, calificacionIdx, de
   var currentProxies = buildDealProxiesForCrossSell_(currentLeads);
   var previousProxies = buildDealProxiesForCrossSell_(previousLeads);
 
-  var crossSellDeals = buildSegmentedMetricWithDelta_(currentProxies, previousProxies, calificacionIdx, function(proxy) {
+  var crossSellDeals = buildSegmentedMetricWithDelta_(currentProxies, previousProxies, calificacionIdx, function (proxy) {
     return true; // Count all proxies (already filtered to Cross-sell)
   });
 
@@ -537,7 +539,7 @@ function calculateCrossSelling_(currentLeads, previousLeads, calificacionIdx, de
  */
 function calculateSemaforoContesto_(currentLeads, previousLeads, calificacionIdx, interaccionesIdx) {
   // Performance optimization: build per-lead interaction summary once for current period
-  var buildLeadSummaries_ = function(leads) {
+  var buildLeadSummaries_ = function (leads) {
     var leadSummaries = {};
     for (var i = 0; i < leads.length; i++) {
       var lid = String(leads[i].id_lead);
@@ -555,8 +557,8 @@ function calculateSemaforoContesto_(currentLeads, previousLeads, calificacionIdx
   var previousSummaries = buildLeadSummaries_(previousLeads);
 
   // Helper to create metric function for a specific channel+toque+resultado
-  var createMetricFn = function(channel, toque, resultado) {
-    return function(lead) {
+  var createMetricFn = function (channel, toque, resultado) {
+    return function (lead) {
       var lid = String(lead.id_lead);
       var summaries = (currentLeads.indexOf(lead) >= 0) ? currentSummaries : previousSummaries;
       var key = channel + '_' + toque + '_' + resultado;
@@ -618,7 +620,7 @@ function calculateSemaforoContesto_(currentLeads, previousLeads, calificacionIdx
  */
 function calculateSemaforoNoContesto_(currentLeads, previousLeads, calificacionIdx, interaccionesIdx) {
   // Performance optimization: build per-lead interaction summary once
-  var buildLeadSummaries_ = function(leads) {
+  var buildLeadSummaries_ = function (leads) {
     var leadSummaries = {};
     for (var i = 0; i < leads.length; i++) {
       var lid = String(leads[i].id_lead);
@@ -636,8 +638,8 @@ function calculateSemaforoNoContesto_(currentLeads, previousLeads, calificacionI
   var previousSummaries = buildLeadSummaries_(previousLeads);
 
   // Helper to create metric function for a specific channel+toque+resultado
-  var createMetricFn = function(channel, toque, resultado) {
-    return function(lead) {
+  var createMetricFn = function (channel, toque, resultado) {
+    return function (lead) {
       var lid = String(lead.id_lead);
       var summaries = (currentLeads.indexOf(lead) >= 0) ? currentSummaries : previousSummaries;
       var key = channel + '_' + toque + '_' + resultado;
@@ -685,7 +687,7 @@ function calculateSemaforoNoContesto_(currentLeads, previousLeads, calificacionI
  * @return {Object} { sinRespuesta: { total, manufacturers, individuals } }
  */
 function calculateSinRespuesta6toToque_(currentLeads, previousLeads, calificacionIdx, interaccionesIdx) {
-  var metricFn = function(lead) {
+  var metricFn = function (lead) {
     var idLead = String(lead.id_lead || '');
     var interactions = interaccionesIdx[idLead] || [];
 
@@ -728,35 +730,37 @@ function calculateRazonesNoPasoVentas_(currentLeads, previousLeads, calificacion
     {
       key: 'noPerfilAdecuado',
       label: 'No perfil adecuado',
-      testFn: function(lead, calif) {
+      testFn: function (lead, calif) {
         return calif && String(calif.perfil_adecuado) === 'No';
       }
     },
     {
       key: 'sinPresupuesto',
       label: 'Sin presupuesto',
-      testFn: function(lead, calif) {
+      testFn: function (lead, calif) {
         return calif && String(calif.tiene_presupuesto) === 'No';
       }
     },
     {
       key: 'sinInteresGenuino',
       label: 'Sin interes genuino',
-      testFn: function(lead, calif) {
+      testFn: function (lead, calif) {
         return calif && String(calif.mostro_interes_genuino) === 'No';
       }
     },
     {
       key: 'necesitaTercero',
       label: 'Necesita tercero para decidir',
-      testFn: function(lead, calif) {
-        return calif && String(calif.necesita_decision_tercero) === 'Si';
+      testFn: function (lead, calif) {
+        if (!calif) return false;
+        var v = String(calif.necesita_decision_tercero || '').trim();
+        return v === 'Si' || v === 'Sí';
       }
     },
     {
       key: 'noEntendioMarketing',
       label: 'No entendio info marketing',
-      testFn: function(lead, calif) {
+      testFn: function (lead, calif) {
         return calif && String(calif.entendio_info_marketing) === 'No';
       }
     }
@@ -770,7 +774,7 @@ function calculateRazonesNoPasoVentas_(currentLeads, previousLeads, calificacion
     var reasonKey = reason.key;
     var testFn = reason.testFn;
 
-    result[reasonKey] = buildSegmentedMetricWithDelta_(currentLeads, previousLeads, calificacionIdx, function(lead) {
+    result[reasonKey] = buildSegmentedMetricWithDelta_(currentLeads, previousLeads, calificacionIdx, function (lead) {
       // Only count leads with status 'Perdido'
       if (String(lead.status || '').trim() !== 'Perdido') return false;
 
@@ -782,7 +786,7 @@ function calculateRazonesNoPasoVentas_(currentLeads, previousLeads, calificacion
   }
 
   // Calculate 'otros' - leads that are Perdido but matched none of the reasons above
-  result.otros = buildSegmentedMetricWithDelta_(currentLeads, previousLeads, calificacionIdx, function(lead) {
+  result.otros = buildSegmentedMetricWithDelta_(currentLeads, previousLeads, calificacionIdx, function (lead) {
     if (String(lead.status || '').trim() !== 'Perdido') return false;
 
     var idLead = String(lead.id_lead || '');
@@ -802,7 +806,7 @@ function calculateRazonesNoPasoVentas_(currentLeads, previousLeads, calificacion
   });
 
   // Total descartados (all Perdido leads)
-  result._totalDescartados = buildSegmentedMetricWithDelta_(currentLeads, previousLeads, calificacionIdx, function(lead) {
+  result._totalDescartados = buildSegmentedMetricWithDelta_(currentLeads, previousLeads, calificacionIdx, function (lead) {
     return String(lead.status || '').trim() === 'Perdido';
   });
 
@@ -820,106 +824,173 @@ function calculateRazonesNoPasoVentas_(currentLeads, previousLeads, calificacion
  * @return {Object} Reasons with segmentation + delta
  */
 function calculateRazonesPerdioVenta_(currentLeads, previousLeads, calificacionIdx, deals) {
-  // Build current and previous period lead ID sets
-  var currentLeadIds = {};
-  for (var i = 0; i < currentLeads.length; i++) {
-    currentLeadIds[String(currentLeads[i].id_lead)] = true;
-  }
-  var previousLeadIds = {};
-  for (var j = 0; j < previousLeads.length; j++) {
-    previousLeadIds[String(previousLeads[j].id_lead)] = true;
+  // Build deal index by lead_id for O(1) lookup per lead
+  var dealsByLead = {};
+  for (var d = 0; d < deals.length; d++) {
+    var deal = deals[d];
+    var dealLeadId = String(deal.id_lead || '');
+    if (!dealsByLead[dealLeadId]) {
+      dealsByLead[dealLeadId] = [];
+    }
+    dealsByLead[dealLeadId].push(deal);
   }
 
   // Hardcoded reasons from cat_opciones with camelCase keys
   var razonesMap = [
     { key: 'sinPresupuesto', label: 'Sin presupuesto' },
-    { key: 'eligioCompetidor', label: 'Eligio competidor' },
+    { key: 'eligioCompetidor', label: 'Eligió competidor', alt: 'Eligio competidor' },
     { key: 'noResponde', label: 'No responde' },
     { key: 'timingInadecuado', label: 'Timing inadecuado' },
-    { key: 'noTienePoderDecision', label: 'No tiene poder de decision' },
+    { key: 'noTienePoderDecision', label: 'No tiene poder de decisión', alt: 'No tiene poder de decision' },
     { key: 'productoNoSeAjusta', label: 'Producto no se ajusta' },
     { key: 'cambioPrioridades', label: 'Cambio de prioridades' },
     { key: 'malaExperienciaPrevia', label: 'Mala experiencia previa' },
     { key: 'precioMuyAlto', label: 'Precio muy alto' },
     { key: 'procesoInternoLargo', label: 'Proceso interno largo' },
-    { key: 'seFueConOtraSolucion', label: 'Se fue con otra solucion' },
+    { key: 'seFueConOtraSolucion', label: 'Se fue con otra solución', alt: 'Se fue con otra solucion' },
     { key: 'noEraElPerfil', label: 'No era el perfil' },
-    { key: 'empresaCerro', label: 'Empresa cerro' }
+    { key: 'empresaCerro', label: 'Empresa cerró', alt: 'Empresa cerro' }
   ];
+
+  // Helper: check if lead has a lost deal with a specific reason (supports alt label for accent variants)
+  var hasLostDealWithReason_ = function (lead, targetLabel, altLabel) {
+    var leadId = String(lead.id_lead || '');
+    var leadDeals = dealsByLead[leadId] || [];
+    for (var i = 0; i < leadDeals.length; i++) {
+      if (String(leadDeals[i].status_venta || '').trim() === 'Perdido') {
+        var razon = String(leadDeals[i].razon_perdida || '').trim();
+        if (razon === targetLabel || (altLabel && razon === altLabel)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  };
 
   var result = {};
 
-  // Calculate each reason metric
+  // Calculate each reason metric — metricFn receives a single lead
   for (var r = 0; r < razonesMap.length; r++) {
     var razonKey = razonesMap[r].key;
     var razonLabel = razonesMap[r].label;
 
-    result[razonKey] = buildSegmentedMetricWithDelta_(currentLeads, previousLeads, calificacionIdx, function(leadsSubset) {
-      // Build lead IDs for this subset
-      var subsetIds = {};
-      for (var s = 0; s < leadsSubset.length; s++) {
-        subsetIds[String(leadsSubset[s].id_lead)] = true;
-      }
-
-      // Count deals matching this reason
-      var count = 0;
-      for (var d = 0; d < deals.length; d++) {
-        var deal = deals[d];
-        var dealLeadId = String(deal.id_lead || '');
-
-        // Check if deal is for a lead in current subset AND status is Perdido AND razon matches
-        if (subsetIds[dealLeadId] && String(deal.status_venta || '').trim() === 'Perdido' && String(deal.razon_perdida || '').trim() === razonLabel) {
-          count++;
-        }
-      }
-
-      return count;
+    var razonAlt = razonesMap[r].alt || null;
+    result[razonKey] = buildSegmentedMetricWithDelta_(currentLeads, previousLeads, calificacionIdx, function (lead) {
+      return hasLostDealWithReason_(lead, razonLabel, razonAlt);
     });
   }
 
   // Calculate 'sinEspecificar' - lost deals with empty/null razon_perdida
-  result.sinEspecificar = buildSegmentedMetricWithDelta_(currentLeads, previousLeads, calificacionIdx, function(leadsSubset) {
-    var subsetIds = {};
-    for (var s = 0; s < leadsSubset.length; s++) {
-      subsetIds[String(leadsSubset[s].id_lead)] = true;
-    }
-
-    var count = 0;
-    for (var d = 0; d < deals.length; d++) {
-      var deal = deals[d];
-      var dealLeadId = String(deal.id_lead || '');
-      var razon = String(deal.razon_perdida || '').trim();
-
-      // Count if deal is Perdido with empty razon_perdida
-      if (subsetIds[dealLeadId] && String(deal.status_venta || '').trim() === 'Perdido' && razon === '') {
-        count++;
+  result.sinEspecificar = buildSegmentedMetricWithDelta_(currentLeads, previousLeads, calificacionIdx, function (lead) {
+    var leadId = String(lead.id_lead || '');
+    var leadDeals = dealsByLead[leadId] || [];
+    for (var i = 0; i < leadDeals.length; i++) {
+      if (String(leadDeals[i].status_venta || '').trim() === 'Perdido' &&
+        String(leadDeals[i].razon_perdida || '').trim() === '') {
+        return true;
       }
     }
-
-    return count;
+    return false;
   });
 
   // Total perdidas (all lost deals)
-  result._totalPerdidas = buildSegmentedMetricWithDelta_(currentLeads, previousLeads, calificacionIdx, function(leadsSubset) {
-    var subsetIds = {};
-    for (var s = 0; s < leadsSubset.length; s++) {
-      subsetIds[String(leadsSubset[s].id_lead)] = true;
-    }
-
-    var count = 0;
-    for (var d = 0; d < deals.length; d++) {
-      var deal = deals[d];
-      var dealLeadId = String(deal.id_lead || '');
-
-      if (subsetIds[dealLeadId] && String(deal.status_venta || '').trim() === 'Perdido') {
-        count++;
+  result._totalPerdidas = buildSegmentedMetricWithDelta_(currentLeads, previousLeads, calificacionIdx, function (lead) {
+    var leadId = String(lead.id_lead || '');
+    var leadDeals = dealsByLead[leadId] || [];
+    for (var i = 0; i < leadDeals.length; i++) {
+      if (String(leadDeals[i].status_venta || '').trim() === 'Perdido') {
+        return true;
       }
     }
-
-    return count;
+    return false;
   });
 
   return result;
+}
+
+// ============ CONTACTABILITY MATRIX (Pivoted: Toques as Rows, Products/Countries as Columns) ============
+
+/**
+ * Calculate Matriz de Contactabilidad (pivoted).
+ * Rows: Toque 1-10 (how many leads reached toque N).
+ * Columns: Dynamic — servicio_interes (Product) and pais (Country).
+ *
+ * A lead "reached toque N" if it has at least N interactions, regardless of resultado.
+ *
+ * @param {Array} currentLeads - Current period leads
+ * @param {Object} interaccionesIdx - Index of { id_lead: [interactions] }
+ * @param {Object} contactosIdx - Index of { id_contacto: contacto_row }
+ * @return {Object} { byProduct, byCountry, tocTotal }
+ */
+function calculateMatrizContactabilidad_(currentLeads, interaccionesIdx, contactosIdx) {
+  var MAX_TOQUES = 10;
+
+  // Pre-resolve each lead's product and country
+  var leadMeta = [];
+  for (var i = 0; i < currentLeads.length; i++) {
+    var lead = currentLeads[i];
+    var lid = String(lead.id_lead || '');
+    var producto = String(lead.servicio_interes || '').trim() || 'Sin Producto';
+    var pais = 'Sin País';
+    var contactoId = String(lead.id_contacto || '');
+    if (contactoId && contactosIdx[contactoId]) {
+      pais = String(contactosIdx[contactoId].pais || '').trim() || 'Sin País';
+    }
+    var numInteractions = (interaccionesIdx[lid] || []).length;
+
+    leadMeta.push({
+      producto: producto,
+      pais: pais,
+      numInteractions: numInteractions
+    });
+  }
+
+  // Build the pivot
+  var byProduct = {};
+  var byCountry = {};
+  var tocTotal = {};
+
+  for (var t = 1; t <= MAX_TOQUES; t++) {
+    var toqueKey = 'toque' + t;
+    byProduct[toqueKey] = {};
+    byCountry[toqueKey] = {};
+    tocTotal[toqueKey] = 0;
+
+    for (var j = 0; j < leadMeta.length; j++) {
+      var meta = leadMeta[j];
+      if (meta.numInteractions >= t) {
+        tocTotal[toqueKey]++;
+
+        // Product pivot
+        if (!byProduct[toqueKey][meta.producto]) {
+          byProduct[toqueKey][meta.producto] = 0;
+        }
+        byProduct[toqueKey][meta.producto]++;
+
+        // Country pivot
+        if (!byCountry[toqueKey][meta.pais]) {
+          byCountry[toqueKey][meta.pais] = 0;
+        }
+        byCountry[toqueKey][meta.pais]++;
+      }
+    }
+  }
+
+  // Collect all unique product and country keys for frontend column headers
+  var allProducts = {};
+  var allCountries = {};
+  for (var k = 0; k < leadMeta.length; k++) {
+    allProducts[leadMeta[k].producto] = true;
+    allCountries[leadMeta[k].pais] = true;
+  }
+
+  return {
+    byProduct: byProduct,
+    byCountry: byCountry,
+    tocTotal: tocTotal,
+    productKeys: Object.keys(allProducts).sort(),
+    countryKeys: Object.keys(allCountries).sort()
+  };
 }
 
 // ============ MAIN ORCHESTRATOR ============
@@ -928,10 +999,14 @@ function calculateRazonesPerdioVenta_(currentLeads, previousLeads, calificacionI
  * Generate SDR Report for a date range.
  * @param {string} dateIn - Start date (YYYY-MM-DD)
  * @param {string} dateOut - End date (YYYY-MM-DD)
+ * @param {string} [compareType] - 'prev_period' (default) or 'yoy' (same period last year)
  * @return {string} JSON string with report data
  */
-function getSDRReport(dateIn, dateOut) {
+function getSDRReport(dateIn, dateOut, compareType) {
   try {
+    // Normalize compareType
+    compareType = (compareType === 'yoy') ? 'yoy' : 'prev_period';
+
     // Parse dates for current period
     var dateInMs = new Date(dateIn).getTime();
     var dateOutMs = new Date(dateOut).getTime();
@@ -956,12 +1031,24 @@ function getSDRReport(dateIn, dateOut) {
     // Filter current period leads
     var currentLeads = filterByDateRange_(allLeads, dateIn, dateOut);
 
-    // Calculate previous period dates (same duration, shifted back)
-    var durationMs = dateOutMs - dateInMs;
-    var prevDateInMs = dateInMs - durationMs;
-    var prevDateOutMs = dateOutMs - durationMs;
-    var prevDateIn = new Date(prevDateInMs).toISOString().split('T')[0];
-    var prevDateOut = new Date(prevDateOutMs).toISOString().split('T')[0];
+    // Calculate previous period dates based on compareType
+    var prevDateIn, prevDateOut;
+    if (compareType === 'yoy') {
+      // Year-over-Year: shift exactly 1 year back
+      var dIn = new Date(dateIn);
+      var dOut = new Date(dateOut);
+      dIn.setFullYear(dIn.getFullYear() - 1);
+      dOut.setFullYear(dOut.getFullYear() - 1);
+      prevDateIn = dIn.toISOString().split('T')[0];
+      prevDateOut = dOut.toISOString().split('T')[0];
+    } else {
+      // prev_period: same duration, shifted back
+      var durationMs = dateOutMs - dateInMs;
+      var prevDateInMs = dateInMs - durationMs;
+      var prevDateOutMs = dateOutMs - durationMs;
+      prevDateIn = new Date(prevDateInMs).toISOString().split('T')[0];
+      prevDateOut = new Date(prevDateOutMs).toISOString().split('T')[0];
+    }
 
     // Filter previous period leads
     var previousLeads = filterByDateRange_(allLeads, prevDateIn, prevDateOut);
@@ -975,12 +1062,14 @@ function getSDRReport(dateIn, dateOut) {
     var sinRespuesta6toToque = calculateSinRespuesta6toToque_(currentLeads, previousLeads, calificacionIdx, interaccionesIdx);
     var razonesNoPasoVentas = calculateRazonesNoPasoVentas_(currentLeads, previousLeads, calificacionIdx);
     var razonesPerdioVenta = calculateRazonesPerdioVenta_(currentLeads, previousLeads, calificacionIdx, allDeals);
+    var matrizContactabilidad = calculateMatrizContactabilidad_(currentLeads, interaccionesIdx, contactosIdx);
 
     // Build result
     var result = {
       metadata: {
         dateIn: dateIn,
         dateOut: dateOut,
+        compareType: compareType,
         previousDateIn: prevDateIn,
         previousDateOut: prevDateOut,
         generatedAt: new Date().toISOString(),
@@ -994,7 +1083,8 @@ function getSDRReport(dateIn, dateOut) {
       semaforoNoContesto: semaforoNoContesto,
       sinRespuesta6toToque: sinRespuesta6toToque,
       razonesNoPasoVentas: razonesNoPasoVentas,
-      razonesPerdioVenta: razonesPerdioVenta
+      razonesPerdioVenta: razonesPerdioVenta,
+      matrizContactabilidad: matrizContactabilidad
     };
 
     return JSON.stringify(result);

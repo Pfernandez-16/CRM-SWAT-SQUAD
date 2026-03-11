@@ -1,0 +1,2070 @@
+<script>
+    /*************************************************************
+     *  App.html — Vue 3 Application for CRM SWAT Squad
+     *  All components, state, and logic in a single file.
+     *************************************************************/
+
+    const { createApp, ref, reactive, computed, onMounted, onUnmounted, watch, nextTick, toRaw } = Vue;
+
+    const app = createApp({
+        setup() {
+            // ── State ──
+            const loading = ref(true);
+            const refreshing = ref(false);
+            const saving = ref(false);
+            const savingCatalog = ref(false);
+            const sidebarCollapsed = ref(false);
+            const currentView = ref('dashboard');
+            const viewMode = ref('table'); // 'table' or 'kanban'
+            const searchQuery = ref('');
+            const filterStatus = ref('');
+            const currentPage = ref(1);
+            const pageSize = 50;
+            const isDark = ref(true);
+            const modalTab = ref('Info');
+            const showLeadModal = ref(false);
+            const activeCatalog = ref('');
+            const activeConfigCategory = ref('general');
+
+            // ── Handoff Modal (Ficha de Negociación) ──
+            const showHandoffModal = ref(false);
+            const handoffLead = ref({});
+            const handoffData = reactive({
+                necesidad_puntual: '',
+                necesita_decision_tercero: '',
+                tiene_presupuesto: '',
+                monto_presupuesto: '',
+                notas_bandeja_plata: '',
+                aeEmail: ''
+            });
+
+            // ── Email Compose Modal ──
+            const showEmailCompose = ref(false);
+            const sendingEmail = ref(false);
+            const emailForm = reactive({
+                to: '',
+                subject: '',
+                body: '',
+                entityId: '',
+                entityType: 'lead'
+            });
+            const emailAttachments = ref([]);
+            let quillInstance = null;
+
+            // ── Quick Calendar Modal ──
+            const showQuickCalendar = ref(false);
+            const quickCalForm = reactive({ tipo: 'Evento', asunto: '', fecha: '', hora: '', notificationMinutes: 30, visibility: 'DEFAULT' });
+            let fullCalendarInstance = null;
+
+            // ── Event Details Modal ──
+            const showEventDetails = ref(false);
+            const selectedEventData = reactive({
+                id: '', title: '', start: '', end: '', type: '',
+                startLocal: '', endLocal: '',
+                description: '', notificationMinutes: 30, visibility: 'DEFAULT'
+            });
+
+            const emailAttachmentSizeMB = computed(function () {
+                var total = 0;
+                for (var i = 0; i < emailAttachments.value.length; i++) {
+                    total += emailAttachments.value[i].size || 0;
+                }
+                return parseFloat((total / 1024 / 1024).toFixed(2));
+            });
+
+            // ── HMN Config ──
+            const hmnVariables = ref({});
+            const savingHMN = ref(false);
+
+            // ── User Management ──
+            const allUsers = ref([]);
+            const savingUsers = ref(false);
+            const newUserEmail = ref('');
+            const newUserNombre = ref('');
+            const newUserRol = ref('SDR');
+
+            const leads = ref([]);
+            const deals = ref([]);
+            const vendedoresList = ref([]);
+            const catalogs = ref({});
+            const pricing = ref([]);
+            const currentUser = ref({ email: '', nombre: '', rol: 'GUEST', sheetId: '' });
+            const userRole = computed(() => currentUser.value.rol || 'GUEST');
+
+            // Read-only flag: true when AE is viewing a Deal (SDR fields are not editable)
+            const isReadOnlySdrFields = computed(function () {
+                var role = userRole.value;
+                var src = selectedLead.value._source;
+                if (role !== 'AE') return false;
+                if (src === 'deal') return true;
+                if (src === 'cross_deal') return true;
+                return false;
+            });
+
+            // ── Phase 1.4: Role-filtered vendor lists ──
+            const sdrList = computed(function () {
+                return vendedoresList.value.filter(function (v) {
+                    return String(v.rol || '').toUpperCase().indexOf('SDR') !== -1;
+                });
+            });
+            const aeList = computed(function () {
+                return vendedoresList.value.filter(function (v) {
+                    var r = String(v.rol || '').toUpperCase();
+                    return r.indexOf('AE') !== -1 || r.indexOf('ACCOUNT EXECUTIVE') !== -1;
+                });
+            });
+            const managerList = computed(function () {
+                return allUsers.value.filter(function (u) {
+                    var r = String(u.rol || '').toUpperCase();
+                    return r === 'GERENTE' || r === 'ADMIN';
+                });
+            });
+
+            // ── Pricing: Monto Aproximado auto-calculation (SDR) ──
+            const calculoMontoAproximado = computed(function () {
+                var tipo = String(editLead['Tipo de Cliente'] || '').trim();
+                var ticket = parseFloat(editLead['Ticket Promedio']) || 0;
+                var licencias = parseFloat(editLead['Licencias Promedio']) || 0;
+                if (!tipo || ticket === 0) return 0;
+                if (tipo === 'Fichas Mensuales (FEE)') return ticket * 12;
+                if (tipo === 'Proyectos') return ticket;
+                if (tipo === 'SaaS') return ticket * licencias * 12;
+                return 0;
+            });
+            const userConnected = ref(false);
+            const clockInTime = ref(null);
+            const clockTimer = ref('');
+            const activeAEs = ref([]);
+            let clockInterval = null;
+            let inactivityTimeout = null;
+            const INACTIVITY_LIMIT_MS = 30 * 60 * 1000; // 30 minutes
+            const stats = ref({ total: 0, thisWeek: 0, thisMonth: 0, byStatus: {}, byCalidad: {}, byVendedor: {} });
+            const routingConfig = reactive({ aeAssignmentMode: 'SDR_CHOICE', managerEmail: '', lastSdrRRSavedEmail: '', lastAeRRSavedEmail: '' });
+            const savingRouting = ref(false);
+            const selectedLead = ref({});
+            const editLead = reactive({});
+            const leadHistory = reactive({ pipeline: [], leads: [], deals: [], loading: false });
+            const editingCatalogValues = ref([]);
+
+            // ── Creation Mode ──
+            const isCreating = ref(false);
+            const creationType = ref('lead'); // 'lead' or 'deal'
+
+            const calendarDate = ref(new Date());
+
+            // ── Reportes State ──
+            const reportData = ref(null);
+            const reportLoading = ref(false);
+            const reportError = ref(null);
+            const dateRange = ref({ start: null, end: null });
+            const comparisonRange = ref({ start: null, end: null });
+            const compareType = ref('prev_period'); // 'prev_period' | 'yoy'
+            const openSections = ref(['embudoGeneral']); // Embudo opens by default
+            let flatpickrInstance = null;
+
+            const reportSections = [
+                { id: 'embudoGeneral', label: 'Embudo General' },
+                { id: 'incontactables', label: 'Incontactables' },
+                { id: 'crossSelling', label: 'Cross Selling' },
+                { id: 'matrizContactabilidad', label: 'Matriz de Contactabilidad' },
+                { id: 'semaforoContesto', label: 'Semáforo Contestó' },
+                { id: 'semaforoNoContesto', label: 'Semáforo No Contestó' },
+                { id: 'sinRespuesta', label: 'Sin Respuesta 6to Toque' },
+                { id: 'noPasoVentas', label: 'Por qué no pasó a Ventas' },
+                { id: 'perdioVenta', label: 'Por qué perdió la venta' }
+            ];
+
+            const matrizPivotMode = ref('product'); // 'product' | 'country'
+
+            // ── Report Data Arrays ──
+            const embudoRows = computed(() => {
+                if (!reportData.value || !reportData.value.embudoGeneral) return [];
+                const eg = reportData.value.embudoGeneral;
+                const rawRows = [
+                    { label: 'Total Leads', metric: eg.totalLeads, type: 'count' },
+                    { label: 'Contactables', metric: eg.contactables, type: 'count' },
+                    { label: 'Contactados', metric: eg.contactados, type: 'count' },
+                    { label: 'Con Respuesta', metric: eg.conRespuesta, type: 'count' },
+                    { label: 'Dialogo Completo', metric: eg.dialogoCompleto, type: 'count' },
+                    { label: 'Dialogo Intermitente', metric: eg.dialogoIntermitente, type: 'count' },
+                    { label: 'Interes', metric: eg.interes, type: 'count' },
+                    { label: 'Descartados', metric: eg.descartados, type: 'count' },
+                    { label: 'Asignados a Ventas', metric: eg.asignadosVentas, type: 'count' },
+                    { label: 'Carry Over', metric: eg.carryOver, type: 'count' },
+                    { label: 'Monto Inversion', metric: eg.montosInversion, type: 'amount' },
+                    { label: 'Deals Cerrados', metric: eg.dealsCerrados, type: 'count' },
+                    { label: 'Monto Cierres', metric: eg.montoCierres, type: 'amount' }
+                ];
+                // Enrich with inter-stage conversion rate (CVR)
+                for (let i = 0; i < rawRows.length; i++) {
+                    if (i === 0 || rawRows[i].type === 'amount') {
+                        rawRows[i].cvrInterEtapa = null; // no CVR for top-of-funnel or amounts
+                    } else {
+                        const prevCount = rawRows[i - 1].metric?.total?.count || 0;
+                        const currCount = rawRows[i].metric?.total?.count || 0;
+                        rawRows[i].cvrInterEtapa = prevCount > 0
+                            ? (currCount / prevCount * 100).toFixed(1)
+                            : '0.0';
+                    }
+                }
+                return rawRows;
+            });
+
+            const incontactablesRows = computed(() => {
+                if (!reportData.value || !reportData.value.incontactables) return [];
+                const inc = reportData.value.incontactables;
+                return [
+                    { label: 'Duplicado', metric: inc.duplicado, type: 'count' },
+                    { label: 'Equivocado', metric: inc.equivocado, type: 'count' },
+                    { label: 'SPAM', metric: inc.spam, type: 'count' }
+                ];
+            });
+
+            const crossSellingRows = computed(() => {
+                if (!reportData.value || !reportData.value.crossSelling) return [];
+                const cs = reportData.value.crossSelling;
+                return [
+                    { label: 'Cross Sell Deals', metric: cs.crossSellDeals, type: 'count' }
+                ];
+            });
+
+            const semaforoContestoGrid = computed(() => {
+                if (!reportData.value || !reportData.value.semaforoContesto) return [];
+                const sc = reportData.value.semaforoContesto;
+                return [
+                    { channel: 'Telefono', toques: [sc.telefono.toque1, sc.telefono.toque2, sc.telefono.toque3] },
+                    { channel: 'WhatsApp', toques: [sc.whatsapp.toque1, sc.whatsapp.toque2, sc.whatsapp.toque3] },
+                    { channel: 'Correo', toques: [sc.correo.toque1, sc.correo.toque2, sc.correo.toque3, sc.correo.toque4] }
+                ];
+            });
+
+            const maxToquesContesto = 4;
+
+            const semaforoNoContestoGrid = computed(() => {
+                if (!reportData.value || !reportData.value.semaforoNoContesto) return [];
+                const snc = reportData.value.semaforoNoContesto;
+                return [
+                    { channel: 'Telefono', toques: [snc.telefono.toque1, snc.telefono.toque2, snc.telefono.toque3] },
+                    { channel: 'WhatsApp', toques: [snc.whatsapp.toque1, snc.whatsapp.toque2, snc.whatsapp.toque3] }
+                ];
+            });
+
+            const maxToquesNoContesto = 3;
+
+            const sinRespuestaRows = computed(() => {
+                if (!reportData.value || !reportData.value.sinRespuesta6toToque) return [];
+                const sr = reportData.value.sinRespuesta6toToque;
+                return [
+                    { label: 'Sin Respuesta (6+ toques)', metric: sr.sinRespuesta, type: 'count' }
+                ];
+            });
+
+            const razonesNoPasoRows = computed(() => {
+                if (!reportData.value || !reportData.value.razonesNoPasoVentas) return [];
+                const rnp = reportData.value.razonesNoPasoVentas;
+                const totalBase = rnp._totalDescartados?.total?.count || 0;
+                const calcMix = (metric) => totalBase > 0 ? ((metric?.total?.count || 0) / totalBase * 100).toFixed(1) : '0.0';
+                return [
+                    { label: 'No perfil adecuado', metric: rnp.noPerfilAdecuado, type: 'count', mixPct: calcMix(rnp.noPerfilAdecuado) },
+                    { label: 'Sin presupuesto', metric: rnp.sinPresupuesto, type: 'count', mixPct: calcMix(rnp.sinPresupuesto) },
+                    { label: 'Sin interes genuino', metric: rnp.sinInteresGenuino, type: 'count', mixPct: calcMix(rnp.sinInteresGenuino) },
+                    { label: 'Necesita tercero para decidir', metric: rnp.necesitaTercero, type: 'count', mixPct: calcMix(rnp.necesitaTercero) },
+                    { label: 'No entendio info marketing', metric: rnp.noEntendioMarketing, type: 'count', mixPct: calcMix(rnp.noEntendioMarketing) },
+                    { label: 'Otros', metric: rnp.otros, type: 'count', mixPct: calcMix(rnp.otros) },
+                    { label: 'Total Descartados', metric: rnp._totalDescartados, type: 'count', isSummary: true, mixPct: '100.0' }
+                ];
+            });
+
+            const razonesPerdioRows = computed(() => {
+                if (!reportData.value || !reportData.value.razonesPerdioVenta) return [];
+                const rpv = reportData.value.razonesPerdioVenta;
+                const totalBase = rpv._totalPerdidas?.total?.count || 0;
+                const calcMix = (metric) => totalBase > 0 ? ((metric?.total?.count || 0) / totalBase * 100).toFixed(1) : '0.0';
+                return [
+                    { label: 'Sin presupuesto', metric: rpv.sinPresupuesto, type: 'count', mixPct: calcMix(rpv.sinPresupuesto) },
+                    { label: 'Eligio competidor', metric: rpv.eligioCompetidor, type: 'count', mixPct: calcMix(rpv.eligioCompetidor) },
+                    { label: 'No responde', metric: rpv.noResponde, type: 'count', mixPct: calcMix(rpv.noResponde) },
+                    { label: 'Timing inadecuado', metric: rpv.timingInadecuado, type: 'count', mixPct: calcMix(rpv.timingInadecuado) },
+                    { label: 'No tiene poder de decision', metric: rpv.noTienePoderDecision, type: 'count', mixPct: calcMix(rpv.noTienePoderDecision) },
+                    { label: 'Producto no se ajusta', metric: rpv.productoNoSeAjusta, type: 'count', mixPct: calcMix(rpv.productoNoSeAjusta) },
+                    { label: 'Cambio de prioridades', metric: rpv.cambioPrioridades, type: 'count', mixPct: calcMix(rpv.cambioPrioridades) },
+                    { label: 'Mala experiencia previa', metric: rpv.malaExperienciaPrevia, type: 'count', mixPct: calcMix(rpv.malaExperienciaPrevia) },
+                    { label: 'Precio muy alto', metric: rpv.precioMuyAlto, type: 'count', mixPct: calcMix(rpv.precioMuyAlto) },
+                    { label: 'Proceso interno largo', metric: rpv.procesoInternoLargo, type: 'count', mixPct: calcMix(rpv.procesoInternoLargo) },
+                    { label: 'Se fue con otra solucion', metric: rpv.seFueConOtraSolucion, type: 'count', mixPct: calcMix(rpv.seFueConOtraSolucion) },
+                    { label: 'No era el perfil', metric: rpv.noEraElPerfil, type: 'count', mixPct: calcMix(rpv.noEraElPerfil) },
+                    { label: 'Empresa cerro', metric: rpv.empresaCerro, type: 'count', mixPct: calcMix(rpv.empresaCerro) },
+                    { label: 'Sin especificar', metric: rpv.sinEspecificar, type: 'count', mixPct: calcMix(rpv.sinEspecificar) },
+                    { label: 'Total Perdidas', metric: rpv._totalPerdidas, type: 'count', isSummary: true, mixPct: '100.0' }
+                ];
+            });
+
+            const semaforoSegment = ref('total');
+
+            function getSegmentValue(metric, segment) {
+                if (!metric || !metric[segment]) return { count: 0, pct: '0.0', delta: '0.0' };
+                return metric[segment];
+            }
+
+            function formatAmount(val) {
+                if (!val && val !== 0) return '$0';
+                return '$' + Number(val).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+            }
+
+            const toast = reactive({ show: false, message: '', type: 'info' });
+
+            // ── Navigation ──
+            const navItems = computed(() => [
+                { id: 'dashboard', icon: 'dashboard', label: 'Dashboard' },
+                { id: 'leads', icon: 'list_alt', label: 'Prospectos', badge: leads.value.length || null },
+                { id: 'negociaciones', icon: 'handshake', label: 'Negociaciones', badge: deals.value.length || null },
+                { id: 'reportes', icon: 'assessment', label: 'Reportes' },
+                { id: 'calendar', icon: 'calendar_month', label: 'Calendario' },
+                { id: 'config', icon: 'settings', label: 'Configuración' },
+                { id: 'account', icon: 'person', label: 'Cuenta' },
+            ]);
+
+            const currentPageTitle = computed(() => {
+                const titles = {
+                    dashboard: 'Dashboard', leads: 'Prospectos', negociaciones: 'Negociaciones',
+                    reportes: 'Reportes', calendar: 'Calendario', config: 'Configuración', account: 'Cuenta'
+                };
+                return titles[currentView.value] || '';
+            });
+
+            // ── User ──
+            const userInitials = computed(() => {
+                const email = currentUser.value.email || 'U';
+                return email.substring(0, 2).toUpperCase();
+            });
+
+            // ── Kanban ──
+            const sdrKanbanStatuses = computed(() => catalogs.value['Status'] || []);
+            const aeKanbanStatuses = computed(() => catalogs.value['Status de Venta'] || []);
+
+            // Kanban statuses depend on which view is active, not the user role
+            const kanbanStatuses = computed(() => {
+                if (currentView.value === 'negociaciones') return aeKanbanStatuses.value;
+                return sdrKanbanStatuses.value;
+            });
+
+            const activeDataset = computed(() => {
+                if (currentView.value === 'negociaciones') return deals.value;
+                return leads.value;
+            });
+
+            // Kanban: get items by status for the active view
+            function getLeadsByStatus(status) {
+                const isNeg = currentView.value === 'negociaciones';
+                let items;
+                if (isNeg) {
+                    items = deals.value.filter(d => (d['Status de Venta'] || '').trim() === status);
+                    items.forEach(d => { d._source = 'deal'; });
+                } else {
+                    items = leads.value.filter(l => (l._colW_Status || '').trim() === status);
+                    items.forEach(l => { l._source = 'lead'; });
+                }
+                return items;
+            }
+
+            function getFilteredLeadsByStatus(status) {
+                let items = getLeadsByStatus(status);
+                if (searchQuery.value) {
+                    const q = searchQuery.value.toLowerCase();
+                    items = items.filter(l =>
+                        (l._name || '').toLowerCase().includes(q) ||
+                        (l._empresa || '').toLowerCase().includes(q) ||
+                        (l._email || '').toLowerCase().includes(q) ||
+                        (l._tel || '').toLowerCase().includes(q) ||
+                        String(l._id).includes(q)
+                    );
+                }
+                return items;
+            }
+
+            // ── Prospectos (SDR) List ──
+            const filteredLeads = computed(() => {
+                let items = leads.value;
+                if (filterStatus.value) {
+                    items = items.filter(l => l._colW_Status === filterStatus.value);
+                }
+                if (searchQuery.value) {
+                    const q = searchQuery.value.toLowerCase();
+                    items = items.filter(l =>
+                        (l._name || '').toLowerCase().includes(q) ||
+                        (l._empresa || '').toLowerCase().includes(q) ||
+                        (l._email || '').toLowerCase().includes(q) ||
+                        (l._tel || '').toLowerCase().includes(q) ||
+                        String(l._id).includes(q)
+                    );
+                }
+                return items;
+            });
+
+            const totalPages = computed(() => Math.ceil(filteredLeads.value.length / pageSize) || 1);
+
+            const paginatedLeads = computed(() => {
+                const start = (currentPage.value - 1) * pageSize;
+                return filteredLeads.value.slice(start, start + pageSize);
+            });
+
+            // ── Negociaciones (AE) List ──
+            const currentNegPage = ref(1);
+            const filterDealStatus = ref('');
+
+            const filteredDeals = computed(() => {
+                let items = deals.value;
+                if (filterDealStatus.value) {
+                    items = items.filter(d => d['Status de Venta'] === filterDealStatus.value);
+                }
+                if (searchQuery.value) {
+                    const q = searchQuery.value.toLowerCase();
+                    items = items.filter(d =>
+                        (d._name || '').toLowerCase().includes(q) ||
+                        (d._empresa || '').toLowerCase().includes(q) ||
+                        (d._email || '').toLowerCase().includes(q) ||
+                        (d._tel || '').toLowerCase().includes(q) ||
+                        String(d._id).includes(q)
+                    );
+                }
+                return items;
+            });
+
+            const totalDealPages = computed(() => Math.ceil(filteredDeals.value.length / pageSize) || 1);
+
+            const paginatedDeals = computed(() => {
+                const start = (currentNegPage.value - 1) * pageSize;
+                return filteredDeals.value.slice(start, start + pageSize);
+            });
+
+            // ── Status Colors ──
+            const statusColorMap = {
+                'Nuevo': '#6c63ff',
+                'Contactado sin Respuesta': '#ff6b6b',
+                'En Seguimiento': '#f5a623',
+                'Reagendar': '#4fc3f7',
+                'Tocar en el futuro': '#a78bfa',
+                'Paso a Ventas': '#00d68f',
+                'Cross Selling': '#00bcd4',
+                'Perdido': '#8b5cf6',
+                'Resucitado': '#ff9800',
+            };
+
+            function getStatusColor(status) {
+                return statusColorMap[status] || '#8892b0';
+            }
+
+            // ── Pricing Computed ──
+            const uniqueRegions = computed(() => [...new Set(pricing.value.map(p => p.region))]);
+            const uniqueMembershipTypes = computed(() => [...new Set(pricing.value.map(p => p.membershipType))]);
+            const uniqueAttractions = computed(() => [...new Set(pricing.value.map(p => p.attraction))]);
+
+            const computedPricing = computed(() => {
+                const r = editLead['¿Cual es su región?'];
+                const m = editLead['¿Que tipo de membresía es?'];
+                const a = editLead['Pricing Tier'];
+                if (!r || !m || !a) return null;
+                const match = pricing.value.find(p =>
+                    p.region === r && p.membershipType === m && p.attraction === a
+                );
+                return match || null;
+            });
+
+            const comparisonLabel = computed(() => {
+                if (!comparisonRange.value.start || !comparisonRange.value.end) return '';
+                const fmt = (d) => d.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' });
+                return 'Comparando vs: ' + fmt(comparisonRange.value.start) + ' - ' + fmt(comparisonRange.value.end);
+            });
+
+            // ── Catalog Names ──
+            const catalogNames = computed(() => Object.keys(catalogs.value).filter(k => k.trim()));
+
+            // ── Config Categories ──
+            const configCategoryMap = {
+                general: {
+                    label: '⚙️ General & Status',
+                    keys: ['Status', 'Calidad de Contacto', 'Vendedor Asignado para Seguimiento']
+                },
+                calificacion: {
+                    label: '📊 Lead Scoring',
+                    keys: ['¿Cuál es tu necesidad puntual?', '¿Entendió la información de Marketing?', '¿Mostró Interés genuino?', '¿El perfil del prospecto es el adecuado?', '¿Tienes presupuesto asignado para este proyecto, en este año?', '¿han sido parte de alguna asociación de la industria?', '¿Necesitas tocar base con alguién para decidir la compra?']
+                },
+                seguimiento: {
+                    label: '📞 Seguimiento',
+                    keys: ['Toques de Contactación', 'Tipo de Seguimiento', 'Toques de Seguimiento', 'Status del Seguimiento', 'Razón de pérdida']
+                },
+                pricing: {
+                    label: '💰 Pricing',
+                    keys: ['¿Cual es su región?', '¿Que tipo de membresía es?', 'Pricing Tier']
+                }
+            };
+
+            const filteredCatalogNames = computed(() => {
+                const cat = activeConfigCategory.value;
+                const allNames = catalogNames.value;
+                if (configCategoryMap[cat]) {
+                    return allNames.filter(n => configCategoryMap[cat].keys.includes(n));
+                }
+                // 'otros' — show any catalog not in known categories
+                const allKnown = Object.values(configCategoryMap).flatMap(c => c.keys);
+                return allNames.filter(n => !allKnown.includes(n));
+            });
+
+            const configCategories = computed(() => {
+                const cats = Object.entries(configCategoryMap).map(([id, c]) => ({ id, label: c.label }));
+                // Check for "Otros"
+                const allKnown = Object.values(configCategoryMap).flatMap(c => c.keys);
+                const hasOthers = catalogNames.value.some(n => !allKnown.includes(n));
+                if (hasOthers) cats.push({ id: 'otros', label: '📁 Otros' });
+                return cats;
+            });
+
+            // ── Calendar (FullCalendar.js Integration) ──
+            function initFullCalendar() {
+                const el = document.getElementById('fullcalendar-container');
+                if (!el) return;
+
+                if (fullCalendarInstance) {
+                    fullCalendarInstance.destroy(); // Destruye la instancia previa atada al DOM antiguo
+                }
+
+                fullCalendarInstance = new FullCalendar.Calendar(el, {
+                    initialView: 'dayGridMonth',
+                    locale: 'es',
+                    headerToolbar: {
+                        left: 'prev,next today',
+                        center: 'title',
+                        right: 'dayGridMonth,timeGridWeek,listWeek'
+                    },
+                    buttonText: {
+                        today: 'Hoy', month: 'Mes', week: 'Semana', list: 'Lista'
+                    },
+                    height: 'auto',
+                    selectable: true,
+                    selectMirror: true,
+                    // Click o drag sobre fechas vacías → abre Quick Calendar
+                    select: function (info) {
+                        var startDate = info.startStr.split('T')[0];
+                        var startTime = info.startStr.includes('T') ? info.startStr.split('T')[1].substring(0, 5) : '';
+                        openQuickCalendar('Agendado desde Calendario', startDate, startTime);
+                        fullCalendarInstance.unselect();
+                    },
+                    // Click sobre evento existente → abre modal de detalles
+                    eventClick: function (info) {
+                        var ev = info.event;
+                        selectedEventData.id = ev.extendedProps && ev.extendedProps.id ? ev.extendedProps.id : (ev.id || '');
+                        selectedEventData.title = ev.title;
+                        selectedEventData.start = ev.startStr;
+                        selectedEventData.end = ev.endStr;
+
+                        // Convertir ISO a datetime-local (YYYY-MM-DDTHH:MM)
+                        function isoToLocal(isoStr) {
+                            if (!isoStr) return '';
+                            var d = new Date(isoStr);
+                            var pad = function (n) { return n < 10 ? '0' + n : '' + n; };
+                            return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) +
+                                'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+                        }
+                        selectedEventData.startLocal = isoToLocal(ev.startStr);
+                        selectedEventData.endLocal = isoToLocal(ev.endStr);
+
+                        // Tipo basado en hack de colores
+                        var color = ev.backgroundColor;
+                        if (color === '#e67c73') selectedEventData.type = 'Tarea';
+                        else if (color === '#dc2127') selectedEventData.type = 'Recordatorio';
+                        else if (color === '#616161') selectedEventData.type = 'Registro Visual';
+                        else selectedEventData.type = 'Evento';
+
+                        // Campos extendidos del backend
+                        var props = ev.extendedProps || {};
+                        selectedEventData.description = props.description || '';
+                        selectedEventData.notificationMinutes = props.notificationMinutes || 30;
+                        selectedEventData.visibility = props.visibility || 'DEFAULT';
+
+                        showEventDetails.value = true;
+                    },
+                    events: function (info, successCallback, failureCallback) {
+                        google.script.run
+                            .withSuccessHandler(function (json) {
+                                try {
+                                    var parsed = JSON.parse(json);
+                                    if (parsed.status === 'success') {
+                                        successCallback(parsed.data);
+                                    } else {
+                                        failureCallback(parsed.message);
+                                    }
+                                } catch (e) {
+                                    failureCallback('Error parsing events');
+                                }
+                            })
+                            .withFailureHandler(function (err) {
+                                failureCallback(err.message || 'Error fetching events');
+                            })
+                            .getAgentEvents(info.startStr, info.endStr);
+                    }
+                });
+                fullCalendarInstance.render();
+            }
+
+            // Watch for view changes to init FullCalendar
+            watch(currentView, function (newView) {
+                if (newView === 'calendar') {
+                    nextTick(function () {
+                        initFullCalendar();
+                    });
+                }
+            });
+
+            // ── Quick Calendar Functions ──
+            function openQuickCalendar(fieldName, dateVal, timeVal) {
+                // Auto-fill asunto with the field name + entity name
+                var entityName = '';
+                if (editLead.value) {
+                    entityName = (editLead.value['Nombre'] || '') + ' ' + (editLead.value['Apellido'] || '');
+                    entityName = entityName.trim();
+                }
+                quickCalForm.tipo = 'Evento';
+                quickCalForm.asunto = fieldName + (entityName ? ' - ' + entityName : '');
+                quickCalForm.fecha = dateVal || '';
+                quickCalForm.hora = timeVal || '';
+                quickCalForm.notificationMinutes = 30;
+                quickCalForm.visibility = 'DEFAULT';
+                showQuickCalendar.value = true;
+            }
+
+            function saveQuickCalendar() {
+                if (!quickCalForm.asunto || !quickCalForm.fecha) return;
+                var tipo = quickCalForm.tipo;
+                var asunto = quickCalForm.asunto;
+                var fecha = quickCalForm.fecha;
+                var hora = quickCalForm.hora;
+                var notifOpts = parseInt(quickCalForm.notificationMinutes, 10);
+                var visOpts = quickCalForm.visibility;
+
+                google.script.run
+                    .withSuccessHandler(function (result) {
+                        if (result.status === 'success') {
+                            showToast('✅ ' + result.message, 'success');
+                            showQuickCalendar.value = false;
+                            // Refresh FullCalendar if it's visible
+                            if (fullCalendarInstance) {
+                                fullCalendarInstance.refetchEvents();
+                            }
+                        } else {
+                            showToast('❌ ' + result.message, 'error');
+                        }
+                    })
+                    .withFailureHandler(function (err) {
+                        showToast('❌ Error: ' + err.message, 'error');
+                    })
+                    .createCalendarEvent(tipo, asunto, fecha, hora, notifOpts, visOpts);
+            }
+
+            function submitEventDetailsUpdate() {
+                var data = {
+                    title: selectedEventData.title,
+                    start: selectedEventData.startLocal ? new Date(selectedEventData.startLocal).toISOString() : selectedEventData.start,
+                    end: selectedEventData.endLocal ? new Date(selectedEventData.endLocal).toISOString() : selectedEventData.end,
+                    description: selectedEventData.description,
+                    notificationMinutes: selectedEventData.notificationMinutes,
+                    tipo: selectedEventData.type,
+                    visibility: selectedEventData.visibility
+                };
+                google.script.run
+                    .withSuccessHandler(function (result) {
+                        if (result.status === 'success') {
+                            showToast('✅ ' + result.message, 'success');
+                            showEventDetails.value = false;
+                            if (fullCalendarInstance) fullCalendarInstance.refetchEvents();
+                        } else {
+                            showToast('❌ ' + result.message, 'error');
+                        }
+                    })
+                    .withFailureHandler(function (err) {
+                        showToast('❌ Error: ' + err.message, 'error');
+                    })
+                    .updateCalendarEvent(selectedEventData.id, data);
+            }
+
+            function deleteEventFromCalendar() {
+                if (!selectedEventData.id) {
+                    showToast('❌ No se puede eliminar: ID no disponible', 'error');
+                    return;
+                }
+                if (!confirm('¿Estás seguro de que deseas eliminar "' + selectedEventData.title + '"?')) return;
+                google.script.run
+                    .withSuccessHandler(function (result) {
+                        if (result.status === 'success') {
+                            showToast('🗑️ ' + result.message, 'success');
+                            showEventDetails.value = false;
+                            if (fullCalendarInstance) fullCalendarInstance.refetchEvents();
+                        } else {
+                            showToast('❌ ' + result.message, 'error');
+                        }
+                    })
+                    .withFailureHandler(function (err) {
+                        showToast('❌ Error: ' + err.message, 'error');
+                    })
+                    .deleteCalendarEvent(selectedEventData.id);
+            }
+
+            // ── Report Functions ──
+            function formatDateYMD(date) {
+                if (!date) return '';
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                return year + '-' + month + '-' + day;
+            }
+
+            let reportAbortController = null;
+
+            function generateReport() {
+                if (!dateRange.value.start || !dateRange.value.end) return;
+                reportLoading.value = true;
+                reportError.value = null;
+                reportAbortController = new AbortController();
+
+                const dateIn = formatDateYMD(dateRange.value.start);
+                const dateOut = formatDateYMD(dateRange.value.end);
+
+                google.script.run
+                    .withSuccessHandler(function (jsonString) {
+                        if (reportAbortController && reportAbortController.signal.aborted) return;
+                        try {
+                            const data = typeof jsonString === 'string' ? JSON.parse(jsonString) : jsonString;
+                            if (data.error) {
+                                reportError.value = data.error;
+                                reportData.value = null;
+                            } else if (data.metadata && data.metadata.totalLeads === 0) {
+                                reportData.value = { _empty: true };
+                            } else {
+                                reportData.value = data;
+                            }
+                        } catch (e) {
+                            reportError.value = 'Error al procesar la respuesta: ' + e.message;
+                            reportData.value = null;
+                        }
+                        reportLoading.value = false;
+                    })
+                    .withFailureHandler(function (error) {
+                        if (reportAbortController && reportAbortController.signal.aborted) return;
+                        reportError.value = error.message || 'Error desconocido al generar el reporte';
+                        reportData.value = null;
+                        reportLoading.value = false;
+                    })
+                    .getSDRReport(dateIn, dateOut, compareType.value);
+            }
+
+            function cancelReport() {
+                if (reportAbortController) {
+                    reportAbortController.abort();
+                }
+                reportLoading.value = false;
+            }
+
+            function toggleSection(sectionId) {
+                const idx = openSections.value.indexOf(sectionId);
+                if (idx > -1) {
+                    openSections.value.splice(idx, 1);
+                } else {
+                    openSections.value.push(sectionId);
+                }
+            }
+
+            function scrollToSection(sectionId) {
+                if (!openSections.value.includes(sectionId)) {
+                    openSections.value.push(sectionId);
+                }
+                nextTick(() => {
+                    const el = document.getElementById('section-' + sectionId);
+                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                });
+            }
+
+            // ── Theme ──
+            function toggleTheme() { setTheme(isDark.value ? 'light' : 'dark'); }
+            function setTheme(theme) {
+                isDark.value = theme === 'dark';
+                document.documentElement.setAttribute('data-theme', theme);
+                try { localStorage.setItem('crm-theme', theme); } catch (e) { }
+            }
+
+            // ── Lead Detail Modal ──
+            function openLeadDetail(lead) {
+                selectedLead.value = lead;
+                Object.assign(editLead, JSON.parse(JSON.stringify(lead)));
+                modalTab.value = 'Lead';
+                showLeadModal.value = true;
+                // Load history asynchronously
+                const isDealItem = (lead._source === 'deal' || lead._source === 'cross_deal');
+                loadLeadHistory(lead._id, isDealItem);
+            }
+
+            function loadLeadHistory(idLead, isDeal) {
+                leadHistory.loading = true;
+                leadHistory.pipeline = [];
+                leadHistory.leads = [];
+                leadHistory.deals = [];
+                google.script.run
+                    .withSuccessHandler(function (jsonStr) {
+                        try {
+                            var result = typeof jsonStr === 'string' ? JSON.parse(jsonStr) : jsonStr;
+                            if (result && result.status === 'success' && result.data) {
+                                leadHistory.pipeline = result.data.pipeline || [];
+                                leadHistory.leads = result.data.leads || [];
+                                leadHistory.deals = result.data.deals || [];
+                            }
+                        } catch (e) {
+                            console.error('Error parsing history:', e);
+                        }
+                        leadHistory.loading = false;
+                    })
+                    .withFailureHandler(function (err) {
+                        console.error('Error loading history:', err);
+                        leadHistory.loading = false;
+                    })
+                    .getLeadHistory(idLead);
+            }
+
+            function closeLeadModal() {
+                showLeadModal.value = false;
+                isCreating.value = false;
+            }
+
+            // ── Manual Creation ──
+            function openCreateLead() {
+                // Clear all keys in editLead
+                Object.keys(editLead).forEach(k => delete editLead[k]);
+                selectedLead.value = {};
+                isCreating.value = true;
+                creationType.value = 'lead';
+                modalTab.value = 'Lead';
+                showLeadModal.value = true;
+            }
+
+            function openCreateDeal() {
+                Object.keys(editLead).forEach(k => delete editLead[k]);
+                selectedLead.value = {};
+                editLead['Status'] = 'Nuevo';
+                isCreating.value = true;
+                creationType.value = 'deal';
+                modalTab.value = 'Deal';
+                showLeadModal.value = true;
+            }
+
+            function submitCreation() {
+                saving.value = true;
+                const payload = {};
+                const ALL_KEYS = [
+                    'Nombre', 'Apellido', 'Email', 'Teléfono', 'Teléfono 2',
+                    'empresa', 'Area', 'source', 'medium', 'campaign', 'term', 'content',
+                    'Nivel', 'fbclid', 'Servicio', 'Ip', 'Link', 'Pais', 'Empleados',
+                    'Status', 'Calidad de Contacto', 'Toques de Contactación',
+                    '¿En qué toque va?', 'Tipo de Seguimiento', 'Toques de Seguimiento',
+                    'Status del Seguimiento', 'Razón de pérdida',
+                    '¿Entendió la información de Marketing?', '¿Mostró Interés genuino?',
+                    '¿Cuál es tu necesidad puntual?', '¿El perfil del prospecto es el adecuado?',
+                    '¿Necesitas tocar base con alguién para decidir la compra?',
+                    '¿Tienes presupuesto asignado para este proyecto, en este año?',
+                    '¿han sido parte de alguna asociación de la industria?',
+                    '¿Cual es su región?', '¿Que tipo de membresía es?', 'Pricing Tier',
+                    '¿Cuánto?', 'Vendedor Asignado para Seguimiento',
+                    'Notas', 'Status de Venta', '¿Ventas Contactó Cliente?',
+                    'Fecha de Reagenda', 'Hora de Reagenda', 'Index',
+                    '1 Year Mem', '2 Year Mem', 'Descuento',
+                    '¿Por qué perdimos la venta?', 'City', 'Country',
+                    'Link de Pago', 'Renovación', 'Soporte de pago'
+                ];
+                for (const key of ALL_KEYS) {
+                    const v = editLead[key];
+                    if (v !== undefined && v !== null && String(v).trim() !== '') {
+                        payload[key] = v;
+                    }
+                }
+
+                google.script.run
+                    .withSuccessHandler(function (result) {
+                        saving.value = false;
+                        if (result && result.status === 'error') {
+                            showToast('❌ Error al crear: ' + result.message, 'error');
+                            return;
+                        }
+                        const label = creationType.value === 'deal' ? 'Deal' : 'Lead';
+                        showToast('✅ ' + label + ' creado con ID #' + (result.data && result.data.id), 'success');
+                        closeLeadModal();
+                        refreshData();
+                    })
+                    .withFailureHandler(function (err) {
+                        saving.value = false;
+                        showToast('❌ Error al crear: ' + err.message, 'error');
+                    })
+                    .createNewLeadOrDeal(payload, creationType.value);
+            }
+
+            // ── Phase 1.3: Touch Change Handler (Relational — writes to fact_toques) ──
+            function onToqueChange(newToqueValue) {
+                var oldValue = String(selectedLead.value['Toques de Contactación'] || '0');
+                if (newToqueValue === oldValue) return;
+
+                if (!window.confirm('¿Deseas registrar este nuevo toque (#' + newToqueValue + ')? Esto actualizará el Timestamp.')) {
+                    // Revert dropdown
+                    editLead['Toques de Contactación'] = oldValue;
+                    return;
+                }
+
+                // Phase 1.11: Do NOT fabricate local timestamp — wait for backend fact_toques record
+                editLead['Toques de Contactación'] = newToqueValue;
+
+                // Determine vendedor and role
+                var idVendedor = editLead['Vendedor asignado (SDR)'] || currentUser.value?.email || '';
+                var rolVendedor = userRole.value || 'SDR';
+                var idEntidad = selectedLead.value._id;
+                var tipoEntidad = selectedLead.value._source === 'deal' ? 'Deal' : 'Lead';
+
+                // Atomic write to fact_toques (relational DB)
+                google.script.run
+                    .withSuccessHandler(function (res) {
+                        if (res && res.success) {
+                            // Phase 1.11: Use the exact backend fecha for Timestamp consistency
+                            editLead['Timestamp'] = res.fecha;
+                            editLead['time stamp'] = res.fecha;
+                            // Add to local _toquesList for immediate display
+                            if (!selectedLead.value._toquesList) selectedLead.value._toquesList = [];
+                            selectedLead.value._toquesList.push({
+                                toque: newToqueValue, fecha: res.fecha, vendedor: idVendedor, rol: rolVendedor
+                            });
+                            showToast('✅ Toque #' + newToqueValue + ' registrado', 'success');
+                        } else {
+                            showToast('❌ Error al registrar toque: ' + (res?.error || 'desconocido'), 'error');
+                        }
+                    })
+                    .withFailureHandler(function (err) {
+                        showToast('❌ Error: ' + err.message, 'error');
+                    })
+                    .registrarToque(idEntidad, tipoEntidad, idVendedor, rolVendedor, newToqueValue);
+            }
+
+            // ── AE Touch Change Handler (Relational — writes to fact_toques with rol AE) ──
+            function onAeToqueChange(newToqueValue) {
+                var oldValue = String(selectedLead.value['Numero de toque'] || '');
+                if (newToqueValue === oldValue) return;
+
+                if (!window.confirm('¿Deseas registrar el toque AE #' + newToqueValue + '? Esto quedará registrado en el historial.')) {
+                    editLead['Numero de toque'] = oldValue;
+                    return;
+                }
+
+                editLead['Numero de toque'] = newToqueValue;
+
+                var idVendedor = editLead['Vendedor Asignado para Seguimiento'] || currentUser.value?.email || '';
+                var rolVendedor = 'AE';
+                var idEntidad = selectedLead.value._id;
+                var tipoEntidad = 'Deal';
+
+                google.script.run
+                    .withSuccessHandler(function (res) {
+                        if (res && res.success) {
+                            if (!selectedLead.value._toquesList) selectedLead.value._toquesList = [];
+                            selectedLead.value._toquesList.push({
+                                toque: newToqueValue, fecha: res.fecha, vendedor: idVendedor, rol: rolVendedor
+                            });
+                            showToast('✅ Toque AE #' + newToqueValue + ' registrado', 'success');
+                        } else {
+                            showToast('❌ Error al registrar toque AE: ' + (res?.error || 'desconocido'), 'error');
+                        }
+                    })
+                    .withFailureHandler(function (err) {
+                        showToast('❌ Error: ' + err.message, 'error');
+                    })
+                    .registrarToque(idEntidad, tipoEntidad, idVendedor, rolVendedor, newToqueValue);
+            }
+
+            function saveLeadChanges() {
+                saving.value = true;
+                const row = selectedLead.value._row;
+                const updates = {};
+
+                // ── Intercept: If SDR changes Status to "Paso a Ventas" via dropdown, redirect to Handoff Modal ──
+                const isLead = selectedLead.value._source !== 'deal' && selectedLead.value._source !== 'cross_deal';
+                const oldStatus = String(selectedLead.value['Status'] || '').trim().toLowerCase();
+                const newStatus = String(editLead['Status'] || '').trim().toLowerCase();
+                if (isLead && newStatus === 'paso a ventas' && oldStatus !== 'paso a ventas') {
+                    saving.value = false;
+                    closeLeadModal();
+                    openHandoffModal(selectedLead.value);
+                    return;
+                }
+
+                // All Standard Keys the backend recognizes
+                const EDITABLE_KEYS = [
+                    // Contact fields
+                    'Nombre', 'Apellido', 'Email', 'Teléfono', 'Teléfono 2',
+                    'empresa', 'Area', 'Pais', 'City', 'Empleados',
+                    'Nivel', 'Servicio', 'Ip', 'Link', 'fbclid',
+                    // Status & Tracking
+                    'Status', 'Calidad de Contacto', 'Toques de Contactación',
+                    'Timestamp', 'time stamp',
+                    'Tipo de Seguimiento', 'Status del Seguimiento',
+                    'Razón de pérdida',
+                    // BANT / Calificación
+                    '¿Entendió la información de Marketing?', '¿Mostró Interés genuino?',
+                    '¿Cuál es tu necesidad puntual?', '¿El perfil del prospecto es el adecuado?',
+                    '¿Necesitas tocar base con alguién para decidir la compra?',
+                    '¿Tienes presupuesto asignado para este proyecto, en este año?',
+                    '¿han sido parte de alguna asociación de la industria?',
+                    '¿Cual es su región?', '¿Que tipo de membresía es?', 'Pricing Tier',
+                    '¿Cuánto?', 'Vendedor Asignado para Seguimiento',
+                    'Notas',
+                    // Pricing fields (SDR)
+                    'Tipo de Cliente', 'Ticket Promedio', 'Licencias Promedio', 'Monto Aproximado',
+                    // Assignment fields (SDR)
+                    'Vendedor asignado (SDR)', 'Fecha y Hora de asignación',
+                    // Pricing fields (AE)
+                    'Monto de Cotización',
+                    // AE-exclusive fields
+                    'Status de Venta', '¿Ventas Contactó Cliente?',
+                    'Fecha de Reagenda', 'Hora de Reagenda', 'Index',
+                    '1 Year Mem', '2 Year Mem', 'Descuento',
+                    '¿Por qué perdimos la venta?',
+                    'Link de Pago', 'Renovación', 'Soporte de pago',
+                    'Toque', 'Fecha de primer contacto AE', 'Numero de toque',
+                    'Proyeccion', 'Monto de proyección', 'Monto de Apartado',
+                    'Monto de cierre', 'Fecha de Cierre', 'Producto de Cierre',
+                    'Cross Selling?', 'Notas Vendedor', '¿Es cliente activo?',
+                    '¿Es recompra?', 'Producto de Recompra', 'Valor de recompra',
+                    'Fecha de recompra', 'Fuente de origen', 'Tipo de Transacción',
+                    'Deal Code'
+                ];
+
+                // Auto-inject calculated Monto Aproximado before diff
+                editLead['Monto Aproximado'] = String(calculoMontoAproximado.value || 0);
+
+                for (const key of EDITABLE_KEYS) {
+                    const oldVal = String(selectedLead.value[key] ?? '');
+                    const newVal = String(editLead[key] ?? '');
+                    if (oldVal !== newVal) {
+                        updates[key] = editLead[key];
+                    }
+                }
+
+                if (Object.keys(updates).length === 0) {
+                    saving.value = false;
+                    showToast('No hay cambios para guardar.', 'info');
+                    return;
+                }
+
+                google.script.run
+                    .withSuccessHandler(function (result) {
+                        saving.value = false;
+                        // Phase 1.8: Surface real backend errors (triggerError) instead of phantom status check
+                        if (result && result.triggerError) {
+                            showToast('❌ Error del servidor: ' + result.triggerError, 'error');
+                            console.error('[SAVE] Backend triggerError:', result.triggerError);
+                            return;
+                        }
+                        if (result && result.updated === false) {
+                            showToast('⚠️ No se actualizó ninguna columna. Verifica los headers en Google Sheets.', 'error');
+                            console.warn('[SAVE] Backend returned updated=false. Full result:', JSON.stringify(result));
+                            return;
+                        }
+                        showToast('✅ Registro actualizado correctamente', 'success');
+                        // Update local data using correct dataset
+                        const isDealSource = (selectedLead.value._source === 'deal' || selectedLead.value._source === 'cross_deal');
+                        const dataset = isDealSource ? deals : leads;
+                        const idx = dataset.value.findIndex(l => l._row === row);
+                        if (idx >= 0) {
+                            for (const key of EDITABLE_KEYS) {
+                                if (updates.hasOwnProperty(key)) {
+                                    dataset.value[idx][key] = editLead[key];
+                                }
+                            }
+                            // Rebuild UI convenience aliases
+                            dataset.value[idx]._colW_Status = dataset.value[idx]['Status'] || '';
+                            dataset.value[idx]._colX_Calidad = dataset.value[idx]['Calidad de Contacto'] || '';
+                            dataset.value[idx]._colY_Toques = dataset.value[idx]['Toques de Contactación'] || '';
+                            dataset.value[idx]._colAQ_Vendedor = dataset.value[idx]['Vendedor Asignado para Seguimiento'] || '';
+                            dataset.value[idx]._colAS_Notas = dataset.value[idx]['Notas'] || '';
+                            dataset.value[idx]._name = ((dataset.value[idx]['Nombre'] || '') + ' ' + (dataset.value[idx]['Apellido'] || '')).trim();
+                            dataset.value[idx]._empresa = dataset.value[idx]['empresa'] || '';
+                            dataset.value[idx]._email = dataset.value[idx]['Email'] || '';
+                            dataset.value[idx]._tel = dataset.value[idx]['Teléfono'] || '';
+                        }
+                        closeLeadModal();
+                        loadStats();
+                    })
+                    .withFailureHandler(function (err) {
+                        saving.value = false;
+                        showToast('❌ Error al guardar: ' + err.message, 'error');
+                    })
+                    .updateLeadMultiple(row, updates, selectedLead.value._source === 'deal' || selectedLead.value._source === 'cross_deal');
+            }
+
+            // ── Catalog Editor ──
+            const configValuesList = ref(null);
+            let catalogSortable = null;
+
+            watch(activeCatalog, (newCat) => {
+                if (newCat && catalogs.value[newCat]) {
+                    editingCatalogValues.value = [...catalogs.value[newCat]];
+                    nextTick(() => {
+                        if (configValuesList.value && !catalogSortable && typeof Sortable !== 'undefined') {
+                            catalogSortable = new Sortable(configValuesList.value, {
+                                handle: '.drag-handle',
+                                animation: 150,
+                                onEnd: function (evt) {
+                                    const itemEl = editingCatalogValues.value.splice(evt.oldIndex, 1)[0];
+                                    editingCatalogValues.value.splice(evt.newIndex, 0, itemEl);
+                                }
+                            });
+                        }
+                    });
+                } else {
+                    editingCatalogValues.value = [];
+                    if (catalogSortable) {
+                        catalogSortable.destroy();
+                        catalogSortable = null;
+                    }
+                }
+            });
+
+            function saveCatalog() {
+                if (!activeCatalog.value) return;
+                savingCatalog.value = true;
+                const clean = editingCatalogValues.value.filter(v => v.trim());
+
+                google.script.run
+                    .withSuccessHandler(function (result) {
+                        savingCatalog.value = false;
+                        catalogs.value[activeCatalog.value] = [...clean];
+                        showToast('✅ Catálogo "' + activeCatalog.value + '" guardado', 'success');
+                    })
+                    .withFailureHandler(function (err) {
+                        savingCatalog.value = false;
+                        showToast('❌ Error: ' + err.message, 'error');
+                    })
+                    .updateCatalog(activeCatalog.value, clean);
+            }
+
+            // ── Toast ──
+            function showToast(message, type) {
+                toast.show = true;
+                toast.message = message;
+                toast.type = type || 'info';
+                setTimeout(() => { toast.show = false; }, 3000);
+            }
+
+            // ── Date formatting ──
+            function formatDate(dateStr) {
+                if (!dateStr) return '—';
+                try {
+                    const d = new Date(dateStr);
+                    return d.toLocaleDateString('es-MX', {
+                        day: '2-digit', month: 'short', year: 'numeric',
+                        hour: '2-digit', minute: '2-digit'
+                    });
+                } catch (e) {
+                    return dateStr;
+                }
+            }
+
+            // ── Safe text truncation (prevents line-break SyntaxError in Vue templates) ──
+            function formatNotes(text, maxLen) {
+                if (!text) return '';
+                var str = String(text);
+                if (str.length > maxLen) return str.substring(0, maxLen) + '...';
+                return str;
+            }
+
+            // ── Data Loading ──
+            function loadLeads() {
+                return new Promise((resolve) => {
+                    google.script.run
+                        .withSuccessHandler(function (response) {
+                            try {
+                                if (typeof response === 'string') {
+                                    response = JSON.parse(response || '{}');
+                                }
+                                // New format: { leads: [...], deals: [...] }
+                                if (response.leads !== undefined) {
+                                    leads.value = response.leads || [];
+                                    deals.value = response.deals || [];
+                                    vendedoresList.value = response.vendedores || [];
+                                }
+                                // Legacy wrapped format: { status, data: { leads, deals } }
+                                else if (response.data && response.data.leads) {
+                                    leads.value = response.data.leads || [];
+                                    deals.value = response.data.deals || [];
+                                }
+                                // Oldest fallback: raw array
+                                else if (Array.isArray(response)) {
+                                    leads.value = response;
+                                    deals.value = [];
+                                } else if (Array.isArray(response.data)) {
+                                    leads.value = response.data;
+                                    deals.value = [];
+                                }
+                                // GLOBAL _source injection (ensures read-only flag works from ANY view)
+                                leads.value.forEach(function (l) { l._source = 'lead'; });
+                                deals.value.forEach(function (d) { d._source = 'deal'; });
+                                if (response.error) {
+                                    console.error('[API] getLeads error:', response.error);
+                                }
+                            } catch (e) {
+                                console.error('[DEBUG] Parsing error:', e);
+                            }
+                            console.log('[DEBUG] Loaded:', leads.value.length, 'leads,', deals.value.length, 'deals.');
+                            resolve();
+                        })
+                        .withFailureHandler(function (err) {
+                            console.error('[DEBUG] getLeads FAILED:', err);
+                            showToast('Error cargando datos: ' + err.message, 'error');
+                            resolve();
+                        })
+                        .getLeads();
+                });
+            }
+
+            function loadCatalogs() {
+                return new Promise((resolve) => {
+                    google.script.run
+                        .withSuccessHandler(function (response) {
+                            let data = {};
+                            if (response && response.status === 'success') {
+                                data = response.data || {};
+                            } else if (response && response.status === 'error') {
+                                console.error('[API] getCatalogs error:', response.message);
+                            } else {
+                                // Backward compat: raw object
+                                data = response || {};
+                            }
+                            console.log('[DEBUG] getCatalogs returned:', Object.keys(data));
+                            if (data['Status']) {
+                                console.log('[DEBUG] Status catalog values:', JSON.stringify(data['Status']));
+                            } else {
+                                console.warn('[DEBUG] No "Status" catalog found — Pipeline will be empty!');
+                            }
+                            catalogs.value = data;
+                            resolve();
+                        })
+                        .withFailureHandler(function (err) {
+                            console.error('[DEBUG] getCatalogs FAILED:', err);
+                            resolve();
+                        })
+                        .getCatalogs();
+                });
+            }
+
+            function loadPricing() {
+                return new Promise((resolve) => {
+                    google.script.run
+                        .withSuccessHandler(function (response) {
+                            if (response && response.status === 'success') {
+                                pricing.value = response.data || [];
+                            } else if (response && response.data) {
+                                pricing.value = response.data || [];
+                            } else {
+                                // Backward compat: raw array
+                                pricing.value = response || [];
+                            }
+                            resolve();
+                        })
+                        .withFailureHandler(function (err) {
+                            console.error('Error loading pricing:', err);
+                            resolve();
+                        })
+                        .getPricingData();
+                });
+            }
+
+            function loadUser() {
+                return new Promise((resolve) => {
+                    google.script.run
+                        .withSuccessHandler(function (data) {
+                            currentUser.value = data || { email: 'Unknown', nombre: 'Unknown', rol: 'GUEST' };
+                            userConnected.value = data && data.isConnected;
+                            if (data && data.isConnected && data.clockInTime) {
+                                clockInTime.value = new Date(data.clockInTime);
+                                startClockTimer_();
+                            }
+                            resolve();
+                        })
+                        .withFailureHandler(function (err) {
+                            console.error('Error loading user config:', err);
+                            resolve();
+                        })
+                        .getUserConfig();
+                });
+            }
+
+            // ── Clock-In / Clock-Out ──
+            function handleClockIn() {
+                google.script.run
+                    .withSuccessHandler(function (result) {
+                        if (result && result.status === 'success') {
+                            userConnected.value = true;
+                            clockInTime.value = new Date();
+                            startClockTimer_();
+                            showToast('🟢 Conectado — ¡a trabajar!', 'success');
+                            resetInactivityTimer_();
+                        } else {
+                            showToast('Error al conectarse: ' + (result && result.message), 'error');
+                        }
+                    })
+                    .withFailureHandler(function (err) {
+                        showToast('Error: ' + err.message, 'error');
+                    })
+                    .clockIn();
+            }
+
+            function handleClockOut() {
+                google.script.run
+                    .withSuccessHandler(function (result) {
+                        if (result && result.status === 'success') {
+                            userConnected.value = false;
+                            clockInTime.value = null;
+                            clockTimer.value = '';
+                            if (clockInterval) { clearInterval(clockInterval); clockInterval = null; }
+                            if (inactivityTimeout) { clearTimeout(inactivityTimeout); inactivityTimeout = null; }
+                            showToast('🔴 Desconectado', 'info');
+                        }
+                    })
+                    .withFailureHandler(function (err) {
+                        showToast('Error: ' + err.message, 'error');
+                    })
+                    .clockOut();
+            }
+
+            function startClockTimer_() {
+                if (clockInterval) clearInterval(clockInterval);
+                clockInterval = setInterval(() => {
+                    if (!clockInTime.value) return;
+                    const diff = Date.now() - new Date(clockInTime.value).getTime();
+                    const h = Math.floor(diff / 3600000);
+                    const m = Math.floor((diff % 3600000) / 60000);
+                    clockTimer.value = h + 'h ' + String(m).padStart(2, '0') + 'm';
+                }, 10000); // Update every 10 sec
+            }
+
+            // ── Inactivity Auto-Disconnect ──
+            function resetInactivityTimer_() {
+                if (inactivityTimeout) clearTimeout(inactivityTimeout);
+                if (!userConnected.value) return;
+                inactivityTimeout = setTimeout(() => {
+                    if (userConnected.value) {
+                        handleClockOut();
+                        showToast('⏰ Desconectado por inactividad (30 min)', 'info');
+                    }
+                }, INACTIVITY_LIMIT_MS);
+            }
+
+            function loadActiveAEs() {
+                google.script.run
+                    .withSuccessHandler(function (result) {
+                        if (result && result.status === 'success') {
+                            activeAEs.value = result.data || [];
+                        }
+                    })
+                    .withFailureHandler(function () { activeAEs.value = []; })
+                    .getActiveAEs();
+            }
+
+            function loadRoutingConfig() {
+                google.script.run
+                    .withSuccessHandler(function (config) {
+                        if (config) {
+                            Object.assign(routingConfig, config);
+                        }
+                    })
+                    .withFailureHandler(function (err) { console.error('RoutingConfig error:', err); })
+                    .getRoutingConfig();
+            }
+
+            function saveRoutingRules() {
+                savingRouting.value = true;
+                var payload = {
+                    aeAssignmentMode: routingConfig.aeAssignmentMode,
+                    managerEmail: routingConfig.managerEmail
+                };
+                google.script.run
+                    .withSuccessHandler(function (result) {
+                        savingRouting.value = false;
+                        if (result && result.status === 'success') {
+                            showToast('✅ Reglas de routing guardadas', 'success');
+                        } else {
+                            showToast('❌ ' + (result.message || 'Error'), 'error');
+                        }
+                    })
+                    .withFailureHandler(function (err) {
+                        savingRouting.value = false;
+                        showToast('❌ Error: ' + err.message, 'error');
+                    })
+                    .saveRoutingConfig(payload);
+            }
+
+            // ── Round Robin Queue ──
+            const roundRobinQueue = ref(null);
+            const savingRROrder = ref(false);
+            let rrSortable = null;
+
+            watch([activeConfigCategory, () => routingConfig.aeAssignmentMode], ([newCat, newMode]) => {
+                if (newCat === 'routing' && newMode === 'AUTO') {
+                    nextTick(() => {
+                        if (roundRobinQueue.value && !rrSortable && typeof Sortable !== 'undefined') {
+                            rrSortable = new Sortable(roundRobinQueue.value, {
+                                handle: '.drag-handle',
+                                animation: 150,
+                                onEnd: function (evt) {
+                                    const itemEl = activeAEs.value.splice(evt.oldIndex, 1)[0];
+                                    activeAEs.value.splice(evt.newIndex, 0, itemEl);
+                                }
+                            });
+                        }
+                    });
+                } else {
+                    if (rrSortable) {
+                        rrSortable.destroy();
+                        rrSortable = null;
+                    }
+                }
+            });
+
+            function saveRoundRobinOrder() {
+                savingRROrder.value = true;
+                const orderedEmails = activeAEs.value.map(ae => ae.email);
+                google.script.run
+                    .withSuccessHandler(function (result) {
+                        savingRROrder.value = false;
+                        if (result && result.status === 'success') {
+                            showToast('✅ ' + result.message, 'success');
+                        } else {
+                            showToast('❌ ' + (result?.message || 'Error desconocido'), 'error');
+                        }
+                    })
+                    .withFailureHandler(function (err) {
+                        savingRROrder.value = false;
+                        showToast('❌ Error: ' + err.message, 'error');
+                    })
+                    .updateRoundRobinOrder(orderedEmails);
+            }
+
+            // ── Handoff Functions ──
+            function openHandoffModal(lead) {
+                // Populate handoff lead info
+                handoffLead._id = lead._id || '';
+                handoffLead._name = lead._name || ((lead['Nombre'] || '') + ' ' + (lead['Apellido'] || '')).trim();
+                handoffLead['Vendedor asignado (SDR)'] = lead['Vendedor asignado (SDR)'] || '';
+                // Build contact history from pipeline/toques
+                handoffLead._history = [];
+                if (leadHistory.pipeline && leadHistory.pipeline.length) {
+                    handoffLead._history = leadHistory.pipeline.slice();
+                }
+                // Reset form
+                handoffData.necesidad_puntual = '';
+                handoffData.necesita_decision_tercero = '';
+                handoffData.tiene_presupuesto = '';
+                handoffData.monto_presupuesto = '';
+                handoffData.notas_bandeja_plata = '';
+                handoffData.aeEmail = '';
+                showHandoffModal.value = true;
+            }
+
+            function cancelHandoff() {
+                showHandoffModal.value = false;
+            }
+
+            function submitHandoff() {
+                saving.value = true;
+                var payload = {
+                    leadId: handoffLead._id,
+                    aeEmail: handoffData.aeEmail || '',
+                    notas: handoffData.notas_bandeja_plata || ''
+                };
+                google.script.run
+                    .withSuccessHandler(function (result) {
+                        saving.value = false;
+                        if (result && result.status === 'success') {
+                            showToast('🎉 ' + result.message, 'success');
+                            showHandoffModal.value = false;
+                            showLeadModal.value = false;
+                            refreshData();
+                        } else {
+                            showToast('❌ ' + (result.message || 'Error en el handoff'), 'error');
+                        }
+                    })
+                    .withFailureHandler(function (err) {
+                        saving.value = false;
+                        showToast('❌ Error: ' + err.message, 'error');
+                    })
+                    .processHandoff(payload);
+            }
+
+            function loadStats() {
+                google.script.run
+                    .withSuccessHandler(function (response) {
+                        if (response && response.status === 'success') {
+                            stats.value = response.data || stats.value;
+                        } else if (response && !response.status) {
+                            // Backward compat
+                            stats.value = response || stats.value;
+                        }
+                    })
+                    .withFailureHandler(function (err) { console.error('Stats error:', err); })
+                    .getLeadStats();
+            }
+
+            async function refreshData() {
+                refreshing.value = true;
+                await Promise.all([loadLeads(), loadCatalogs()]);
+                loadStats();
+                refreshing.value = false;
+                showToast('Datos actualizados', 'info');
+                if (viewMode.value === 'kanban') nextTick(() => initKanbanDragDrop());
+            }
+
+            // ── Kanban Drag & Drop with SortableJS ──
+            function initKanbanDragDrop() {
+                if (viewMode.value !== 'kanban') return;
+
+                nextTick(() => {
+                    const columns = document.querySelectorAll('.kanban-cards');
+                    columns.forEach(col => {
+                        if (col._sortable) col._sortable.destroy();
+
+                        col._sortable = new Sortable(col, {
+                            group: 'kanban',
+                            animation: 300,
+                            ghostClass: 'sortable-ghost',
+                            chosenClass: 'sortable-chosen',
+                            dragClass: 'sortable-drag',
+                            easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+                            onEnd: function (evt) {
+                                const cardEl = evt.item;
+                                const newCol = evt.to;
+                                const rowNum = parseInt(cardEl.dataset.row, 10);
+                                const newStatus = newCol.dataset.status;
+                                const cardSource = cardEl.dataset.source || '';
+
+                                if (!rowNum || !newStatus) return;
+
+                                // Determine if this item is a deal or lead
+                                const itemIsDeal = cardSource === 'deal';
+                                const dataset = itemIsDeal ? deals : leads;
+                                const lead = dataset.value.find(l => l._row === rowNum);
+
+                                if (lead) {
+                                    const oldStatus = itemIsDeal ? lead['Status de Venta'] : lead._colW_Status;
+                                    if (oldStatus === newStatus) return;
+
+                                    // ── HANDOFF: Intercept "Paso a Ventas" with modal instead of confirm() ──
+                                    if (!itemIsDeal && newStatus.toLowerCase().trim() === 'paso a ventas') {
+                                        openHandoffModal(lead);
+                                        // Revert visually for now; the actual move happens after handoff form
+                                        nextTick(() => initKanbanDragDrop());
+                                        return;
+                                    }
+
+                                    // Update locally
+                                    if (itemIsDeal) {
+                                        lead['Status de Venta'] = newStatus;
+                                    } else {
+                                        lead._colW_Status = newStatus;
+                                        lead['Status'] = newStatus;
+                                    }
+
+                                    // Persist status change to backend
+                                    google.script.run
+                                        .withSuccessHandler(function (result) {
+                                            if (result && result.triggerError) {
+                                                if (itemIsDeal) {
+                                                    lead['Status de Venta'] = oldStatus;
+                                                } else {
+                                                    lead._colW_Status = oldStatus;
+                                                    lead['Status'] = oldStatus;
+                                                }
+                                                showToast('Error al mover: ' + result.triggerError, 'error');
+                                            } else {
+                                                const labelPrefix = itemIsDeal ? 'Deal #' : 'Lead #';
+                                                showToast(labelPrefix + (lead._id || rowNum) + ' → ' + newStatus, 'success');
+                                                loadStats();
+                                            }
+                                        })
+                                        .withFailureHandler(function (err) {
+                                            if (itemIsDeal) {
+                                                lead['Status de Venta'] = oldStatus;
+                                            } else {
+                                                lead._colW_Status = oldStatus;
+                                                lead['Status'] = oldStatus;
+                                            }
+                                            showToast('Error al mover: ' + err.message, 'error');
+                                        })
+                                        .updateLeadField(rowNum, itemIsDeal ? 'Status de Venta' : 'Status', newStatus, itemIsDeal);
+                                }
+                            }
+                        });
+                    });
+                });
+            }
+
+            // ── Handoff Modal (Ficha de Negociación) ──
+            function openHandoffModal(lead) {
+                handoffLead.value = lead;
+                // Phase 1.2: Pre-fill BANT from existing lead data to avoid double-entry
+                handoffData.necesidad_puntual = editLead['¿Cuál es tu necesidad puntual?'] || '';
+                handoffData.necesita_decision_tercero = editLead['¿Necesitas tocar base con alguién para decidir la compra?'] || '';
+                handoffData.tiene_presupuesto = editLead['¿Tienes presupuesto asignado para este proyecto, en este año?'] || '';
+                handoffData.monto_presupuesto = editLead['¿Cuánto?'] || '';
+                handoffData.notas_bandeja_plata = '';
+                showHandoffModal.value = true;
+            }
+
+            function cancelHandoff() {
+                showHandoffModal.value = false;
+                handoffLead.value = {};
+            }
+
+            function submitHandoff() {
+                saving.value = true;
+                const lead = handoffLead.value;
+                const row = lead._row;
+
+                // Build updates: Status = 'Paso a Ventas' + BANT fields + notes
+                const updates = {
+                    'Status': 'Paso a Ventas',
+                    '¿Cuál es tu necesidad puntual?': handoffData.necesidad_puntual,
+                    '¿Necesitas tocar base con alguién para decidir la compra?': handoffData.necesita_decision_tercero,
+                    '¿Tienes presupuesto asignado para este proyecto, en este año?': handoffData.tiene_presupuesto,
+                    '¿Cuánto?': handoffData.monto_presupuesto,
+                    'Notas': handoffData.notas_bandeja_plata
+                };
+
+                google.script.run
+                    .withSuccessHandler(function (result) {
+                        saving.value = false;
+                        if (result && result.status === 'error') {
+                            showToast('❌ Error en el traspaso: ' + result.message, 'error');
+                            return;
+                        }
+                        // Update local state
+                        lead._colW_Status = 'Paso a Ventas';
+                        lead['Status'] = 'Paso a Ventas';
+
+                        showHandoffModal.value = false;
+                        showToast('✅ Ficha de Negociación creada — Lead #' + (lead._id || row) + ' enviado al AE', 'success');
+                        refreshData();
+                    })
+                    .withFailureHandler(function (err) {
+                        saving.value = false;
+                        showToast('❌ Error: ' + err.message, 'error');
+                    })
+                    .updateLeadMultiple(row, updates, false);
+            }
+
+            // ── Email Compose Functions ──
+            function openEmailCompose() {
+                var lead = selectedLead.value;
+                emailForm.to = lead['Email'] || lead._email || '';
+                emailForm.subject = '';
+                emailForm.body = '';
+                emailForm.entityId = lead._id || '';
+                emailForm.entityType = lead._source === 'deal' || lead._source === 'cross_deal' ? 'deal' : 'lead';
+                emailAttachments.value = [];
+                showEmailCompose.value = true;
+
+                // Initialize Quill editor after DOM renders
+                nextTick(function () {
+                    var editorEl = document.getElementById('quill-email-editor');
+                    if (editorEl && typeof Quill !== 'undefined') {
+                        // Destroy previous instance if exists
+                        if (quillInstance) {
+                            try { quillInstance = null; } catch (e) { }
+                            editorEl.innerHTML = '';
+                        }
+                        quillInstance = new Quill('#quill-email-editor', {
+                            theme: 'snow',
+                            placeholder: 'Escribe el cuerpo del correo aquí...',
+                            modules: {
+                                toolbar: {
+                                    container: [
+                                        [{ 'font': [] }, { 'size': ['small', false, 'large', 'huge'] }],
+                                        ['bold', 'italic', 'underline', 'strike'],
+                                        [{ 'color': [] }, { 'background': [] }],
+                                        [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                                        [{ 'align': [] }],
+                                        ['link', 'image'],
+                                        ['clean']
+                                    ],
+                                    handlers: {
+                                        'image': function () {
+                                            // Trigger the hidden file input for attachments
+                                            var fileInput = document.querySelector('#email-attachment-input');
+                                            if (fileInput) fileInput.click();
+                                        },
+                                        'link': function (value) {
+                                            if (value) {
+                                                var href = prompt('Ingrese el enlace URL:');
+                                                if (href) this.quill.format('link', href);
+                                            } else {
+                                                this.quill.format('link', false);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                    }
+                });
+            }
+
+            function closeEmailCompose() {
+                showEmailCompose.value = false;
+                emailForm.to = '';
+                emailForm.subject = '';
+                emailForm.body = '';
+                emailAttachments.value = [];
+                if (quillInstance) {
+                    try { quillInstance = null; } catch (e) { }
+                }
+            }
+
+            function handleAttachmentSelect(event) {
+                var files = event.target.files;
+                if (!files || !files.length) return;
+                for (var i = 0; i < files.length; i++) {
+                    emailAttachments.value.push(files[i]);
+                }
+                // Check total size
+                if (emailAttachmentSizeMB.value > 20) {
+                    showToast('⚠️ Los adjuntos exceden el límite de 20 MB. Elimina algunos archivos.', 'error');
+                }
+                // Reset input so same file can be re-selected
+                event.target.value = '';
+            }
+
+            function removeAttachment(idx) {
+                emailAttachments.value.splice(idx, 1);
+            }
+
+            function sendEmail() {
+                // Get HTML content from Quill
+                var htmlBody = '';
+                var plainText = '';
+                if (quillInstance) {
+                    htmlBody = quillInstance.root.innerHTML || '';
+                    plainText = quillInstance.getText() || '';
+                }
+
+                if (!emailForm.to || !emailForm.subject || (!htmlBody && !plainText)) {
+                    showToast('Todos los campos son obligatorios (Para, Asunto, Cuerpo).', 'error');
+                    return;
+                }
+
+                if (emailAttachmentSizeMB.value > 20) {
+                    showToast('⚠️ Los adjuntos exceden el límite de 20 MB.', 'error');
+                    return;
+                }
+
+                sendingEmail.value = true;
+
+                // Process attachments to Base64
+                var filesToProcess = emailAttachments.value.slice();
+                var processedAttachments = [];
+                var filesProcessed = 0;
+
+                function doSend() {
+                    google.script.run
+                        .withSuccessHandler(function (result) {
+                            sendingEmail.value = false;
+                            if (result && result.status === 'success') {
+                                showToast('✅ ' + result.message, 'success');
+                                closeEmailCompose();
+                            } else {
+                                showToast('❌ ' + (result.message || 'Error desconocido'), 'error');
+                            }
+                        })
+                        .withFailureHandler(function (err) {
+                            sendingEmail.value = false;
+                            showToast('❌ Error al enviar correo: ' + err.message, 'error');
+                        })
+                        .sendDirectEmail(
+                            emailForm.to,
+                            emailForm.subject,
+                            plainText,
+                            emailForm.entityId,
+                            emailForm.entityType,
+                            htmlBody,
+                            processedAttachments
+                        );
+                }
+
+                if (filesToProcess.length === 0) {
+                    doSend();
+                } else {
+                    // Read all files as Base64 before sending
+                    for (var i = 0; i < filesToProcess.length; i++) {
+                        (function (file) {
+                            var rawFile = typeof Vue !== 'undefined' && Vue.toRaw ? Vue.toRaw(file) : file;
+                            var reader = new FileReader();
+                            reader.onload = function (e) {
+                                var base64 = e.target.result.split(',')[1]; // strip data:...;base64,
+                                processedAttachments.push({
+                                    filename: rawFile.name,
+                                    mimeType: rawFile.type || 'application/octet-stream',
+                                    data: base64
+                                });
+                                filesProcessed++;
+                                if (filesProcessed === filesToProcess.length) {
+                                    doSend();
+                                }
+                            };
+                            reader.onerror = function () {
+                                sendingEmail.value = false;
+                                showToast('❌ Error al leer archivo: ' + rawFile.name, 'error');
+                            };
+                            reader.readAsDataURL(rawFile);
+                        })(filesToProcess[i]);
+                    }
+                }
+            }
+
+            // ── HMN Config Functions ──
+            function loadHMN() {
+                google.script.run
+                    .withSuccessHandler(function (result) {
+                        if (result && result.status === 'success') {
+                            hmnVariables.value = result.data || {};
+                        }
+                    })
+                    .withFailureHandler(function (err) { console.error('HMN load error:', err); })
+                    .getHMNConfig();
+            }
+
+            function saveHMN() {
+                savingHMN.value = true;
+                google.script.run
+                    .withSuccessHandler(function (result) {
+                        savingHMN.value = false;
+                        showToast('✅ Configuración HMN guardada', 'success');
+                    })
+                    .withFailureHandler(function (err) {
+                        savingHMN.value = false;
+                        showToast('❌ Error: ' + err.message, 'error');
+                    })
+                    .saveHMNConfig(JSON.parse(JSON.stringify(hmnVariables.value)));
+            }
+
+            // ── User Management Functions ──
+            function loadAllUsers() {
+                google.script.run
+                    .withSuccessHandler(function (result) {
+                        if (result && result.status === 'success') {
+                            allUsers.value = result.data || [];
+                        }
+                    })
+                    .withFailureHandler(function (err) { console.error('Users load error:', err); })
+                    .getAllUsers();
+            }
+
+            function addUser() {
+                if (!newUserEmail.value.trim()) { showToast('Ingresa un email', 'warning'); return; }
+                savingUsers.value = true;
+                google.script.run
+                    .withSuccessHandler(function (result) {
+                        savingUsers.value = false;
+                        if (result && result.status === 'success') {
+                            showToast('✅ Usuario creado', 'success');
+                            newUserEmail.value = '';
+                            newUserNombre.value = '';
+                            newUserRol.value = 'SDR';
+                            loadAllUsers();
+                        } else {
+                            showToast('❌ ' + (result && result.message), 'error');
+                        }
+                    })
+                    .withFailureHandler(function (err) {
+                        savingUsers.value = false;
+                        showToast('❌ Error: ' + err.message, 'error');
+                    })
+                    .createUser(newUserEmail.value.trim(), newUserNombre.value.trim(), newUserRol.value);
+            }
+
+            function toggleUserActive(user) {
+                google.script.run
+                    .withSuccessHandler(function (result) {
+                        if (result && result.status === 'success') {
+                            user.activo = !user.activo;
+                            showToast(user.activo ? '✅ Usuario activado' : '🟡 Usuario desactivado', 'info');
+                        }
+                    })
+                    .withFailureHandler(function (err) { showToast('❌ Error: ' + err.message, 'error'); })
+                    .toggleUserActive(user.email);
+            }
+
+            function updateUserRole(user, newRole) {
+                google.script.run
+                    .withSuccessHandler(function (result) {
+                        if (result && result.status === 'success') {
+                            user.rol = newRole;
+                            showToast('✅ Rol actualizado a ' + newRole, 'success');
+                        }
+                    })
+                    .withFailureHandler(function (err) { showToast('❌ Error: ' + err.message, 'error'); })
+                    .updateUserRole(user.email, newRole);
+            }
+
+            // Watch for view/mode changes to re-init kanban
+            watch(currentView, (newView, oldView) => {
+                if (viewMode.value === 'kanban') {
+                    nextTick(() => initKanbanDragDrop());
+                }
+                if (newView === 'leads') currentPage.value = 1;
+                if (newView === 'negociaciones') currentNegPage.value = 1;
+                if (newView === 'config' && userRole.value === 'ADMIN') {
+                    loadHMN();
+                    loadAllUsers();
+                }
+                if (newView === 'reportes') {
+                    nextTick(() => {
+                        const now = new Date();
+                        const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+                        const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+                        if (flatpickrInstance) { flatpickrInstance.destroy(); flatpickrInstance = null; }
+
+                        flatpickrInstance = flatpickr('.date-range-picker', {
+                            mode: 'range',
+                            dateFormat: 'Y-m-d',
+                            defaultDate: [firstDay, lastDay],
+                            locale: { firstDayOfWeek: 1, rangeSeparator: ' a ' },
+                            onChange: function (selectedDates) {
+                                if (selectedDates.length === 2) {
+                                    dateRange.value = { start: selectedDates[0], end: selectedDates[1] };
+                                    const diffMs = selectedDates[1].getTime() - selectedDates[0].getTime();
+                                    const compEnd = new Date(selectedDates[0].getTime() - 86400000);
+                                    const compStart = new Date(compEnd.getTime() - diffMs);
+                                    comparisonRange.value = { start: compStart, end: compEnd };
+                                }
+                            }
+                        });
+
+                        // Set initial date range
+                        dateRange.value = { start: firstDay, end: lastDay };
+                        const diffMs = lastDay.getTime() - firstDay.getTime();
+                        const compEnd = new Date(firstDay.getTime() - 86400000);
+                        const compStart = new Date(compEnd.getTime() - diffMs);
+                        comparisonRange.value = { start: compStart, end: compEnd };
+
+                        // Auto-load current month report
+                        generateReport();
+                    });
+                }
+                if (oldView === 'reportes' && flatpickrInstance) {
+                    flatpickrInstance.destroy();
+                    flatpickrInstance = null;
+                }
+            });
+
+            watch(viewMode, (newMode) => {
+                if (newMode === 'kanban') {
+                    nextTick(() => initKanbanDragDrop());
+                }
+            });
+
+            // ── Init ──
+            onMounted(async () => {
+                // Apply saved theme
+                try {
+                    const saved = localStorage.getItem('crm-theme');
+                    if (saved) setTheme(saved); else setTheme('dark');
+                } catch (e) { setTheme('dark'); }
+
+                // Load all data
+                await Promise.all([loadLeads(), loadCatalogs(), loadPricing(), loadUser()]);
+                loadStats();
+                loadActiveAEs();
+                loadRoutingConfig();
+                loading.value = false;
+
+                // Set up inactivity listener
+                ['click', 'keydown', 'mousemove', 'scroll'].forEach(ev => {
+                    document.addEventListener(ev, resetInactivityTimer_, { passive: true });
+                });
+
+                nextTick(() => initKanbanDragDrop());
+            });
+
+            // Cleanup event listeners y timers al desmontar (fix MEM #1)
+            onUnmounted(() => {
+                ['click', 'keydown', 'mousemove', 'scroll'].forEach(ev => {
+                    document.removeEventListener(ev, resetInactivityTimer_);
+                });
+                if (clockInterval) { clearInterval(clockInterval); clockInterval = null; }
+                if (inactivityTimeout) { clearTimeout(inactivityTimeout); inactivityTimeout = null; }
+            });
+
+            return {
+                // State
+                loading, refreshing, saving, savingCatalog, savingHMN, savingUsers,
+                sidebarCollapsed, currentView, viewMode, searchQuery, filterStatus, filterDealStatus,
+                currentPage, currentNegPage, isDark, modalTab, showLeadModal, activeCatalog,
+                activeConfigCategory, configValuesList, roundRobinQueue, savingRROrder,
+                leads, deals, vendedoresList, activeDataset, catalogs, pricing, currentUser, stats,
+                selectedLead, editLead, leadHistory, editingCatalogValues,
+                isCreating, creationType,
+                userRole, userConnected, clockInTime, clockTimer, activeAEs,
+                toast, calendarDate,
+                // Handoff
+                showHandoffModal, handoffLead, handoffData,
+                // Email Compose
+                showEmailCompose, emailForm, sendingEmail,
+                emailAttachments, emailAttachmentSizeMB,
+                // HMN & Users
+                hmnVariables, allUsers, newUserEmail, newUserNombre, newUserRol,
+                // Reportes
+                reportData, reportLoading, reportError, dateRange, comparisonRange, compareType,
+                openSections, reportSections,
+                embudoRows, incontactablesRows, crossSellingRows,
+                semaforoContestoGrid, semaforoNoContestoGrid, maxToquesContesto, maxToquesNoContesto,
+                sinRespuestaRows, razonesNoPasoRows, razonesPerdioRows,
+                semaforoSegment,
+                matrizPivotMode,
+                getSegmentValue, formatAmount,
+                // Computed
+                navItems, currentPageTitle, userInitials,
+                kanbanStatuses, filteredLeads, totalPages, paginatedLeads,
+                filteredDeals, totalDealPages, paginatedDeals,
+                catalogNames, filteredCatalogNames, configCategories,
+                uniqueRegions, uniqueMembershipTypes, uniqueAttractions,
+                computedPricing, comparisonLabel,
+                showQuickCalendar, quickCalForm,
+                showEventDetails, selectedEventData,
+                isReadOnlySdrFields, calculoMontoAproximado,
+                sdrList, aeList, managerList,
+                // Methods
+                getLeadsByStatus, getFilteredLeadsByStatus, getStatusColor,
+                toggleTheme, setTheme,
+                openLeadDetail, closeLeadModal, saveLeadChanges, onToqueChange, onAeToqueChange,
+                openCreateLead, openCreateDeal, submitCreation,
+                handleClockIn, handleClockOut, loadActiveAEs,
+                saveCatalog, showToast, formatDate, formatNotes,
+                refreshData,
+                openQuickCalendar, saveQuickCalendar,
+                submitEventDetailsUpdate, deleteEventFromCalendar,
+                routingConfig, savingRouting, saveRoutingRules, saveRoundRobinOrder,
+                pageSize,
+                // Handoff methods
+                openHandoffModal, cancelHandoff, submitHandoff,
+                showHandoffModal, handoffLead, handoffData,
+                // Email Compose methods
+                openEmailCompose, closeEmailCompose, sendEmail,
+                handleAttachmentSelect, removeAttachment,
+                // HMN & User methods
+                loadHMN, saveHMN, loadAllUsers, addUser, toggleUserActive, updateUserRole,
+                // Report methods
+                generateReport, cancelReport, toggleSection, scrollToSection, formatDateYMD,
+            };
+        }
+    });
+
+    app.mount('#app');
+</script>

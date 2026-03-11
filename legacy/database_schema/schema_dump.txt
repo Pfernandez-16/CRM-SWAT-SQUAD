@@ -1,0 +1,66 @@
+=== dim_contactos (200r x 13c) ===
+Cols: ['id_contacto', 'nombre', 'apellido', 'email', 'telefono_1', 'telefono_2', 'empresa', 'area', 'pais', 'ciudad', 'empleados', 'nivel', 'fecha_creacion']
+  R2: [1, 'Valentina', 'Rodríguez', 'valentina.rodriguez@corporativo.mx', '+52 819 600 1338', None, 'Textiles Modernos', None, 'Uruguay', 'Montevideo', None, 'CEO', '2024-11-21 20:24:58']
+  R3: [2, 'Miguel', 'Aguilar', 'miguel.aguilar@corporativo.mx', '+56 542 351 1615', None, 'Metal Works SA', None, 'Costa Rica', 'San José', None, 'Analista', '2025-02-20 12:00:58']
+  R4: [3, 'Valentina', 'Romero', 'valentinaromero80@empresa.com', '+57 103 413 1647', None, 'Consultoría Integral', 'RRHH', 'Colombia', 'Cali', '11-50', 'VP', '2024-07-26 08:49:38']
+
+=== dim_campanas (30r x 8c) ===
+Cols: ['id_campana', 'source', 'medium', 'campaign', 'term', 'content', 'fecha_inicio', 'activa']
+  R2: [1, 'organic', 'display', 'lead_gen_2025', 'lead gen', None, '2024-02-17', True]
+  R3: [2, 'bing', 'referral', 'referral_program', None, 'carousel', '2025-09-08', True]
+  R4: [3, 'tiktok', 'organic', 'brand_awareness_q1', 'consultoría', 'banner_v1', '2025-10-10', True]
+
+=== dim_vendedores (7r x 5c) ===
+Cols: ['id_vendedor', 'email', 'nombre', 'rol', 'activo']
+  R2: [1, 'pedro.mendez@swatsquad.com', 'Pedro Méndez', 'SDR', True]
+  R3: [2, 'ana.garcia@swatsquad.com', 'Ana García', 'SDR', True]
+  R4: [3, 'carlos.lopez@swatsquad.com', 'Carlos López', 'SDR', True]
+
+=== dim_productos (60r x 8c) ===
+Cols: ['id_producto', 'region', 'membership_type', 'pricing_tier', 'precio_1_year', 'precio_2_year', 'moneda', 'activo']
+  R2: [1, 'Norteamérica', 'Manufacturers', 'Tier 1 - Basic', 2997, 4947, 'USD', True]
+  R3: [2, 'Norteamérica', 'Manufacturers', 'Tier 2 - Standard', 3364, 6004, 'USD', True]
+  R4: [3, 'Norteamérica', 'Manufacturers', 'Tier 3 - Premium', 4122, 7365, 'USD', True]
+
+=== fact_leads (200r x 14c) ===
+Cols: ['id_lead', 'id_contacto', 'id_campana', 'id_vendedor_sdr', 'status', 'calidad_contacto', 'servicio_interes', 'fecha_ingreso', 'fecha_asignacion', 'fecha_ultimo_contacto', 'numero_toques', 'tipo_seguimiento', 'status_seguimiento', 'notas']
+  R2: [1, 82, 27, 3, 'En Seguimiento', 'Excelente', None, '2024-04-01 22:53:56', '2024-04-04 03:53:56', '2024-05-01 22:53:56', 6, 'Email', 'Cancelado', 'Agenda reunión próxima semana']
+  R3: [2, 28, 5, 1, 'Calificado', 'Sin Calificar', None, '2024-04-28 00:41:05', '2024-04-29 06:41:05', '2024-05-17 00:41:05', 3, 'WhatsApp', 'Activo', 'Sin interés en este momento']
+  R4: [3, 35, None, 3, 'Perdido', 'Regular', 'Consultoría', '2024-03-02 17:31:45', '2024-03-05 08:31:45', '2024-03-17 17:31:45', 2, None, None, 'Pidió propuesta formal']
+
+=== fact_deals (33r x 21c) ===
+Cols: ['id_deal', 'id_lead', 'id_contacto', 'id_vendedor_ae', 'id_producto', 'status_venta', 'proyeccion', 'monto_proyeccion', 'monto_apartado', 'monto_cierre', 'fecha_pase_ventas', 'fecha_primer_contacto_ae', 'fecha_cierre', 'razon_perdida', 'descuento_pct', 'es_recompra', 'es_cliente_activo', 'producto_cierre', 'fuente_origen', 'tipo_transaccion', 'notas_vendedor']
+  R2: [1, 6, 185, 6, 34, 'Apartado', 'Baja', 41169, 8233.8, 0, '2025-04-22 04:38:08', '2025-04-23 08:38:08', None, None, 0, False, False, None, 'Outbound', None, 'Compara con 2 competidores']
+  R3: [2, 10, 83, 7, None, 'Stand-by', 'Alta', 10913, 0, 0, '2024-11-13 07:17:40', '2024-11-13 20:17:40', None, None, 0, False, False, None, 'Outbound', None, 'Muy interesado, buen perfil']
+  R4: [3, 30, 23, 7, 17, 'En negociación', 'Media', 3350, 0, 0, '2024-08-02 21:04:43', '2024-08-04 19:04:43', None, None, 0, False, False, None, 'Evento', None, 'Presupuesto limitado este trimestre']
+
+=== fact_interacciones (600r x 10c) ===
+Cols: ['id_interaccion', 'id_lead', 'id_deal', 'id_vendedor', 'tipo_interaccion', 'resultado', 'numero_toque', 'timestamp', 'duracion_seg', 'notas']
+  R2: [1, 96, None, 1, 'WhatsApp', 'Contestó', 3, '2025-01-03 03:47:49', None, 'Buena conversación, agenda demo']
+  R3: [2, 177, None, 2, 'WhatsApp', 'No Contestó', 1, '2024-12-11 20:21:31', None, None]
+  R4: [3, 161, None, 5, 'Teléfono', 'No Contestó', 7, '2024-07-07 10:56:40', None, 'Llamada breve, pide callback']
+
+=== fact_calificacion (56r x 13c) ===
+Cols: ['id_calificacion', 'id_lead', 'entendio_info_marketing', 'mostro_interes_genuino', 'necesidad_puntual', 'perfil_adecuado', 'necesita_decision_tercero', 'tiene_presupuesto', 'monto_presupuesto', 'asociacion_industria', 'region', 'tipo_membresia', 'fecha_calificacion']
+  R2: [1, 1, 'No', 'No', 'Necesita CRM', 'Sí', 'Parcialmente', 'Parcialmente', '> $50,000', None, 'Europa', 'Attraction', '2024-04-12 22:53:56']
+  R3: [2, 2, None, 'Parcialmente', 'Quiere capacitación', None, 'Sí', 'Parcialmente', '$20,000-$50,000', 'Parcialmente', None, None, '2024-04-30 00:41:05']
+  R4: [3, 4, 'Parcialmente', 'Sí', 'Busca membresía', None, 'No', 'No', '$20,000-$50,000', None, 'Norteamérica', 'Individuals', '2024-06-09 02:37:27']
+
+=== cat_opciones (106r x 5c) ===
+Cols: ['id_opcion', 'categoria', 'valor', 'orden', 'activo']
+  R2: [1, 'Status Lead', 'Nuevo', 1, True]
+  R3: [2, 'Status Lead', 'Contactado', 2, True]
+  R4: [3, 'Status Lead', 'En Seguimiento', 3, True]
+
+=== log_transacciones (250r x 8c) ===
+Cols: ['id_log', 'timestamp', 'entidad', 'id_entidad', 'usuario', 'campo_modificado', 'valor_anterior', 'valor_nuevo']
+  R2: [1, '2024-12-08 02:23:15', 'Lead', 47, 'carlos.lopez@swatsquad.com', 'Vendedor SDR', 'No Calificado', 'Perdido']
+  R3: [2, '2024-04-08 19:35:56', 'Lead', 59, 'sofia.martinez@swatsquad.com', 'Calidad de Contacto', 'En Seguimiento', 'Inválido']
+  R4: [3, '2025-05-24 12:19:08', 'Lead', 13, 'ana.garcia@swatsquad.com', 'Status', None, 'Nuevo']
+
+=== config_users (7r x 6c) ===
+Cols: ['email', 'nombre', 'rol', 'activo', 'conectado', 'ultimo_clockin']
+  R2: ['pedro.mendez@swatsquad.com', 'Pedro Méndez', 'SDR', True, False, '2025-12-27 02:28:33']
+  R3: ['ana.garcia@swatsquad.com', 'Ana García', 'SDR', True, False, '2025-12-24 09:23:53']
+  R4: ['carlos.lopez@swatsquad.com', 'Carlos López', 'SDR', True, True, '2025-12-29 21:42:52']
+
