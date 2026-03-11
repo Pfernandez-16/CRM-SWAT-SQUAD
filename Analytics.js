@@ -1057,6 +1057,36 @@ function calculateDealsReport_(allDeals, dateIn, dateOut, prevDateIn, prevDateOu
 
   var total = currentDeals.length;
 
+  // Step 4b — average days to close (fondeo=true deals only)
+  var today = new Date();
+  var closedDaysSum = 0;
+  var closedCount = 0;
+  for (var v = 0; v < currentDeals.length; v++) {
+    var vd = currentDeals[v];
+    if (vd.fondeo === true) {
+      var startMs = new Date(vd.fecha_pase_ventas || '').getTime();
+      if (!isNaN(startMs)) {
+        closedDaysSum += Math.round((today.getTime() - startMs) / 86400000);
+        closedCount++;
+      }
+    }
+  }
+  var avgDaysToClose = closedCount > 0 ? Math.round(closedDaysSum / closedCount) : 0;
+
+  var prevClosedDaysSum = 0;
+  var prevClosedCount = 0;
+  for (var pv = 0; pv < previousDeals.length; pv++) {
+    var pvd = previousDeals[pv];
+    if (pvd.fondeo === true) {
+      var pstartMs = new Date(pvd.fecha_pase_ventas || '').getTime();
+      if (!isNaN(pstartMs)) {
+        prevClosedDaysSum += Math.round((today.getTime() - pstartMs) / 86400000);
+        prevClosedCount++;
+      }
+    }
+  }
+  var prevAvgDaysToClose = prevClosedCount > 0 ? Math.round(prevClosedDaysSum / prevClosedCount) : 0;
+
   var stages = {
     contactado:     { si: total,         no: 0 },
     cotizado:       { si: cotizadoSi,    no: total - cotizadoSi },
@@ -1105,11 +1135,13 @@ function calculateDealsReport_(allDeals, dateIn, dateOut, prevDateIn, prevDateOu
   }
 
   return {
-    totalDeals:      total,
-    stages:          stages,
-    montoCotizacion: montoCotizacion,
-    montoCierre:     montoCierre,
-    razonesPerdida:  razonesPerdida
+    totalDeals:         total,
+    stages:             stages,
+    montoCotizacion:    montoCotizacion,
+    montoCierre:        montoCierre,
+    razonesPerdida:     razonesPerdida,
+    avgDaysToClose:     avgDaysToClose,
+    prevAvgDaysToClose: prevAvgDaysToClose
   };
 }
 
