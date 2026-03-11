@@ -84,10 +84,40 @@ Plans:
 - [ ] 04-01-PLAN.md — fact_deals schema update (5 checkbox columns) + calculateDealsReport_() backend function + wire into getSDRReport()
 - [ ] 04-02-PLAN.md — Deals frontend: dealsReportRows + dealsLossRows computeds in App.html + two new table blocks in Index.html
 
+### Phase 5: Comparativa Personalizada + Ranking SDRs
+**Goal**: El gerente puede comparar contra cualquier período libre, y puede ver el ranking de performance de sus SDRs con CVR y delta
+**Depends on**: Phase 4
+**Requirements**: CUSTOM-01, CUSTOM-02, CUSTOM-03, SDR-01, SDR-02, SDR-03
+**Success Criteria** (what must be TRUE):
+  1. El selector de período tiene una tercera opción "Personalizado" que muestra dos date pickers adicionales para el rango de comparación
+  2. Al generar reporte con modo personalizado, getSDRReport() recibe las fechas custom y calcula métricas comparativas contra ese período
+  3. Todas las tablas existentes muestran deltas correctos contra el período personalizado
+  4. La sección "Ranking SDRs" muestra tabla con nombre SDR, total leads, CVR actual, CVR anterior y delta, ordenada por CVR descendente
+  5. El ranking se actualiza al cambiar el período
+**Plans**: TBD
+
+Plans:
+- [ ] 05-01-PLAN.md — Backend: extender getSDRReport() para fechas custom + calculateSDRRankingReport_()
+- [ ] 05-02-PLAN.md — Frontend: UI comparativa personalizada + sección Ranking SDRs
+
+### Phase 6: Visual Intelligence
+**Goal**: Los reportes destacan automáticamente variaciones críticas y el Embudo General tiene representación visual gráfica para reuniones con el CEO
+**Depends on**: Phase 5
+**Requirements**: CHART-01, ALERT-01, VELOCITY-01
+**Success Criteria** (what must be TRUE):
+  1. La sección Embudo General incluye una gráfica de embudo (Chart.js CDN) que muestra el volumen por etapa visualmente
+  2. Todas las tablas con delta destacan visualmente (color distinto) cuando la variación es ≥ ±20%
+  3. La sección Deals muestra velocidad de cierre promedio en días con delta vs período anterior
+**Plans**: TBD
+
+Plans:
+- [ ] 06-01-PLAN.md — Backend: añadir avgDaysToClose a calculateDealsReport_() + Frontend: ALERT-01 delta styling global
+- [ ] 06-02-PLAN.md — Frontend: Chart.js funnel chart para Embudo General + velocity display en Deals
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 -> 2 -> 3 -> 4
+Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -95,3 +125,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 | 2. Funnel + Incontactables + Cross-Selling | 2/2 | Complete    | 2026-03-11 |
 | 3. Toques + Semáforos + Razones | 3/3 | Complete    | 2026-03-11 |
 | 4. Deals Backend + Frontend | 2/2 | Complete    | 2026-03-11 |
+| 5. Comparativa Personalizada + Ranking SDRs | 0/2 | Not started | - |
+| 6. Visual Intelligence | 0/2 | Not started | - |
