@@ -16,9 +16,9 @@
 - [ ] **FUNNEL-01**: Reporte muestra total de leads del período con desglose Manufacturados vs Individuales
 - [ ] **FUNNEL-02**: Reporte muestra métricas de contactabilidad: Contactables, Contactados, Con Respuesta
 - [ ] **FUNNEL-03**: Reporte muestra métricas de calidad de diálogo: Diálogo Completo, Diálogo Intermitente
-- [ ] **FUNNEL-04**: Reporte muestra métricas de avance: Con Interés, Descartados, Asignados a Ventas, Carry Over
+- [x] **FUNNEL-04**: Reporte muestra métricas de avance: Con Interés, Descartados, Asignados a Ventas, Carry Over
 - [ ] **FUNNEL-05**: Reporte muestra métricas monetarias: Montos de Inversión, Deals Cerrados, Monto de Cierres
-- [ ] **FUNNEL-06**: Cada métrica muestra ratio de conversión respecto a la etapa anterior (fórmulas de funnel)
+- [x] **FUNNEL-06**: Cada métrica muestra ratio de conversión respecto a la etapa anterior (fórmulas de funnel)
 - [ ] **FUNNEL-07**: Cada métrica muestra delta % comparado con el período seleccionado (sube/baja)
 - [ ] **FUNNEL-08**: Desglose visual Manufacturados vs Individuales en cada métrica
 
@@ -97,9 +97,9 @@
 | FUNNEL-01 | Phase 2 | Pending |
 | FUNNEL-02 | Phase 2 | Pending |
 | FUNNEL-03 | Phase 2 | Pending |
-| FUNNEL-04 | Phase 2 | Pending |
+| FUNNEL-04 | Phase 2 | Complete |
 | FUNNEL-05 | Phase 2 | Pending |
-| FUNNEL-06 | Phase 2 | Pending |
+| FUNNEL-06 | Phase 2 | Complete |
 | FUNNEL-07 | Phase 2 | Pending |
 | FUNNEL-08 | Phase 2 | Pending |
 | INCONT-01 | Phase 2 | Pending |

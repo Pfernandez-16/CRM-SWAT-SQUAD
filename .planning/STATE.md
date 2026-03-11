@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: Completed 01-02-PLAN.md — Phase 1 scaffolding complete
-last_updated: "2026-03-11T18:09:39.590Z"
+stopped_at: Completed 02-01-PLAN.md — CVR bug fix and label accent fix
+last_updated: "2026-03-11T18:40:45.625Z"
 last_activity: "2026-03-11 — Completed 01-02: compareType watcher + comparisonRange backend fix"
 progress:
   total_phases: 4
   completed_phases: 1
-  total_plans: 2
-  completed_plans: 2
+  total_plans: 4
+  completed_plans: 3
 ---
 
 ---
@@ -65,6 +65,7 @@ Progress: [██████████] 100%
 - Trend: fast (targeted edits only)
 
 *Updated after each plan completion*
+| Phase 02-funnel-incontactables-cross-selling P01 | 2 | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -81,6 +82,7 @@ Recent decisions affecting current work:
 - [Phase 01-scaffolding]: GAP 1 (no watch(compareType)) and GAP 2 (YOY comparisonRange) closed in plan 01-02
 - [01-02]: Backend metadata is authoritative for comparison dates — successHandler reads previousDateIn/Out to correct comparisonRange after each report call
 - [01-02]: watch(compareType) uses function() callback to match existing watcher style; no { immediate: false } needed (Vue 3 default)
+- [Phase 02-funnel-incontactables-cross-selling]: CVR inter-etapa backward scan: always walk backwards past amount rows to nearest count row (prevCountRow pattern)
 
 ### Pending Todos
 
@@ -93,6 +95,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-11T17:53:45.356Z
-Stopped at: Completed 01-02-PLAN.md — Phase 1 scaffolding complete
+Last session: 2026-03-11T18:40:45.622Z
+Stopped at: Completed 02-01-PLAN.md — CVR bug fix and label accent fix
 Resume file: None
