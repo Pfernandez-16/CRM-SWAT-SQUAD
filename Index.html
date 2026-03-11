@@ -48,7 +48,8 @@
 
         <nav class="sidebar-nav">
           <template v-for="item in navItems" :key="item.id">
-            <!-- Role-based visibility: SDR sees prospectos. AE sees negociaciones. Admin/Gerente sees all. -->
+            <!-- Role-based visibility: SDR sees prospectos. AE sees negociaciones. Admin/Gerente sees all.
+                 'reportes' is intentionally excluded from SDR and AE arrays — it is a management analytics view. -->
             <a v-if="
               userRole === 'ADMIN' || userRole === 'GERENTE' ||
               (userRole === 'SDR' && ['dashboard','leads','calendar','account'].includes(item.id)) ||
