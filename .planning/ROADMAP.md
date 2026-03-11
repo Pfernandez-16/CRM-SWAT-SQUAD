@@ -13,7 +13,7 @@ The CRM core is already complete. This roadmap covers only the reports module: s
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Scaffolding** - Reportes view skeleton, period selector, and getSDRReport API wiring with live data flowing into Vue state (completed 2026-03-11)
-- [ ] **Phase 2: Funnel + Incontactables + Cross-Selling** - First three report tables rendered with deltas and Mfg/Ind breakdowns
+- [x] **Phase 2: Funnel + Incontactables + Cross-Selling** - First three report tables rendered with deltas and Mfg/Ind breakdowns (completed 2026-03-11)
 - [ ] **Phase 3: Toques + Semáforos + Razones** - Vertical contactability matrix, semaphore grids, and loss-reason tables
 - [ ] **Phase 4: Deals Backend + Frontend** - New Analytics function for Deals report, schema update, and full Deals table in the UI
 
@@ -92,6 +92,6 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Scaffolding | 2/2 | Complete    | 2026-03-11 |
-| 2. Funnel + Incontactables + Cross-Selling | 0/2 | Not started | - |
+| 2. Funnel + Incontactables + Cross-Selling | 2/2 | Complete   | 2026-03-11 |
 | 3. Toques + Semáforos + Razones | 0/3 | Not started | - |
 | 4. Deals Backend + Frontend | 0/2 | Not started | - |
