@@ -10,7 +10,8 @@
       "WebSearch",
       "Skill(gsd:progress)",
       "Skill(gsd:discuss-phase)",
-      "Bash(test:*)"
+      "Bash(test:*)",
+      "Bash(node:*)"
     ]
   }
 }
