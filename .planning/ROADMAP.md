@@ -12,7 +12,7 @@ The CRM core is already complete. This roadmap covers only the reports module: s
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [x] **Phase 1: Scaffolding** - Reportes view skeleton, period selector, and getSDRReport API wiring with live data flowing into Vue state (completed 2026-03-11)
+- [x] **Phase 1: Scaffolding** - Reportes view skeleton, period selector, and getSDRReport API wiring with live data flowing into Vue state (completed 2026-03-11)
 - [ ] **Phase 2: Funnel + Incontactables + Cross-Selling** - First three report tables rendered with deltas and Mfg/Ind breakdowns
 - [ ] **Phase 3: Toques + Semáforos + Razones** - Vertical contactability matrix, semaphore grids, and loss-reason tables
 - [ ] **Phase 4: Deals Backend + Frontend** - New Analytics function for Deals report, schema update, and full Deals table in the UI
@@ -45,11 +45,11 @@ Plans:
   3. User can see Incontactables (Duplicados, Equivocados, Spam) with Mfg/Ind breakdown and delta arrows
   4. User can see Cross-Selling deals count with Mfg/Ind breakdown and delta
   5. All three tables update when the user changes the period selector
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 02-01: Embudo General table (FUNNEL-01 through FUNNEL-08)
-- [ ] 02-02: Incontactables table (INCONT-01 through INCONT-03) and Cross-Selling table (CROSS-01)
+- [ ] 02-01-PLAN.md — Fix CVR bug (Deals Cerrados reads amount row) and label accent; surgical edits to App.html lines 190 and 202-208
+- [ ] 02-02-PLAN.md — Deploy, audit static code, and browser-verify all 12 requirements across all three tables (checkpoint)
 
 ### Phase 3: Toques + Semáforos + Razones
 **Goal**: Users can read the vertical contactability matrix, the Contesto/No-Contesto semaphore grids, and both Razones tables
