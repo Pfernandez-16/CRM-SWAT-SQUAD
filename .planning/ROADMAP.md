@@ -29,11 +29,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. After changing the period, the app calls getSDRReport() and the response JSON is available in Vue reactive state
   4. A loading indicator is visible while the API call is in flight and disappears on completion
   5. If the API call fails, an error message is displayed rather than a silent blank state
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 01-01: Reportes view skeleton and navigation wiring in App.html
-- [ ] 01-02: Period selector component and getSDRReport API integration
+- [ ] 01-01-PLAN.md — Audit and verify existing Reportes scaffolding (nav wiring, flatpickr, controls bar, states)
+- [ ] 01-02-PLAN.md — Close two gaps: add watch(compareType) auto-trigger and fix YOY comparisonRange
 
 ### Phase 2: Funnel + Incontactables + Cross-Selling
 **Goal**: Users can read the Embudo General, Incontactables, and Cross-Selling report tables with full breakdowns and period comparisons
