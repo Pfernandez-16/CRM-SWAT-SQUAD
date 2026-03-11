@@ -387,7 +387,15 @@
                   title="Tipo de comparación temporal">
                   <option value="prev_period">vs Período Anterior</option>
                   <option value="yoy">vs Mismo Período Año Pasado (YOY)</option>
+                  <option value="custom">Personalizado</option>
                 </select>
+                <template v-if="compareType === 'custom'">
+                  <span style="font-size:0.8rem; color:var(--text-secondary); margin-left:0.5rem;">Comparar contra:</span>
+                  <input type="text" class="custom-prev-picker date-range-picker"
+                    placeholder="Rango de comparación..."
+                    readonly
+                    style="margin-left:0.5rem; min-width:200px;">
+                </template>
                 <span class="comparison-label" v-if="comparisonLabel">{{ comparisonLabel }}</span>
               </div>
               <div class="report-controls-right">
@@ -1382,6 +1390,45 @@
                         <tr v-if="!dealsLossRows.length">
                           <td colspan="4" style="color:var(--text-muted); text-align:center; padding:1rem;">
                             Sin razones de perdida en el periodo
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <!-- Ranking SDRs Table -->
+                  <div v-else-if="section.id === 'rankingSDRs'" class="report-table-wrapper">
+                    <table class="report-table">
+                      <thead>
+                        <tr>
+                          <th style="min-width:160px;">SDR</th>
+                          <th data-tooltip="Total leads asignados en el período actual">Total Leads</th>
+                          <th data-tooltip="Tasa de conversión a cierre en período actual">CVR Actual</th>
+                          <th data-tooltip="Tasa de conversión a cierre en período de comparación">CVR Anterior</th>
+                          <th data-tooltip="Cambio porcentual de CVR vs período de comparación">Delta%</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr v-for="row in sdrRankingRows" :key="row.id">
+                          <td class="col-metric">{{ row.nombre }}</td>
+                          <td class="col-count">{{ row.totalLeads }}</td>
+                          <td class="col-count" style="font-weight:600;">{{ row.cvrCurrent }}%</td>
+                          <td class="col-count" style="color:var(--text-secondary);">{{ row.cvrPrevious }}%</td>
+                          <td class="col-delta">
+                            <span v-if="Number(row.delta) > 0" class="delta-positive">
+                              <span class="material-symbols-outlined">arrow_upward</span>+{{ row.delta }}%
+                            </span>
+                            <span v-else-if="Number(row.delta) < 0" class="delta-negative">
+                              <span class="material-symbols-outlined">arrow_downward</span>{{ row.delta }}%
+                            </span>
+                            <span v-else class="delta-neutral">
+                              <span class="material-symbols-outlined">remove</span>0%
+                            </span>
+                          </td>
+                        </tr>
+                        <tr v-if="!sdrRankingRows.length">
+                          <td colspan="5" style="color:var(--text-muted); text-align:center; padding:1rem;">
+                            Sin datos de SDR para el período seleccionado
                           </td>
                         </tr>
                       </tbody>
