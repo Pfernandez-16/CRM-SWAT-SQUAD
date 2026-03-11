@@ -1976,6 +1976,11 @@
                 }
             });
 
+            // Auto-trigger report when compareType changes (PERIOD-03)
+            watch(compareType, function () {
+                generateReport();
+            });
+
             // ── Init ──
             onMounted(async () => {
                 // Apply saved theme
