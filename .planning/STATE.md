@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: in_progress
-stopped_at: Completed 06-01-PLAN.md — avgDaysToClose added to Analytics.js; delta-alert CSS and bindings applied across all 9 report sections
-last_updated: "2026-03-11T22:15:21.902Z"
+stopped_at: "Completed 06-02-PLAN.md — Chart.js funnel chart and dealsVelocity deployed; clasp push complete; checkpoint:human-verify pending"
+last_updated: "2026-03-11T22:20:18.343Z"
 last_activity: "2026-03-11 — Completed 03-01: Toques/Semaforos/SinRespuesta code audit (read-only)"
 progress:
   total_phases: 6
-  completed_phases: 5
+  completed_phases: 6
   total_plans: 13
-  completed_plans: 12
+  completed_plans: 13
   percent: 86
 ---
 
@@ -77,6 +77,7 @@ Progress: [███████---] 71%
 | Phase 05-comparativa-personalizada-+-ranking-sdrs P01 | 2 | 2 tasks | 1 files |
 | Phase 05-comparativa-personalizada-+-ranking-sdrs P02 | 5min | 2 tasks | 2 files |
 | Phase 06-visual-intelligence P01 | 5min | 3 tasks | 3 files |
+| Phase 06-visual-intelligence P02 | 5 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -108,6 +109,8 @@ Recent decisions affecting current work:
 - [Phase 05-02]: sdrRankingRows and customPrevRange added to setup() return for template access
 - [Phase 06-visual-intelligence]: avgDaysToClose measures days from fecha_pase_ventas to today (not period end) — reflects real deal velocity
 - [Phase 06-visual-intelligence]: delta-alert CSS uses rgba(255,193,7,0.18) amber background overlay — works on dark glassmorphism without overriding text color direction
+- [Phase 06-visual-intelligence]: Chart.js CDN before include('App') — new Chart() globally available in App.html at runtime
+- [Phase 06-visual-intelligence]: dealsVelocity returns null (not 0) when dealsReport missing — v-if hides stat block entirely
 
 ### Pending Todos
 
@@ -120,6 +123,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-11T22:15:21.895Z
-Stopped at: Completed 06-01-PLAN.md — avgDaysToClose added to Analytics.js; delta-alert CSS and bindings applied across all 9 report sections
+Last session: 2026-03-11T22:20:18.338Z
+Stopped at: Completed 06-02-PLAN.md — Chart.js funnel chart and dealsVelocity deployed; clasp push complete; checkpoint:human-verify pending
 Resume file: None
