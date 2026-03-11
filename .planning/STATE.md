@@ -1,16 +1,63 @@
-# 🧠 STATE: CRM SWAT Squad
+# Project State
 
-## Current Focus
-Establishing firm ground truth of the system to prevent context degradation. We have fully reviewed the codebase logic and DB schema. Applying GSD methodology as requested by the user.
+## Project Reference
 
-## Active Decisions
-- Keep everything inside the Google Apps Script + Sheets constraints.
-- Stick to Vue 3 Composition API for frontend state.
-- Proceed with careful `LockService` routines since concurrent updates are the highest risk for failure in GAS.
+See: .planning/PROJECT.md (updated 2026-03-11)
 
-## Known Blockers / Risks
-- **GAS Timeouts**: 6-minute execution limits and 1-5 second cold starts on `google.script.run`. Heavy reads on `getLeads()` might lag as DB grows.
-- **Silent Failures**: If a script fails silently on the backend, the optimistic UI update on Kanban might show a false state. Needs robust `.withFailureHandler()` implementations.
+**Core value:** El reporte cuadra con la base de datos al 100% — confiabilidad es lo que retiene al cliente
+**Current focus:** Phase 1 — Scaffolding
 
-## Next Action
-Wait for User direction: Do we proceed with Milestone 2 (Analytical/Workflow audit) or address specific UI/backend enhancements?
+## Current Position
+
+Phase: 1 of 4 (Scaffolding)
+Plan: 0 of 2 in current phase
+Status: Ready to plan
+Last activity: 2026-03-11 — Roadmap created, project re-initialized with GSD methodology
+
+Progress: [░░░░░░░░░░] 0%
+
+## Performance Metrics
+
+**Velocity:**
+- Total plans completed: 0
+- Average duration: -
+- Total execution time: 0 hours
+
+**By Phase:**
+
+| Phase | Plans | Total | Avg/Plan |
+|-------|-------|-------|----------|
+| - | - | - | - |
+
+**Recent Trend:**
+- Last 5 plans: none yet
+- Trend: -
+
+*Updated after each plan completion*
+
+## Accumulated Context
+
+### Decisions
+
+Decisions are logged in PROJECT.md Key Decisions table.
+Recent decisions affecting current work:
+
+- Backend-first: Analytics.js backend was completed before frontend work began — solid data contract in place
+- Toques = FILAS: Christian explicitly requires toques as rows in the vertical matrix for product/country column comparison
+- Deals schema gap: fact_deals lacks boolean funnel fields — must add cotizo/en_negociacion/asistio_demo/firmo_contrato/fondeo before Deals report is possible
+- GAS timeout risk: getSDRReport is a single call; adding Deals section may push execution time — monitor closely
+
+### Pending Todos
+
+None yet.
+
+### Blockers/Concerns
+
+- [Phase 4]: fact_deals schema change requires adding 5 boolean columns and defaulting existing rows — must verify Sheets does not break existing AE views
+- [All phases]: GAS 6-minute timeout — if getSDRReport grows too large, may need to split into a separate getDealsReport call
+
+## Session Continuity
+
+Last session: 2026-03-11
+Stopped at: Roadmap created — ready to plan Phase 1
+Resume file: None
