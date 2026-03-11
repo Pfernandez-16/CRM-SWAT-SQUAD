@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: in_progress
-stopped_at: Completed 04-01-PLAN.md — calculateDealsReport_() implemented, dealsReport wired into getSDRReport()
-last_updated: "2026-03-11T20:42:26.964Z"
+stopped_at: Completed 05-01-PLAN.md — custom date comparison and calculateSDRRankingReport_() added to Analytics.js
+last_updated: "2026-03-11T21:51:53.368Z"
 last_activity: "2026-03-11 — Completed 03-01: Toques/Semaforos/SinRespuesta code audit (read-only)"
 progress:
-  total_phases: 4
+  total_phases: 6
   completed_phases: 4
-  total_plans: 9
-  completed_plans: 9
+  total_plans: 13
+  completed_plans: 10
   percent: 86
 ---
 
@@ -74,6 +74,7 @@ Progress: [███████---] 71%
 | Phase 03-toques-semaforos-razones P02 | 5 | 3 tasks | 1 files |
 | Phase 03-toques-semaforos-razones P03 | 5 | 3 tasks | 2 files |
 | Phase 04-deals-backend-+-frontend P01 | 10min | 2 tasks | 1 files |
+| Phase 05-comparativa-personalizada-+-ranking-sdrs P01 | 2 | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -99,6 +100,8 @@ Recent decisions affecting current work:
 - [Phase 03-toques-semaforos-razones]: Display text row.mixPct intentionally left uncapped — shows real value even if >100%; only the visual bar is capped at 100%
 - [Phase 03-toques-semaforos-razones]: CHECK 2 semaforoContestoGrid: 3 matching lines (both names on same return block line) treated as PASS — both computeds defined and exported
 - [Phase 04-deals-backend-+-frontend]: calculateDealsReport_ placed before MAIN ORCHESTRATOR; contactado stage si=totalDeals by definition; empty razon_perdida normalized to 'Sin razon'
+- [Phase 05-01]: compareType normalization changed from ternary to if-guard to allow 'custom' through without becoming 'prev_period'
+- [Phase 05-01]: calculateSDRRankingReport_ builds union of current+previous SDR IDs so SDRs with only previous-period leads still appear
 
 ### Pending Todos
 
@@ -111,6 +114,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-11T19:46:43.230Z
-Stopped at: Completed 04-01-PLAN.md — calculateDealsReport_() implemented, dealsReport wired into getSDRReport()
+Last session: 2026-03-11T21:51:53.354Z
+Stopped at: Completed 05-01-PLAN.md — custom date comparison and calculateSDRRankingReport_() added to Analytics.js
 Resume file: None

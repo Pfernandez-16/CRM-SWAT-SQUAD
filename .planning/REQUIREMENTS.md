@@ -64,15 +64,15 @@
 
 ### Comparativa Personalizada
 
-- [ ] **CUSTOM-01**: Usuario puede seleccionar un tercer modo de comparación "Personalizado" en el selector de período
-- [ ] **CUSTOM-02**: Al activar modo personalizado, aparecen dos date pickers adicionales para elegir inicio y fin del período de comparación libremente
-- [ ] **CUSTOM-03**: El backend recibe las fechas personalizadas y calcula todas las métricas contra ese período libre (sin modificar la lógica existente de prev_period/yoy)
+- [x] **CUSTOM-01**: Usuario puede seleccionar un tercer modo de comparación "Personalizado" en el selector de período
+- [x] **CUSTOM-02**: Al activar modo personalizado, aparecen dos date pickers adicionales para elegir inicio y fin del período de comparación libremente
+- [x] **CUSTOM-03**: El backend recibe las fechas personalizadas y calcula todas las métricas contra ese período libre (sin modificar la lógica existente de prev_period/yoy)
 
 ### Ranking SDRs
 
-- [ ] **SDR-01**: Backend: nueva función calculateSDRRankingReport_() que calcula total leads, leads con_interes y CVR por id_vendedor_sdr para período actual y anterior, con delta
-- [ ] **SDR-02**: Frontend: sección "Ranking SDRs" muestra tabla con nombre del SDR, total leads, CVR actual, CVR anterior y delta — ordenada de mayor a menor CVR
-- [ ] **SDR-03**: Ranking SDR incluido en respuesta de getSDRReport() — se actualiza al cambiar el período selector
+- [x] **SDR-01**: Backend: nueva función calculateSDRRankingReport_() que calcula total leads, leads con_interes y CVR por id_vendedor_sdr para período actual y anterior, con delta
+- [x] **SDR-02**: Frontend: sección "Ranking SDRs" muestra tabla con nombre del SDR, total leads, CVR actual, CVR anterior y delta — ordenada de mayor a menor CVR
+- [x] **SDR-03**: Ranking SDR incluido en respuesta de getSDRReport() — se actualiza al cambiar el período selector
 
 ### Visual Intelligence
 
@@ -142,12 +142,12 @@
 | DEALS-03 | Phase 4 | Complete |
 | DEALS-04 | Phase 4 | Complete |
 | DEALS-05 | Phase 4 | Complete |
-| CUSTOM-01 | Phase 5 | Pending |
-| CUSTOM-02 | Phase 5 | Pending |
-| CUSTOM-03 | Phase 5 | Pending |
-| SDR-01 | Phase 5 | Pending |
-| SDR-02 | Phase 5 | Pending |
-| SDR-03 | Phase 5 | Pending |
+| CUSTOM-01 | Phase 5 | Complete |
+| CUSTOM-02 | Phase 5 | Complete |
+| CUSTOM-03 | Phase 5 | Complete |
+| SDR-01 | Phase 5 | Complete |
+| SDR-02 | Phase 5 | Complete |
+| SDR-03 | Phase 5 | Complete |
 | CHART-01 | Phase 6 | Pending |
 | ALERT-01 | Phase 6 | Pending |
 | VELOCITY-01 | Phase 6 | Pending |

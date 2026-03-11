@@ -125,5 +125,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 | 2. Funnel + Incontactables + Cross-Selling | 2/2 | Complete    | 2026-03-11 |
 | 3. Toques + Semáforos + Razones | 3/3 | Complete    | 2026-03-11 |
 | 4. Deals Backend + Frontend | 2/2 | Complete    | 2026-03-11 |
-| 5. Comparativa Personalizada + Ranking SDRs | 0/2 | Not started | - |
+| 5. Comparativa Personalizada + Ranking SDRs | 1/2 | In Progress|  |
 | 6. Visual Intelligence | 0/2 | Not started | - |
