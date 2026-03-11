@@ -1112,7 +1112,7 @@
                           <td class="col-percentage" style="text-align:center; min-width:70px;">
                             <div class="percentage-cell">
                               <div class="percentage-bar"
-                                :style="{ width: row.mixPct + '%', background: 'var(--accent-danger, #ef4444)' }"></div>
+                                :style="{ width: Math.min(Number(row.mixPct), 100) + '%', background: 'var(--accent-danger, #ef4444)' }"></div>
                               <span class="percentage-value" :style="row.isSummary ? 'font-weight:700;' : ''">{{
                                 row.mixPct }}%</span>
                             </div>
@@ -1232,7 +1232,7 @@
                           <td class="col-percentage" style="text-align:center; min-width:70px;">
                             <div class="percentage-cell">
                               <div class="percentage-bar"
-                                :style="{ width: row.mixPct + '%', background: 'var(--accent-danger, #ef4444)' }"></div>
+                                :style="{ width: Math.min(Number(row.mixPct), 100) + '%', background: 'var(--accent-danger, #ef4444)' }"></div>
                               <span class="percentage-value" :style="row.isSummary ? 'font-weight:700;' : ''">{{
                                 row.mixPct }}%</span>
                             </div>
