@@ -42,15 +42,15 @@
 
 ### Razones No Pasó a Ventas
 
-- [ ] **RAZNES-01**: Reporte muestra 6 categorías de razones: No Perfil Adecuado, Sin Presupuesto, Sin Interés Genuino, Necesita Tercero, No Entendió el Marketing, Otros
-- [ ] **RAZNES-02**: Cada razón muestra % de representatividad sobre el total de descartados (base 100)
-- [ ] **RAZNES-03**: Cada razón muestra delta % vs período de comparación
+- [x] **RAZNES-01**: Reporte muestra 6 categorías de razones: No Perfil Adecuado, Sin Presupuesto, Sin Interés Genuino, Necesita Tercero, No Entendió el Marketing, Otros
+- [x] **RAZNES-02**: Cada razón muestra % de representatividad sobre el total de descartados (base 100)
+- [x] **RAZNES-03**: Cada razón muestra delta % vs período de comparación
 
 ### Razones Perdió la Venta
 
-- [ ] **RAZPERD-01**: Reporte muestra 13+ categorías de razones de pérdida de venta
-- [ ] **RAZPERD-02**: Cada razón muestra % de representatividad sobre el total de pérdidas (base 100)
-- [ ] **RAZPERD-03**: Cada razón muestra delta % vs período de comparación
+- [x] **RAZPERD-01**: Reporte muestra 13+ categorías de razones de pérdida de venta
+- [x] **RAZPERD-02**: Cada razón muestra % de representatividad sobre el total de pérdidas (base 100)
+- [x] **RAZPERD-03**: Cada razón muestra delta % vs período de comparación
 
 ### Reporte de Deals / Negociaciones (Nuevo — Backend + Frontend)
 
@@ -111,12 +111,12 @@
 | TOQUES-03 | Phase 3 | Pending |
 | TOQUES-04 | Phase 3 | Pending |
 | TOQUES-05 | Phase 3 | Pending |
-| RAZNES-01 | Phase 3 | Pending |
-| RAZNES-02 | Phase 3 | Pending |
-| RAZNES-03 | Phase 3 | Pending |
-| RAZPERD-01 | Phase 3 | Pending |
-| RAZPERD-02 | Phase 3 | Pending |
-| RAZPERD-03 | Phase 3 | Pending |
+| RAZNES-01 | Phase 3 | Complete |
+| RAZNES-02 | Phase 3 | Complete |
+| RAZNES-03 | Phase 3 | Complete |
+| RAZPERD-01 | Phase 3 | Complete |
+| RAZPERD-02 | Phase 3 | Complete |
+| RAZPERD-03 | Phase 3 | Complete |
 | DEALS-01 | Phase 4 | Pending |
 | DEALS-02 | Phase 4 | Pending |
 | DEALS-03 | Phase 4 | Pending |

@@ -64,7 +64,7 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 03-01-PLAN.md — Audit matrizContactabilidad, semaforoContesto, semaforoNoContesto, sinRespuesta sections (TOQUES-01..05)
+- [x] 03-01-PLAN.md — Audit matrizContactabilidad, semaforoContesto, semaforoNoContesto, sinRespuesta sections (TOQUES-01..05)
 - [ ] 03-02-PLAN.md — Audit razones tables + apply mixPct bar cap fix (RAZNES-01..03, RAZPERD-01..03)
 - [ ] 03-03-PLAN.md — Deploy, cross-section integration verify, and Phase 3 sign-off (all 11 requirements)
 
