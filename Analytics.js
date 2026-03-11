@@ -1113,6 +1113,85 @@ function calculateDealsReport_(allDeals, dateIn, dateOut, prevDateIn, prevDateOu
   };
 }
 
+// ============ SDR RANKING REPORT ============
+
+/**
+ * Calculate per-SDR performance ranking.
+ * @param {Array} currentLeads - Leads in the current period (already filtered)
+ * @param {Array} previousLeads - Leads in the previous period (already filtered)
+ * @param {Object} calificacionIdx - Calificacion indexed by id_lead
+ * @return {Array} Sorted array of SDR objects: { id, nombre, totalLeads, cvrCurrent, cvrPrevious, delta }
+ */
+function calculateSDRRankingReport_(currentLeads, previousLeads, calificacionIdx) {
+  // Load dim_vendedores to get SDR names
+  var allVendedores = readTable_(T_VENDEDORES);
+  var vendedoresIdx = {};
+  for (var v = 0; v < allVendedores.length; v++) {
+    var vend = allVendedores[v];
+    var vid = String(vend.id_vendedor || '');
+    if (vid) vendedoresIdx[vid] = vend.nombre || vid;
+  }
+
+  // Aggregate current period: leads per SDR + closings per SDR
+  var currentBySDR = {};
+  for (var i = 0; i < currentLeads.length; i++) {
+    var lead = currentLeads[i];
+    var sdrId = String(lead.id_vendedor_sdr || '');
+    if (!sdrId) continue;
+    if (!currentBySDR[sdrId]) { currentBySDR[sdrId] = { leads: 0, closed: 0 }; }
+    currentBySDR[sdrId].leads++;
+    var cal = calificacionIdx[String(lead.id_lead || '')];
+    if (cal && (cal.status_lead === 'Cerrado' || cal.status_lead === 'Deal Cerrado')) {
+      currentBySDR[sdrId].closed++;
+    }
+  }
+
+  // Aggregate previous period
+  var previousBySDR = {};
+  for (var j = 0; j < previousLeads.length; j++) {
+    var plead = previousLeads[j];
+    var psdrId = String(plead.id_vendedor_sdr || '');
+    if (!psdrId) continue;
+    if (!previousBySDR[psdrId]) { previousBySDR[psdrId] = { leads: 0, closed: 0 }; }
+    previousBySDR[psdrId].leads++;
+    var pcal = calificacionIdx[String(plead.id_lead || '')];
+    if (pcal && (pcal.status_lead === 'Cerrado' || pcal.status_lead === 'Deal Cerrado')) {
+      previousBySDR[psdrId].closed++;
+    }
+  }
+
+  // Build unified SDR set (union of current + previous SDR IDs)
+  var sdrIds = {};
+  var k;
+  for (k in currentBySDR)  { sdrIds[k] = true; }
+  for (k in previousBySDR) { sdrIds[k] = true; }
+
+  // Build result array
+  var results = [];
+  for (var sdrId in sdrIds) {
+    var cur  = currentBySDR[sdrId]  || { leads: 0, closed: 0 };
+    var prev = previousBySDR[sdrId] || { leads: 0, closed: 0 };
+
+    var cvrCurrent  = cur.leads  > 0 ? Math.round((cur.closed  / cur.leads)  * 10000) / 100 : 0;
+    var cvrPrevious = prev.leads > 0 ? Math.round((prev.closed / prev.leads) * 10000) / 100 : 0;
+    var delta = calcDelta_(cvrCurrent, cvrPrevious);
+
+    results.push({
+      id:          sdrId,
+      nombre:      vendedoresIdx[sdrId] || sdrId,
+      totalLeads:  cur.leads,
+      cvrCurrent:  cvrCurrent,
+      cvrPrevious: cvrPrevious,
+      delta:       delta
+    });
+  }
+
+  // Sort by cvrCurrent descending
+  results.sort(function (a, b) { return b.cvrCurrent - a.cvrCurrent; });
+
+  return results;
+}
+
 // ============ MAIN ORCHESTRATOR ============
 
 /**
@@ -1189,6 +1268,7 @@ function getSDRReport(dateIn, dateOut, compareType, customPrevDateIn, customPrev
     var razonesPerdioVenta = calculateRazonesPerdioVenta_(currentLeads, previousLeads, calificacionIdx, allDeals);
     var matrizContactabilidad = calculateMatrizContactabilidad_(currentLeads, interaccionesIdx, contactosIdx);
     var dealsReport = calculateDealsReport_(allDeals, dateIn, dateOut, prevDateIn, prevDateOut);
+    var sdrRanking = calculateSDRRankingReport_(currentLeads, previousLeads, calificacionIdx);
 
     // Build result
     var result = {
@@ -1211,7 +1291,8 @@ function getSDRReport(dateIn, dateOut, compareType, customPrevDateIn, customPrev
       razonesNoPasoVentas: razonesNoPasoVentas,
       razonesPerdioVenta: razonesPerdioVenta,
       matrizContactabilidad: matrizContactabilidad,
-      dealsReport: dealsReport
+      dealsReport: dealsReport,
+      sdrRanking: sdrRanking
     };
 
     return JSON.stringify(result);
