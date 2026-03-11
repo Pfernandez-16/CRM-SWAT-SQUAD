@@ -54,8 +54,8 @@
 
 ### Reporte de Deals / Negociaciones (Nuevo — Backend + Frontend)
 
-- [ ] **DEALS-01**: Backend: agregar campos booleanos a fact_deals: cotizo, en_negociacion, asistio_demo, firmo_contrato, fondeo
-- [ ] **DEALS-02**: Backend: nueva función calculateDealsReport_() en Analytics.js que calcula métricas Sí/No por etapa
+- [x] **DEALS-01**: Backend: agregar campos booleanos a fact_deals: cotizo, en_negociacion, asistio_demo, firmo_contrato, fondeo
+- [x] **DEALS-02**: Backend: nueva función calculateDealsReport_() en Analytics.js que calcula métricas Sí/No por etapa
 - [ ] **DEALS-03**: Frontend: reporte muestra flujo Contactado→Cotizado→Negociación→Demo→Contrato→Fondeo con conteos Sí/No
 - [ ] **DEALS-04**: Frontend: cada etapa muestra monto cotizado y monto de cierre donde aplica
 - [ ] **DEALS-05**: Frontend: razones de pérdida por deal con conteos
@@ -117,8 +117,8 @@
 | RAZPERD-01 | Phase 3 | Complete |
 | RAZPERD-02 | Phase 3 | Complete |
 | RAZPERD-03 | Phase 3 | Complete |
-| DEALS-01 | Phase 4 | Pending |
-| DEALS-02 | Phase 4 | Pending |
+| DEALS-01 | Phase 4 | Complete |
+| DEALS-02 | Phase 4 | Complete |
 | DEALS-03 | Phase 4 | Pending |
 | DEALS-04 | Phase 4 | Pending |
 | DEALS-05 | Phase 4 | Pending |

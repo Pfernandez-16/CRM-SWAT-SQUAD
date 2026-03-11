@@ -94,4 +94,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 | 1. Scaffolding | 2/2 | Complete    | 2026-03-11 |
 | 2. Funnel + Incontactables + Cross-Selling | 2/2 | Complete    | 2026-03-11 |
 | 3. Toques + Semáforos + Razones | 3/3 | Complete    | 2026-03-11 |
-| 4. Deals Backend + Frontend | 0/2 | Not started | - |
+| 4. Deals Backend + Frontend | 1/2 | In Progress|  |
