@@ -13,7 +13,7 @@ The CRM core is already complete. This roadmap covers only the reports module: s
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Scaffolding** - Reportes view skeleton, period selector, and getSDRReport API wiring with live data flowing into Vue state (completed 2026-03-11)
-- [x] **Phase 2: Funnel + Incontactables + Cross-Selling** - First three report tables rendered with deltas and Mfg/Ind breakdowns (completed 2026-03-11)
+- [x] **Phase 2: Funnel + Incontactables + Cross-Selling** - First three report tables rendered with deltas and Mfg/Ind breakdowns (completed 2026-03-11)
 - [ ] **Phase 3: Toques + Semáforos + Razones** - Vertical contactability matrix, semaphore grids, and loss-reason tables
 - [ ] **Phase 4: Deals Backend + Frontend** - New Analytics function for Deals report, schema update, and full Deals table in the UI
 
@@ -61,12 +61,12 @@ Plans:
   3. User can see the Sin Respuesta al 6to toque indicator
   4. User can see Razones No Paso a Ventas with 6 categories, % representatividad, and delta %
   5. User can see Razones Perdio la Venta with 13+ categories, % representatividad, and delta %
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 03-01: Toques vertical matrix and semaphore grids (TOQUES-01 through TOQUES-05)
-- [ ] 03-02: Razones No Paso a Ventas and Razones Perdio la Venta tables (RAZNES-01 through RAZPERD-03)
-- [ ] 03-03: Remaining report table polish and cross-section integration verification
+- [ ] 03-01-PLAN.md — Audit matrizContactabilidad, semaforoContesto, semaforoNoContesto, sinRespuesta sections (TOQUES-01..05)
+- [ ] 03-02-PLAN.md — Audit razones tables + apply mixPct bar cap fix (RAZNES-01..03, RAZPERD-01..03)
+- [ ] 03-03-PLAN.md — Deploy, cross-section integration verify, and Phase 3 sign-off (all 11 requirements)
 
 ### Phase 4: Deals Backend + Frontend
 **Goal**: The Deals/Negociaciones report exists end-to-end: schema updated, backend calculating, frontend displaying the full funnel with Si/No counts and amounts
