@@ -63,7 +63,9 @@ Recent decisions affecting current work:
 - Deals schema gap: fact_deals lacks boolean funnel fields — must add cotizo/en_negociacion/asistio_demo/firmo_contrato/fondeo before Deals report is possible
 - GAS timeout risk: getSDRReport is a single call; adding Deals section may push execution time — monitor closely
 - [Phase 01-scaffolding]: Reportes view is ADMIN/GERENTE-only by product decision — SDR/AE exclusion is intentional
-- [Phase 01-scaffolding]: GAP 1 (no watch(compareType)) and GAP 2 (YOY comparisonRange) deferred to plan 01-02
+- [Phase 01-scaffolding]: GAP 1 (no watch(compareType)) and GAP 2 (YOY comparisonRange) closed in plan 01-02
+- [01-02]: Backend metadata is authoritative for comparison dates — successHandler reads previousDateIn/Out to correct comparisonRange after each report call
+- [01-02]: watch(compareType) uses function() callback to match existing watcher style; no { immediate: false } needed (Vue 3 default)
 
 ### Pending Todos
 
@@ -77,5 +79,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-11T17:53:45.356Z
-Stopped at: Completed 01-01-PLAN.md — checkpoint awaiting human verification
+Stopped at: Completed 01-02-PLAN.md — Phase 1 scaffolding complete
 Resume file: None
