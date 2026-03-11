@@ -491,12 +491,13 @@
                             </td>
                           </template>
                           <td class="col-delta">
-                            <span v-if="Number(getSegmentValue(row.metric, 'total').delta) > 0" class="delta-positive">
+                            <span v-if="Number(getSegmentValue(row.metric, 'total').delta) > 0"
+                              :class="['delta-positive', Math.abs(Number(getSegmentValue(row.metric, 'total').delta)) >= 20 ? 'delta-alert' : '']">
                               <span class="material-symbols-outlined">arrow_upward</span>
                               +{{ getSegmentValue(row.metric, 'total').delta }}%
                             </span>
                             <span v-else-if="Number(getSegmentValue(row.metric, 'total').delta) < 0"
-                              class="delta-negative">
+                              :class="['delta-negative', Math.abs(Number(getSegmentValue(row.metric, 'total').delta)) >= 20 ? 'delta-alert' : '']">
                               <span class="material-symbols-outlined">arrow_downward</span>
                               {{ getSegmentValue(row.metric, 'total').delta }}%
                             </span>
@@ -525,12 +526,12 @@
                           </template>
                           <td class="col-delta">
                             <span v-if="Number(getSegmentValue(row.metric, 'manufacturers').delta) > 0"
-                              class="delta-positive">
+                              :class="['delta-positive', Math.abs(Number(getSegmentValue(row.metric, 'manufacturers').delta)) >= 20 ? 'delta-alert' : '']">
                               <span class="material-symbols-outlined">arrow_upward</span>
                               +{{ getSegmentValue(row.metric, 'manufacturers').delta }}%
                             </span>
                             <span v-else-if="Number(getSegmentValue(row.metric, 'manufacturers').delta) < 0"
-                              class="delta-negative">
+                              :class="['delta-negative', Math.abs(Number(getSegmentValue(row.metric, 'manufacturers').delta)) >= 20 ? 'delta-alert' : '']">
                               <span class="material-symbols-outlined">arrow_downward</span>
                               {{ getSegmentValue(row.metric, 'manufacturers').delta }}%
                             </span>
@@ -559,12 +560,12 @@
                           </template>
                           <td class="col-delta">
                             <span v-if="Number(getSegmentValue(row.metric, 'individuals').delta) > 0"
-                              class="delta-positive">
+                              :class="['delta-positive', Math.abs(Number(getSegmentValue(row.metric, 'individuals').delta)) >= 20 ? 'delta-alert' : '']">
                               <span class="material-symbols-outlined">arrow_upward</span>
                               +{{ getSegmentValue(row.metric, 'individuals').delta }}%
                             </span>
                             <span v-else-if="Number(getSegmentValue(row.metric, 'individuals').delta) < 0"
-                              class="delta-negative">
+                              :class="['delta-negative', Math.abs(Number(getSegmentValue(row.metric, 'individuals').delta)) >= 20 ? 'delta-alert' : '']">
                               <span class="material-symbols-outlined">arrow_downward</span>
                               {{ getSegmentValue(row.metric, 'individuals').delta }}%
                             </span>
@@ -620,12 +621,13 @@
                             </td>
                           </template>
                           <td class="col-delta">
-                            <span v-if="Number(getSegmentValue(row.metric, 'total').delta) > 0" class="delta-positive">
+                            <span v-if="Number(getSegmentValue(row.metric, 'total').delta) > 0"
+                              :class="['delta-positive', Math.abs(Number(getSegmentValue(row.metric, 'total').delta)) >= 20 ? 'delta-alert' : '']">
                               <span class="material-symbols-outlined">arrow_upward</span>
                               +{{ getSegmentValue(row.metric, 'total').delta }}%
                             </span>
                             <span v-else-if="Number(getSegmentValue(row.metric, 'total').delta) < 0"
-                              class="delta-negative">
+                              :class="['delta-negative', Math.abs(Number(getSegmentValue(row.metric, 'total').delta)) >= 20 ? 'delta-alert' : '']">
                               <span class="material-symbols-outlined">arrow_downward</span>
                               {{ getSegmentValue(row.metric, 'total').delta }}%
                             </span>
@@ -654,12 +656,12 @@
                           </template>
                           <td class="col-delta">
                             <span v-if="Number(getSegmentValue(row.metric, 'manufacturers').delta) > 0"
-                              class="delta-positive">
+                              :class="['delta-positive', Math.abs(Number(getSegmentValue(row.metric, 'manufacturers').delta)) >= 20 ? 'delta-alert' : '']">
                               <span class="material-symbols-outlined">arrow_upward</span>
                               +{{ getSegmentValue(row.metric, 'manufacturers').delta }}%
                             </span>
                             <span v-else-if="Number(getSegmentValue(row.metric, 'manufacturers').delta) < 0"
-                              class="delta-negative">
+                              :class="['delta-negative', Math.abs(Number(getSegmentValue(row.metric, 'manufacturers').delta)) >= 20 ? 'delta-alert' : '']">
                               <span class="material-symbols-outlined">arrow_downward</span>
                               {{ getSegmentValue(row.metric, 'manufacturers').delta }}%
                             </span>
@@ -688,12 +690,12 @@
                           </template>
                           <td class="col-delta">
                             <span v-if="Number(getSegmentValue(row.metric, 'individuals').delta) > 0"
-                              class="delta-positive">
+                              :class="['delta-positive', Math.abs(Number(getSegmentValue(row.metric, 'individuals').delta)) >= 20 ? 'delta-alert' : '']">
                               <span class="material-symbols-outlined">arrow_upward</span>
                               +{{ getSegmentValue(row.metric, 'individuals').delta }}%
                             </span>
                             <span v-else-if="Number(getSegmentValue(row.metric, 'individuals').delta) < 0"
-                              class="delta-negative">
+                              :class="['delta-negative', Math.abs(Number(getSegmentValue(row.metric, 'individuals').delta)) >= 20 ? 'delta-alert' : '']">
                               <span class="material-symbols-outlined">arrow_downward</span>
                               {{ getSegmentValue(row.metric, 'individuals').delta }}%
                             </span>
@@ -749,12 +751,13 @@
                             </td>
                           </template>
                           <td class="col-delta">
-                            <span v-if="Number(getSegmentValue(row.metric, 'total').delta) > 0" class="delta-positive">
+                            <span v-if="Number(getSegmentValue(row.metric, 'total').delta) > 0"
+                              :class="['delta-positive', Math.abs(Number(getSegmentValue(row.metric, 'total').delta)) >= 20 ? 'delta-alert' : '']">
                               <span class="material-symbols-outlined">arrow_upward</span>
                               +{{ getSegmentValue(row.metric, 'total').delta }}%
                             </span>
                             <span v-else-if="Number(getSegmentValue(row.metric, 'total').delta) < 0"
-                              class="delta-negative">
+                              :class="['delta-negative', Math.abs(Number(getSegmentValue(row.metric, 'total').delta)) >= 20 ? 'delta-alert' : '']">
                               <span class="material-symbols-outlined">arrow_downward</span>
                               {{ getSegmentValue(row.metric, 'total').delta }}%
                             </span>
@@ -783,12 +786,12 @@
                           </template>
                           <td class="col-delta">
                             <span v-if="Number(getSegmentValue(row.metric, 'manufacturers').delta) > 0"
-                              class="delta-positive">
+                              :class="['delta-positive', Math.abs(Number(getSegmentValue(row.metric, 'manufacturers').delta)) >= 20 ? 'delta-alert' : '']">
                               <span class="material-symbols-outlined">arrow_upward</span>
                               +{{ getSegmentValue(row.metric, 'manufacturers').delta }}%
                             </span>
                             <span v-else-if="Number(getSegmentValue(row.metric, 'manufacturers').delta) < 0"
-                              class="delta-negative">
+                              :class="['delta-negative', Math.abs(Number(getSegmentValue(row.metric, 'manufacturers').delta)) >= 20 ? 'delta-alert' : '']">
                               <span class="material-symbols-outlined">arrow_downward</span>
                               {{ getSegmentValue(row.metric, 'manufacturers').delta }}%
                             </span>
@@ -817,12 +820,12 @@
                           </template>
                           <td class="col-delta">
                             <span v-if="Number(getSegmentValue(row.metric, 'individuals').delta) > 0"
-                              class="delta-positive">
+                              :class="['delta-positive', Math.abs(Number(getSegmentValue(row.metric, 'individuals').delta)) >= 20 ? 'delta-alert' : '']">
                               <span class="material-symbols-outlined">arrow_upward</span>
                               +{{ getSegmentValue(row.metric, 'individuals').delta }}%
                             </span>
                             <span v-else-if="Number(getSegmentValue(row.metric, 'individuals').delta) < 0"
-                              class="delta-negative">
+                              :class="['delta-negative', Math.abs(Number(getSegmentValue(row.metric, 'individuals').delta)) >= 20 ? 'delta-alert' : '']">
                               <span class="material-symbols-outlined">arrow_downward</span>
                               {{ getSegmentValue(row.metric, 'individuals').delta }}%
                             </span>
@@ -904,13 +907,15 @@
                                 <div style="font-weight:600;">{{ getSegmentValue(toque, semaforoSegment).count }}</div>
                                 <div style="font-size:0.7rem;">
                                   <span v-if="Number(getSegmentValue(toque, semaforoSegment).delta) > 0"
-                                    class="delta-positive" style="font-size:0.7rem;">
+                                    :class="['delta-positive', Math.abs(Number(getSegmentValue(toque, semaforoSegment).delta)) >= 20 ? 'delta-alert' : '']"
+                                    style="font-size:0.7rem;">
                                     <span class="material-symbols-outlined"
                                       style="font-size:0.7rem;">arrow_upward</span>{{ getSegmentValue(toque,
                                     semaforoSegment).delta }}%
                                   </span>
                                   <span v-else-if="Number(getSegmentValue(toque, semaforoSegment).delta) < 0"
-                                    class="delta-negative" style="font-size:0.7rem;">
+                                    :class="['delta-negative', Math.abs(Number(getSegmentValue(toque, semaforoSegment).delta)) >= 20 ? 'delta-alert' : '']"
+                                    style="font-size:0.7rem;">
                                     <span class="material-symbols-outlined"
                                       style="font-size:0.7rem;">arrow_downward</span>{{ getSegmentValue(toque,
                                     semaforoSegment).delta }}%
@@ -956,13 +961,15 @@
                                 <div style="font-weight:600;">{{ getSegmentValue(toque, semaforoSegment).count }}</div>
                                 <div style="font-size:0.7rem;">
                                   <span v-if="Number(getSegmentValue(toque, semaforoSegment).delta) > 0"
-                                    class="delta-positive" style="font-size:0.7rem;">
+                                    :class="['delta-positive', Math.abs(Number(getSegmentValue(toque, semaforoSegment).delta)) >= 20 ? 'delta-alert' : '']"
+                                    style="font-size:0.7rem;">
                                     <span class="material-symbols-outlined"
                                       style="font-size:0.7rem;">arrow_upward</span>{{ getSegmentValue(toque,
                                     semaforoSegment).delta }}%
                                   </span>
                                   <span v-else-if="Number(getSegmentValue(toque, semaforoSegment).delta) < 0"
-                                    class="delta-negative" style="font-size:0.7rem;">
+                                    :class="['delta-negative', Math.abs(Number(getSegmentValue(toque, semaforoSegment).delta)) >= 20 ? 'delta-alert' : '']"
+                                    style="font-size:0.7rem;">
                                     <span class="material-symbols-outlined"
                                       style="font-size:0.7rem;">arrow_downward</span>{{ getSegmentValue(toque,
                                     semaforoSegment).delta }}%
@@ -1016,12 +1023,13 @@
                             </div>
                           </td>
                           <td class="col-delta">
-                            <span v-if="Number(getSegmentValue(row.metric, 'total').delta) > 0" class="delta-positive">
+                            <span v-if="Number(getSegmentValue(row.metric, 'total').delta) > 0"
+                              :class="['delta-positive', Math.abs(Number(getSegmentValue(row.metric, 'total').delta)) >= 20 ? 'delta-alert' : '']">
                               <span class="material-symbols-outlined">arrow_upward</span>
                               +{{ getSegmentValue(row.metric, 'total').delta }}%
                             </span>
                             <span v-else-if="Number(getSegmentValue(row.metric, 'total').delta) < 0"
-                              class="delta-negative">
+                              :class="['delta-negative', Math.abs(Number(getSegmentValue(row.metric, 'total').delta)) >= 20 ? 'delta-alert' : '']">
                               <span class="material-symbols-outlined">arrow_downward</span>
                               {{ getSegmentValue(row.metric, 'total').delta }}%
                             </span>
@@ -1043,12 +1051,12 @@
                           </td>
                           <td class="col-delta">
                             <span v-if="Number(getSegmentValue(row.metric, 'manufacturers').delta) > 0"
-                              class="delta-positive">
+                              :class="['delta-positive', Math.abs(Number(getSegmentValue(row.metric, 'manufacturers').delta)) >= 20 ? 'delta-alert' : '']">
                               <span class="material-symbols-outlined">arrow_upward</span>
                               +{{ getSegmentValue(row.metric, 'manufacturers').delta }}%
                             </span>
                             <span v-else-if="Number(getSegmentValue(row.metric, 'manufacturers').delta) < 0"
-                              class="delta-negative">
+                              :class="['delta-negative', Math.abs(Number(getSegmentValue(row.metric, 'manufacturers').delta)) >= 20 ? 'delta-alert' : '']">
                               <span class="material-symbols-outlined">arrow_downward</span>
                               {{ getSegmentValue(row.metric, 'manufacturers').delta }}%
                             </span>
@@ -1070,12 +1078,12 @@
                           </td>
                           <td class="col-delta">
                             <span v-if="Number(getSegmentValue(row.metric, 'individuals').delta) > 0"
-                              class="delta-positive">
+                              :class="['delta-positive', Math.abs(Number(getSegmentValue(row.metric, 'individuals').delta)) >= 20 ? 'delta-alert' : '']">
                               <span class="material-symbols-outlined">arrow_upward</span>
                               +{{ getSegmentValue(row.metric, 'individuals').delta }}%
                             </span>
                             <span v-else-if="Number(getSegmentValue(row.metric, 'individuals').delta) < 0"
-                              class="delta-negative">
+                              :class="['delta-negative', Math.abs(Number(getSegmentValue(row.metric, 'individuals').delta)) >= 20 ? 'delta-alert' : '']">
                               <span class="material-symbols-outlined">arrow_downward</span>
                               {{ getSegmentValue(row.metric, 'individuals').delta }}%
                             </span>
@@ -1136,12 +1144,13 @@
                             </div>
                           </td>
                           <td class="col-delta">
-                            <span v-if="Number(getSegmentValue(row.metric, 'total').delta) > 0" class="delta-positive">
+                            <span v-if="Number(getSegmentValue(row.metric, 'total').delta) > 0"
+                              :class="['delta-positive', Math.abs(Number(getSegmentValue(row.metric, 'total').delta)) >= 20 ? 'delta-alert' : '']">
                               <span class="material-symbols-outlined">arrow_upward</span>
                               +{{ getSegmentValue(row.metric, 'total').delta }}%
                             </span>
                             <span v-else-if="Number(getSegmentValue(row.metric, 'total').delta) < 0"
-                              class="delta-negative">
+                              :class="['delta-negative', Math.abs(Number(getSegmentValue(row.metric, 'total').delta)) >= 20 ? 'delta-alert' : '']">
                               <span class="material-symbols-outlined">arrow_downward</span>
                               {{ getSegmentValue(row.metric, 'total').delta }}%
                             </span>
@@ -1163,12 +1172,12 @@
                           </td>
                           <td class="col-delta">
                             <span v-if="Number(getSegmentValue(row.metric, 'manufacturers').delta) > 0"
-                              class="delta-positive">
+                              :class="['delta-positive', Math.abs(Number(getSegmentValue(row.metric, 'manufacturers').delta)) >= 20 ? 'delta-alert' : '']">
                               <span class="material-symbols-outlined">arrow_upward</span>
                               +{{ getSegmentValue(row.metric, 'manufacturers').delta }}%
                             </span>
                             <span v-else-if="Number(getSegmentValue(row.metric, 'manufacturers').delta) < 0"
-                              class="delta-negative">
+                              :class="['delta-negative', Math.abs(Number(getSegmentValue(row.metric, 'manufacturers').delta)) >= 20 ? 'delta-alert' : '']">
                               <span class="material-symbols-outlined">arrow_downward</span>
                               {{ getSegmentValue(row.metric, 'manufacturers').delta }}%
                             </span>
@@ -1190,12 +1199,12 @@
                           </td>
                           <td class="col-delta">
                             <span v-if="Number(getSegmentValue(row.metric, 'individuals').delta) > 0"
-                              class="delta-positive">
+                              :class="['delta-positive', Math.abs(Number(getSegmentValue(row.metric, 'individuals').delta)) >= 20 ? 'delta-alert' : '']">
                               <span class="material-symbols-outlined">arrow_upward</span>
                               +{{ getSegmentValue(row.metric, 'individuals').delta }}%
                             </span>
                             <span v-else-if="Number(getSegmentValue(row.metric, 'individuals').delta) < 0"
-                              class="delta-negative">
+                              :class="['delta-negative', Math.abs(Number(getSegmentValue(row.metric, 'individuals').delta)) >= 20 ? 'delta-alert' : '']">
                               <span class="material-symbols-outlined">arrow_downward</span>
                               {{ getSegmentValue(row.metric, 'individuals').delta }}%
                             </span>
@@ -1256,12 +1265,13 @@
                             </div>
                           </td>
                           <td class="col-delta">
-                            <span v-if="Number(getSegmentValue(row.metric, 'total').delta) > 0" class="delta-positive">
+                            <span v-if="Number(getSegmentValue(row.metric, 'total').delta) > 0"
+                              :class="['delta-positive', Math.abs(Number(getSegmentValue(row.metric, 'total').delta)) >= 20 ? 'delta-alert' : '']">
                               <span class="material-symbols-outlined">arrow_upward</span>
                               +{{ getSegmentValue(row.metric, 'total').delta }}%
                             </span>
                             <span v-else-if="Number(getSegmentValue(row.metric, 'total').delta) < 0"
-                              class="delta-negative">
+                              :class="['delta-negative', Math.abs(Number(getSegmentValue(row.metric, 'total').delta)) >= 20 ? 'delta-alert' : '']">
                               <span class="material-symbols-outlined">arrow_downward</span>
                               {{ getSegmentValue(row.metric, 'total').delta }}%
                             </span>
@@ -1283,12 +1293,12 @@
                           </td>
                           <td class="col-delta">
                             <span v-if="Number(getSegmentValue(row.metric, 'manufacturers').delta) > 0"
-                              class="delta-positive">
+                              :class="['delta-positive', Math.abs(Number(getSegmentValue(row.metric, 'manufacturers').delta)) >= 20 ? 'delta-alert' : '']">
                               <span class="material-symbols-outlined">arrow_upward</span>
                               +{{ getSegmentValue(row.metric, 'manufacturers').delta }}%
                             </span>
                             <span v-else-if="Number(getSegmentValue(row.metric, 'manufacturers').delta) < 0"
-                              class="delta-negative">
+                              :class="['delta-negative', Math.abs(Number(getSegmentValue(row.metric, 'manufacturers').delta)) >= 20 ? 'delta-alert' : '']">
                               <span class="material-symbols-outlined">arrow_downward</span>
                               {{ getSegmentValue(row.metric, 'manufacturers').delta }}%
                             </span>
@@ -1310,12 +1320,12 @@
                           </td>
                           <td class="col-delta">
                             <span v-if="Number(getSegmentValue(row.metric, 'individuals').delta) > 0"
-                              class="delta-positive">
+                              :class="['delta-positive', Math.abs(Number(getSegmentValue(row.metric, 'individuals').delta)) >= 20 ? 'delta-alert' : '']">
                               <span class="material-symbols-outlined">arrow_upward</span>
                               +{{ getSegmentValue(row.metric, 'individuals').delta }}%
                             </span>
                             <span v-else-if="Number(getSegmentValue(row.metric, 'individuals').delta) < 0"
-                              class="delta-negative">
+                              :class="['delta-negative', Math.abs(Number(getSegmentValue(row.metric, 'individuals').delta)) >= 20 ? 'delta-alert' : '']">
                               <span class="material-symbols-outlined">arrow_downward</span>
                               {{ getSegmentValue(row.metric, 'individuals').delta }}%
                             </span>
@@ -1373,11 +1383,13 @@
                           <td class="col-count">{{ row.current }}</td>
                           <td class="col-count">{{ row.previous }}</td>
                           <td class="col-delta">
-                            <span v-if="Number(row.delta) > 0" class="delta-positive">
+                            <span v-if="Number(row.delta) > 0"
+                              :class="['delta-positive', Math.abs(Number(row.delta)) >= 20 ? 'delta-alert' : '']">
                               <span class="material-symbols-outlined">arrow_upward</span>
                               +{{ row.delta }}%
                             </span>
-                            <span v-else-if="Number(row.delta) < 0" class="delta-negative">
+                            <span v-else-if="Number(row.delta) < 0"
+                              :class="['delta-negative', Math.abs(Number(row.delta)) >= 20 ? 'delta-alert' : '']">
                               <span class="material-symbols-outlined">arrow_downward</span>
                               {{ row.delta }}%
                             </span>
@@ -1415,10 +1427,12 @@
                           <td class="col-count" style="font-weight:600;">{{ row.cvrCurrent }}%</td>
                           <td class="col-count" style="color:var(--text-secondary);">{{ row.cvrPrevious }}%</td>
                           <td class="col-delta">
-                            <span v-if="Number(row.delta) > 0" class="delta-positive">
+                            <span v-if="Number(row.delta) > 0"
+                              :class="['delta-positive', Math.abs(Number(row.delta)) >= 20 ? 'delta-alert' : '']">
                               <span class="material-symbols-outlined">arrow_upward</span>+{{ row.delta }}%
                             </span>
-                            <span v-else-if="Number(row.delta) < 0" class="delta-negative">
+                            <span v-else-if="Number(row.delta) < 0"
+                              :class="['delta-negative', Math.abs(Number(row.delta)) >= 20 ? 'delta-alert' : '']">
                               <span class="material-symbols-outlined">arrow_downward</span>{{ row.delta }}%
                             </span>
                             <span v-else class="delta-neutral">
