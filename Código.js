@@ -122,6 +122,47 @@ function getFirstEmptyRow_(sh, idColName) {
 }
 
 /**
+ * Calcula Calidad de Contacto BANT (MVP — sin ponderaciones).
+ * Score 0-5: cada campo BANT verdadero suma 1 punto.
+ * necesita_decision_tercero es inverso (FALSE = bueno).
+ * @param {Sheet} calSheet - fact_calificacion sheet object
+ * @param {string} idLead  - ID del lead
+ * @return {string} 'Alto' | 'Medio' | 'Bajo' | 'Sin Calificar'
+ */
+function calcBANTScore_(calSheet, idLead) {
+  var calColMap = getColumnMap_(calSheet);
+  var calData = calSheet.getDataRange().getValues();
+  var calIdLeadCol = calColMap['id_lead'] || 2;
+
+  var calif = null;
+  for (var i = 1; i < calData.length; i++) {
+    if (String(calData[i][calIdLeadCol - 1]) === String(idLead)) {
+      calif = calData[i];
+      break;
+    }
+  }
+  if (!calif) return '';
+
+  var score = 0;
+  var perfilCol    = calColMap['perfil_adecuado'];
+  var presupCol    = calColMap['tiene_presupuesto'];
+  var interesCol   = calColMap['mostro_interes_genuino'];
+  var entendioCol  = calColMap['entendio_info_marketing'];
+  var terceroCol   = calColMap['necesita_decision_tercero'];
+
+  if (perfilCol   && calif[perfilCol   - 1] === true) score++;
+  if (presupCol   && calif[presupCol   - 1] === true) score++;
+  if (interesCol  && calif[interesCol  - 1] === true) score++;
+  if (entendioCol && calif[entendioCol - 1] === true) score++;
+  if (terceroCol  && calif[terceroCol  - 1] === false) score++; // no necesitar tercero = positivo
+
+  if (score >= 5) return 'Alto';
+  if (score >= 3) return 'Medio';
+  if (score >= 1) return 'Bajo';
+  return 'Sin Calificar';
+}
+
+/**
  * Parsea "Contestó Teléfono 3" → {tipo: "Teléfono", resultado: "Contestó"}
  */
 function parseToqueValue_(value) {
@@ -1067,6 +1108,26 @@ function updateLeadField(rowNumber, colIdentifier, newValue, isDeal) {
           logChange_('Lead', idLead, Session.getActiveUser().getEmail() || 'API', fieldName, '', newValue);
         }
         result.updated = true;
+
+        // 6.4 Auto-calculate calidad_contacto from BANT score after any BANT field update
+        var bantScore = calcBANTScore_(calSheet, idLead);
+        if (bantScore) {
+          var leadsSheet = ss.getSheetByName(T_LEADS);
+          if (leadsSheet) {
+            var leadsColMap = getColumnMap_(leadsSheet);
+            var leadsData = leadsSheet.getDataRange().getValues();
+            var leadsIdCol = leadsColMap['id_lead'] || 1;
+            var calidadCol = leadsColMap['calidad_contacto'];
+            if (calidadCol) {
+              for (var li = 1; li < leadsData.length; li++) {
+                if (String(leadsData[li][leadsIdCol - 1]) === String(idLead)) {
+                  leadsSheet.getRange(li + 1, calidadCol).setValue(bantScore);
+                  break;
+                }
+              }
+            }
+          }
+        }
       }
     } else if (dbCol) {
       // Write to fact table
