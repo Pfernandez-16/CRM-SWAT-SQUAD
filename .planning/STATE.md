@@ -1,116 +1,51 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
-status: in_progress
-stopped_at: "Completed 06-02-PLAN.md — Chart.js funnel chart and dealsVelocity deployed; clasp push complete; checkpoint:human-verify pending"
-last_updated: "2026-03-11T22:39:15.892Z"
-last_activity: "2026-03-11 — Completed 03-01: Toques/Semaforos/SinRespuesta code audit (read-only)"
+milestone: v2.0
+milestone_name: Pre-Entrega al Cliente
+status: defining_requirements
+stopped_at: "Milestone v2.0 started — defining requirements"
+last_updated: "2026-03-14"
+last_activity: "2026-03-14 — Milestone v2.0 started"
 progress:
-  total_phases: 6
-  completed_phases: 6
-  total_plans: 13
-  completed_plans: 13
-  percent: 86
----
-
----
-gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
-status: in_progress
-stopped_at: Completed 03-01-PLAN.md — Phase 3 Toques/Semaforos audit complete
-last_updated: "2026-03-11T19:11:34Z"
-last_activity: "2026-03-11 — Completed 03-01: static audit of matrizContactabilidad, semaforoContesto, semaforoNoContesto, sinRespuesta"
-progress:
-  [█████████░] 86%
-  completed_phases: 2
-  total_plans: 7
-  completed_plans: 5
-  percent: 71
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-03-11)
+See: .planning/PROJECT.md (updated 2026-03-14)
 
-**Core value:** El reporte cuadra con la base de datos al 100% — confiabilidad es lo que retiene al cliente
-**Current focus:** Phase 3 — Toques/Semaforos/Razones
+**Core value:** El reporte cuadra con la base de datos al 100% y el flujo SDR→AE funciona sin fricciones
+**Current focus:** Defining requirements for v2.0
 
 ## Current Position
 
-Phase: 3 of 4 (Toques/Semaforos/Razones)
-Plan: 1 of 3 in current phase
-Status: Plan 03-01 complete — audit confirmed all TOQUES-01..05 satisfied
-Last activity: 2026-03-11 — Completed 03-01: Toques/Semaforos/SinRespuesta code audit (read-only)
-
-Progress: [███████---] 71%
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-03-14 — Milestone v2.0 started
 
 ## Performance Metrics
 
-**Velocity:**
-- Total plans completed: 5
-- Average duration: ~1 min
-- Total execution time: ~5 min
-
-**By Phase:**
-
-| Phase | Plans | Total | Avg/Plan |
-|-------|-------|-------|----------|
-| 01-scaffolding | 2 | ~2 min | ~1 min |
-| 02-funnel-incontactables-cross-selling | 2 | ~2 min | ~1 min |
-| 03-toques-semaforos-razones | 1 (audit) | ~1 min | ~1 min |
-
-**Recent Trend:**
-- Last 5 plans: 01-01 (~1 min), 01-02 (~1 min), 02-01 (~1 min), 02-02 (~1 min), 03-01 (~1 min)
-- Trend: fast (read-only audit for 03-01)
-
-*Updated after each plan completion*
-| Phase 02-funnel-incontactables-cross-selling P01 | 2 | 2 tasks | 1 files |
-| Phase 02-funnel-incontactables-cross-selling P02 | 3 | 2 tasks | 1 files |
-| Phase 03-toques-semaforos-razones P01 | ~1 min | 2 tasks | 0 files (audit) |
-| Phase 03-toques-semaforos-razones P02 | 5 | 3 tasks | 1 files |
-| Phase 03-toques-semaforos-razones P03 | 5 | 3 tasks | 2 files |
-| Phase 04-deals-backend-+-frontend P01 | 10min | 2 tasks | 1 files |
-| Phase 05-comparativa-personalizada-+-ranking-sdrs P01 | 2 | 2 tasks | 1 files |
-| Phase 05-comparativa-personalizada-+-ranking-sdrs P02 | 5min | 2 tasks | 2 files |
-| Phase 06-visual-intelligence P01 | 5min | 3 tasks | 3 files |
-| Phase 06-visual-intelligence P02 | 5 | 2 tasks | 2 files |
+**v1.0 Summary:**
+- 6 phases, 13 plans completed
+- All 39 requirements satisfied
 
 ## Accumulated Context
 
 ### Decisions
 
-Decisions are logged in PROJECT.md Key Decisions table.
-Recent decisions affecting current work:
-
-- Backend-first: Analytics.js backend was completed before frontend work began — solid data contract in place
-- Toques = FILAS: Christian explicitly requires toques as rows in the vertical matrix for product/country column comparison
-- Deals schema gap: fact_deals lacks boolean funnel fields — must add cotizo/en_negociacion/asistio_demo/firmo_contrato/fondeo before Deals report is possible
-- GAS timeout risk: getSDRReport is a single call; adding Deals section may push execution time — monitor closely
-- [Phase 01-scaffolding]: Reportes view is ADMIN/GERENTE-only by product decision — SDR/AE exclusion is intentional
-- [Phase 01-scaffolding]: GAP 1 (no watch(compareType)) and GAP 2 (YOY comparisonRange) closed in plan 01-02
-- [01-02]: Backend metadata is authoritative for comparison dates — successHandler reads previousDateIn/Out to correct comparisonRange after each report call
-- [01-02]: watch(compareType) uses function() callback to match existing watcher style; no { immediate: false } needed (Vue 3 default)
-- [Phase 02-funnel-incontactables-cross-selling]: CVR inter-etapa backward scan: always walk backwards past amount rows to nearest count row (prevCountRow pattern)
-- [Phase 02-funnel-incontactables-cross-selling]: SPAM row in Incontactables shows 0/0/0 by design — no SPAM status in fact_leads
-- [Phase 02-funnel-incontactables-cross-selling]: Amount rows (Monto Inversion, Monto Cierres) show -- in CVR column — correct, no ratio on money rows
-- [03-01]: matrizContactabilidad has no delta column by design — backend returns plain Number cells, not segmented metrics
-- [03-01]: semaforoNoContestoGrid correctly excludes Correo row — only Telefono and WhatsApp, no snc.correo reference
-- [03-01]: Both semaforo grids share a single semaforoSegment ref (no split refs)
-- [Phase 03-toques-semaforos-razones]: Display text row.mixPct intentionally left uncapped — shows real value even if >100%; only the visual bar is capped at 100%
-- [Phase 03-toques-semaforos-razones]: CHECK 2 semaforoContestoGrid: 3 matching lines (both names on same return block line) treated as PASS — both computeds defined and exported
-- [Phase 04-deals-backend-+-frontend]: calculateDealsReport_ placed before MAIN ORCHESTRATOR; contactado stage si=totalDeals by definition; empty razon_perdida normalized to 'Sin razon'
-- [Phase 05-01]: compareType normalization changed from ternary to if-guard to allow 'custom' through without becoming 'prev_period'
-- [Phase 05-01]: calculateSDRRankingReport_ builds union of current+previous SDR IDs so SDRs with only previous-period leads still appear
-- [Phase 05-02]: Custom pickers placed inline after select using template v-if; watch(compareType) does NOT auto-call generateReport() when switching to custom mode — user picks dates first
-- [Phase 05-02]: sdrRankingRows and customPrevRange added to setup() return for template access
-- [Phase 06-visual-intelligence]: avgDaysToClose measures days from fecha_pase_ventas to today (not period end) — reflects real deal velocity
-- [Phase 06-visual-intelligence]: delta-alert CSS uses rgba(255,193,7,0.18) amber background overlay — works on dark glassmorphism without overriding text color direction
-- [Phase 06-visual-intelligence]: Chart.js CDN before include('App') — new Chart() globally available in App.html at runtime
-- [Phase 06-visual-intelligence]: dealsVelocity returns null (not 0) when dealsReport missing — v-if hides stat block entirely
+- [v1.0] Backend-first: Analytics.js completed before frontend — solid data contract
+- [v1.0] Toques = FILAS: Christian's explicit requirement for vertical consistency
+- [v1.0] Reportes view is ADMIN/GERENTE-only by design
+- [v2.0] submitHandoff must call processHandoff — routing logic exists but is bypassed
+- [v2.0] SDR Ranking CVR fix: use lead.status === 'Paso a Ventas' instead of cal.status_lead
+- [v2.0] Remove duplicate function definitions in App.html before adding new code
 
 ### Pending Todos
 
@@ -118,11 +53,12 @@ None yet.
 
 ### Blockers/Concerns
 
-- [Phase 4]: fact_deals schema change requires adding 5 boolean columns and defaulting existing rows — must verify Sheets does not break existing AE views
-- [All phases]: GAS 6-minute timeout — if getSDRReport grows too large, may need to split into a separate getDealsReport call
+- processHandoff has a typo ('Pase a Ventas' vs 'Paso a Ventas') — must fix before activating
+- Duplicate function definitions in App.html could cause subtle bugs if not cleaned first
+- Deal fichas restructure touches both Index.html modal and App.html methods — high surface area
 
 ## Session Continuity
 
-Last session: 2026-03-11T22:20:18.338Z
-Stopped at: Completed 06-02-PLAN.md — Chart.js funnel chart and dealsVelocity deployed; clasp push complete; checkpoint:human-verify pending
+Last session: 2026-03-14
+Stopped at: Milestone v2.0 started — defining requirements
 Resume file: None
