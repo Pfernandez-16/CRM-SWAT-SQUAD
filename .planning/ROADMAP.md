@@ -1,23 +1,14 @@
-# Roadmap: CRM SWAT Squad — Módulo de Reportería
+# Roadmap: CRM SWAT Squad
 
-## Overview
+## Milestones
 
-The CRM core is already complete. This roadmap covers only the reports module: scaffolding the Reportes view with period selection and API wiring, then building each report section incrementally. The final phase adds the one missing backend piece (Deals/Negociaciones) and its frontend. Four phases, each delivering a coherent, verifiable capability on top of the existing system.
+- ✅ **v1.0 Reporteria** - Phases 1-6 (shipped 2026-03-11)
+- 🚧 **v2.0 Pre-Entrega al Cliente** - Phases 7-11 (in progress)
 
 ## Phases
 
-**Phase Numbering:**
-- Integer phases (1, 2, 3): Planned milestone work
-- Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
-
-Decimal phases appear between their surrounding integers in numeric order.
-
-- [x] **Phase 1: Scaffolding** - Reportes view skeleton, period selector, and getSDRReport API wiring with live data flowing into Vue state (completed 2026-03-11)
-- [x] **Phase 2: Funnel + Incontactables + Cross-Selling** - First three report tables rendered with deltas and Mfg/Ind breakdowns (completed 2026-03-11)
-- [x] **Phase 3: Toques + Semáforos + Razones** - Vertical contactability matrix, semaphore grids, and loss-reason tables (completed 2026-03-11)
-- [x] **Phase 4: Deals Backend + Frontend** - New Analytics function for Deals report, schema update, and full Deals table in the UI (completed 2026-03-11)
-
-## Phase Details
+<details>
+<summary>✅ v1.0 Reportería (Phases 1-6) — SHIPPED 2026-03-11</summary>
 
 ### Phase 1: Scaffolding
 **Goal**: The Reportes view exists, the period selector works, and real data flows from the backend into the Vue app
@@ -32,8 +23,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 2 plans
 
 Plans:
-- [ ] 01-01-PLAN.md — Audit and verify existing Reportes scaffolding (nav wiring, flatpickr, controls bar, states)
-- [ ] 01-02-PLAN.md — Close two gaps: add watch(compareType) auto-trigger and fix YOY comparisonRange
+- [x] 01-01-PLAN.md — Audit and verify existing Reportes scaffolding (nav wiring, flatpickr, controls bar, states)
+- [x] 01-02-PLAN.md — Close two gaps: add watch(compareType) auto-trigger and fix YOY comparisonRange
 
 ### Phase 2: Funnel + Incontactables + Cross-Selling
 **Goal**: Users can read the Embudo General, Incontactables, and Cross-Selling report tables with full breakdowns and period comparisons
@@ -48,8 +39,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 02-01-PLAN.md — Fix CVR bug (Deals Cerrados reads amount row) and label accent; surgical edits to App.html lines 190 and 202-208
-- [ ] 02-02-PLAN.md — Deploy, audit static code, and browser-verify all 12 requirements across all three tables (checkpoint)
+- [x] 02-01-PLAN.md — Fix CVR bug (Deals Cerrados reads amount row) and label accent; surgical edits to App.html lines 190 and 202-208
+- [x] 02-02-PLAN.md — Deploy, audit static code, and browser-verify all 12 requirements across all three tables (checkpoint)
 
 ### Phase 3: Toques + Semáforos + Razones
 **Goal**: Users can read the vertical contactability matrix, the Contesto/No-Contesto semaphore grids, and both Razones tables
@@ -81,8 +72,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 04-01-PLAN.md — fact_deals schema update (5 checkbox columns) + calculateDealsReport_() backend function + wire into getSDRReport()
-- [ ] 04-02-PLAN.md — Deals frontend: dealsReportRows + dealsLossRows computeds in App.html + two new table blocks in Index.html
+- [x] 04-01-PLAN.md — fact_deals schema update (5 checkbox columns) + calculateDealsReport_() backend function + wire into getSDRReport()
+- [x] 04-02-PLAN.md — Deals frontend: dealsReportRows + dealsLossRows computeds in App.html + two new table blocks in Index.html
 
 ### Phase 5: Comparativa Personalizada + Ranking SDRs
 **Goal**: El gerente puede comparar contra cualquier período libre, y puede ver el ranking de performance de sus SDRs con CVR y delta
@@ -97,8 +88,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 05-01-PLAN.md — Backend: extender getSDRReport() para fechas custom + calculateSDRRankingReport_()
-- [ ] 05-02-PLAN.md — Frontend: UI comparativa personalizada + sección Ranking SDRs
+- [x] 05-01-PLAN.md — Backend: extender getSDRReport() para fechas custom + calculateSDRRankingReport_()
+- [x] 05-02-PLAN.md — Frontend: UI comparativa personalizada + sección Ranking SDRs
 
 ### Phase 6: Visual Intelligence
 **Goal**: Los reportes destacan automáticamente variaciones críticas y el Embudo General tiene representación visual gráfica para reuniones con el CEO
@@ -111,19 +102,100 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 06-01-PLAN.md — Analytics.js avgDaysToClose + Styles.html .delta-alert CSS + Index.html delta-alert class binding on all delta spans
-- [ ] 06-02-PLAN.md — Chart.js CDN + canvas#embudoChart + App.html watch(embudoRows) funnel chart + dealsVelocity computed + clasp deploy
+- [x] 06-01-PLAN.md — Analytics.js avgDaysToClose + Styles.html .delta-alert CSS + Index.html delta-alert class binding on all delta spans
+- [x] 06-02-PLAN.md — Chart.js CDN + canvas#embudoChart + App.html watch(embudoRows) funnel chart + dealsVelocity computed + clasp deploy
+
+</details>
+
+---
+
+### 🚧 v2.0 Pre-Entrega al Cliente (In Progress)
+
+**Milestone Goal:** Corregir bugs críticos del handoff, activar routing inteligente de AEs, implementar pricing UI en fichas, reestructurar deal fichas, y QA general para la entrega a Christian.
+
+#### Phase 7: Bug Fixes Críticos
+**Goal**: El flujo SDR→AE está libre de bugs bloqueantes — routing activo, CVR correcto, sin definiciones duplicadas, status canónico
+**Depends on**: Phase 6 (v1.0 complete)
+**Requirements**: BUG-01, BUG-02, BUG-03, BUG-04
+**Success Criteria** (what must be TRUE):
+  1. Al confirmar handoff, el sistema ejecuta processHandoff (con lógica de routing) y no updateLeadMultiple — el AE asignado aparece en el deal creado
+  2. La sección Ranking SDRs muestra CVR real (leads con status 'Paso a Ventas' / total leads) en vez de 0% para todos los SDRs
+  3. App.html contiene exactamente una definición de openHandoffModal, cancelHandoff y submitHandoff — sin código duplicado silencioso
+  4. Los leads pasados a ventas tienen status 'Paso a Ventas' (sin tilde en 'Paso') en fact_leads y fact_deals
+**Plans**: TBD
+
+Plans:
+- [ ] 07-01-PLAN.md
+
+#### Phase 8: Handoff Routing End-to-End
+**Goal**: El gerente puede configurar el modo de asignación de AEs, y el flujo SDR→AE opera correctamente en los tres modos (SDR Choice, Round Robin, Manager Review)
+**Depends on**: Phase 7
+**Requirements**: ROUTE-01, ROUTE-02, ROUTE-03, ROUTE-04
+**Success Criteria** (what must be TRUE):
+  1. En modo SDR_CHOICE, el SDR ve un dropdown de AEs activos en el handoff modal y el deal se crea asignado al AE seleccionado
+  2. En modo AUTO (Round Robin), el dropdown de AEs se oculta y el sistema asigna el siguiente AE en turno automáticamente al confirmar
+  3. En modo MANAGER_REVIEW, el deal se crea sin AE asignado y queda visible para el gerente como pendiente de aprobación
+  4. El panel Admin tiene un selector de modo de routing (SDR_CHOICE / AUTO / MANAGER_REVIEW) que el gerente puede cambiar y guardar
+**Plans**: TBD
+
+Plans:
+- [ ] 08-01-PLAN.md
+
+#### Phase 9: Pricing UI
+**Goal**: Tanto SDRs como AEs ven y pueden editar montos estimados y cotizados durante el flujo de handoff y en fichas de deal
+**Depends on**: Phase 7
+**Requirements**: PRICE-01, PRICE-02, PRICE-03
+**Success Criteria** (what must be TRUE):
+  1. En el handoff modal, el SDR ve el monto estimado auto-calculado (ticket promedio × factor por tipo: Fichas×12, Proyectos×1, SaaS×licencias×12) antes de confirmar
+  2. En la ficha de deal, el AE puede ver y editar el monto cotizado en un campo independiente del monto estimado
+  3. La calculadora de pricing muestra el desglose del cálculo (tipo de cliente, factor, resultado) tanto en el handoff modal como en el deal modal
+**Plans**: TBD
+
+Plans:
+- [ ] 09-01-PLAN.md
+
+#### Phase 10: Deal Fichas Reestructuradas
+**Goal**: Las fichas de deal tienen secciones Cotización y Cierre visualmente separadas, con timestamps automáticos y soporte multi-producto con clasificación automática
+**Depends on**: Phase 7
+**Requirements**: DEAL-01, DEAL-02, DEAL-03, DEAL-04
+**Success Criteria** (what must be TRUE):
+  1. El modal de deal muestra dos secciones distinguibles visualmente: "Cotización" (monto cotizado + fecha de cotización) y "Cierre" (monto cierre + monto apartado + fecha de cierre)
+  2. La fecha de cotización se graba automáticamente al ingresar monto cotizado; la fecha de cierre se graba automáticamente al cambiar status a "Vendido"
+  3. El AE puede agregar múltiples productos por deal en una tabla con nombre, cantidad, precio unitario y descuento % por línea
+  4. El sistema clasifica automáticamente el deal como cross-selling, up-selling o venta directa al comparar el producto de interés del SDR con el/los producto(s) de cierre del AE
+**Plans**: TBD
+
+Plans:
+- [ ] 10-01-PLAN.md
+
+#### Phase 11: QA y Limpieza Pre-Entrega
+**Goal**: El sistema pasa una verificación end-to-end completa, el código muerto está eliminado, y el checklist de reunión con el cliente refleja el estado real
+**Depends on**: Phases 7, 8, 9, 10 (all complete)
+**Requirements**: QA-01, QA-02, QA-03
+**Success Criteria** (what must be TRUE):
+  1. CHECKLIST_REUNION_CLIENTE.md tiene la sección 9 (Reportería) marcada como completa con todos sus ítems verificados
+  2. App.html no contiene funciones duplicadas, variables no referenciadas ni imports sin usar — auditoría de código limpia
+  3. El flujo completo crear lead → toques → calificar BANT → handoff → deal creado con AE → cotizar → negociar → cerrar funciona sin errores en producción
+**Plans**: TBD
+
+Plans:
+- [ ] 11-01-PLAN.md
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
+Phases 7 → 8 → (9 and 10 can execute in parallel after 7) → 11
 
-| Phase | Plans Complete | Status | Completed |
-|-------|----------------|--------|-----------|
-| 1. Scaffolding | 2/2 | Complete    | 2026-03-11 |
-| 2. Funnel + Incontactables + Cross-Selling | 2/2 | Complete    | 2026-03-11 |
-| 3. Toques + Semáforos + Razones | 3/3 | Complete    | 2026-03-11 |
-| 4. Deals Backend + Frontend | 2/2 | Complete    | 2026-03-11 |
-| 5. Comparativa Personalizada + Ranking SDRs | 1/2 | Complete    | 2026-03-11 |
-| 6. Visual Intelligence | 2/2 | Complete    | 2026-03-11 |
+| Phase | Milestone | Plans Complete | Status | Completed |
+|-------|-----------|----------------|--------|-----------|
+| 1. Scaffolding | v1.0 | 2/2 | Complete | 2026-03-11 |
+| 2. Funnel + Incontactables + Cross-Selling | v1.0 | 2/2 | Complete | 2026-03-11 |
+| 3. Toques + Semáforos + Razones | v1.0 | 3/3 | Complete | 2026-03-11 |
+| 4. Deals Backend + Frontend | v1.0 | 2/2 | Complete | 2026-03-11 |
+| 5. Comparativa Personalizada + Ranking SDRs | v1.0 | 2/2 | Complete | 2026-03-11 |
+| 6. Visual Intelligence | v1.0 | 2/2 | Complete | 2026-03-11 |
+| 7. Bug Fixes Críticos | v2.0 | 0/TBD | Not started | - |
+| 8. Handoff Routing End-to-End | v2.0 | 0/TBD | Not started | - |
+| 9. Pricing UI | v2.0 | 0/TBD | Not started | - |
+| 10. Deal Fichas Reestructuradas | v2.0 | 0/TBD | Not started | - |
+| 11. QA y Limpieza Pre-Entrega | v2.0 | 0/TBD | Not started | - |

@@ -77,30 +77,30 @@ Requirements for pre-delivery milestone. Each maps to roadmap phases.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| BUG-01 | TBD | Pending |
-| BUG-02 | TBD | Pending |
-| BUG-03 | TBD | Pending |
-| BUG-04 | TBD | Pending |
-| ROUTE-01 | TBD | Pending |
-| ROUTE-02 | TBD | Pending |
-| ROUTE-03 | TBD | Pending |
-| ROUTE-04 | TBD | Pending |
-| PRICE-01 | TBD | Pending |
-| PRICE-02 | TBD | Pending |
-| PRICE-03 | TBD | Pending |
-| DEAL-01 | TBD | Pending |
-| DEAL-02 | TBD | Pending |
-| DEAL-03 | TBD | Pending |
-| DEAL-04 | TBD | Pending |
-| QA-01 | TBD | Pending |
-| QA-02 | TBD | Pending |
-| QA-03 | TBD | Pending |
+| BUG-01 | Phase 7 | Pending |
+| BUG-02 | Phase 7 | Pending |
+| BUG-03 | Phase 7 | Pending |
+| BUG-04 | Phase 7 | Pending |
+| ROUTE-01 | Phase 8 | Pending |
+| ROUTE-02 | Phase 8 | Pending |
+| ROUTE-03 | Phase 8 | Pending |
+| ROUTE-04 | Phase 8 | Pending |
+| PRICE-01 | Phase 9 | Pending |
+| PRICE-02 | Phase 9 | Pending |
+| PRICE-03 | Phase 9 | Pending |
+| DEAL-01 | Phase 10 | Pending |
+| DEAL-02 | Phase 10 | Pending |
+| DEAL-03 | Phase 10 | Pending |
+| DEAL-04 | Phase 10 | Pending |
+| QA-01 | Phase 11 | Pending |
+| QA-02 | Phase 11 | Pending |
+| QA-03 | Phase 11 | Pending |
 
 **Coverage:**
 - v2.0 requirements: 18 total
-- Mapped to phases: 0 (pending roadmap)
-- Unmapped: 18 ⚠️
+- Mapped to phases: 18 (100%)
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-14*
-*Last updated: 2026-03-14 after milestone v2.0 definition*
+*Last updated: 2026-03-14 — traceability populated after roadmap v2.0 creation*
