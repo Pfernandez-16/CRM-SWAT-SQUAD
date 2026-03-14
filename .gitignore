@@ -1,0 +1,23 @@
+# Archivos binarios / datos
+*.xlsx
+*.csv
+*.pdf
+*.docx
+
+# Minutas y scripts auxiliares
+MINUTA_REUNION_CRM*
+generar_minuta_pdf.py
+read_excel.py
+
+# Python scripts
+*.py
+!.claude/**/*.py
+__pycache__/
+*.pyc
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Claude Code local settings
+.claude/settings.local.json

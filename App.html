@@ -1206,6 +1206,11 @@
                                     dataset.value[idx][key] = editLead[key];
                                 }
                             }
+                            // If backend recalculated BANT score, sync it into the lead
+                            if (result && result.calidadContacto) {
+                                editLead['Calidad de Contacto'] = result.calidadContacto;
+                                dataset.value[idx]['Calidad de Contacto'] = result.calidadContacto;
+                            }
                             // Rebuild UI convenience aliases
                             dataset.value[idx]._colW_Status = dataset.value[idx]['Status'] || '';
                             dataset.value[idx]._colX_Calidad = dataset.value[idx]['Calidad de Contacto'] || '';

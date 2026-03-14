@@ -1123,20 +1123,21 @@ function updateLeadField(rowNumber, colIdentifier, newValue, isDeal) {
         result.updated = true;
 
         // 6.4 Auto-calculate calidad_contacto from BANT score after any BANT field update
+        SpreadsheetApp.flush(); // commit calificacion write before re-reading for score
         var bantScore = calcBANTScore_(calSheet, idLead);
-        if (bantScore) {
-          var leadsSheet = ss.getSheetByName(T_LEADS);
-          if (leadsSheet) {
-            var leadsColMap = getColumnMap_(leadsSheet);
-            var leadsData = leadsSheet.getDataRange().getValues();
-            var leadsIdCol = leadsColMap['id_lead'] || 1;
-            var calidadCol = leadsColMap['calidad_contacto'];
-            if (calidadCol) {
-              for (var li = 1; li < leadsData.length; li++) {
-                if (String(leadsData[li][leadsIdCol - 1]) === String(idLead)) {
-                  leadsSheet.getRange(li + 1, calidadCol).setValue(bantScore);
-                  break;
-                }
+        var leadsSheet = ss.getSheetByName(T_LEADS);
+        if (leadsSheet) {
+          var leadsColMap = getColumnMap_(leadsSheet);
+          var leadsData = leadsSheet.getDataRange().getValues();
+          var leadsIdCol = leadsColMap['id_lead'] || 1;
+          var calidadCol = leadsColMap['calidad_contacto'];
+          if (calidadCol) {
+            for (var li = 1; li < leadsData.length; li++) {
+              if (String(leadsData[li][leadsIdCol - 1]) === String(idLead)) {
+                var scoreToWrite = bantScore || 'Sin Calificar';
+                leadsSheet.getRange(li + 1, calidadCol).setValue(scoreToWrite);
+                result.calidadContacto = scoreToWrite; // send back to frontend
+                break;
               }
             }
           }
@@ -1305,6 +1306,27 @@ function updateLeadMultiple(rowNumber, updates, isDeal) {
             calSheet.appendRow(newCalRow);
             for (var calLog in calificacionUpdates) {
               logChange_('Lead', entityId, user, calificacionUpdates[calLog].field, '', calificacionUpdates[calLog].value);
+            }
+          }
+
+          // 6.4 Auto-calculate calidad_contacto from BANT score after any BANT update
+          SpreadsheetApp.flush();
+          var bantScore = calcBANTScore_(calSheet, idLead);
+          var leadsSheet2 = ss.getSheetByName(T_LEADS);
+          if (leadsSheet2) {
+            var leadsColMap2 = getColumnMap_(leadsSheet2);
+            var leadsData2 = leadsSheet2.getDataRange().getValues();
+            var leadsIdCol2 = leadsColMap2['id_lead'] || 1;
+            var calidadCol2 = leadsColMap2['calidad_contacto'];
+            if (calidadCol2) {
+              for (var li2 = 1; li2 < leadsData2.length; li2++) {
+                if (String(leadsData2[li2][leadsIdCol2 - 1]) === String(idLead)) {
+                  var scoreToWrite2 = bantScore || 'Sin Calificar';
+                  leadsSheet2.getRange(li2 + 1, calidadCol2).setValue(scoreToWrite2);
+                  result.calidadContacto = scoreToWrite2;
+                  break;
+                }
+              }
             }
           }
         }
