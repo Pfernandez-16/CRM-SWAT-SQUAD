@@ -1580,57 +1580,6 @@
                     .updateRoundRobinOrder(orderedEmails);
             }
 
-            // ── Handoff Functions ──
-            function openHandoffModal(lead) {
-                // Populate handoff lead info
-                handoffLead._id = lead._id || '';
-                handoffLead._name = lead._name || ((lead['Nombre'] || '') + ' ' + (lead['Apellido'] || '')).trim();
-                handoffLead['Vendedor asignado (SDR)'] = lead['Vendedor asignado (SDR)'] || '';
-                // Build contact history from pipeline/toques
-                handoffLead._history = [];
-                if (leadHistory.pipeline && leadHistory.pipeline.length) {
-                    handoffLead._history = leadHistory.pipeline.slice();
-                }
-                // Reset form
-                handoffData.necesidad_puntual = '';
-                handoffData.necesita_decision_tercero = '';
-                handoffData.tiene_presupuesto = '';
-                handoffData.monto_presupuesto = '';
-                handoffData.notas_bandeja_plata = '';
-                handoffData.aeEmail = '';
-                showHandoffModal.value = true;
-            }
-
-            function cancelHandoff() {
-                showHandoffModal.value = false;
-            }
-
-            function submitHandoff() {
-                saving.value = true;
-                var payload = {
-                    leadId: handoffLead._id,
-                    aeEmail: handoffData.aeEmail || '',
-                    notas: handoffData.notas_bandeja_plata || ''
-                };
-                google.script.run
-                    .withSuccessHandler(function (result) {
-                        saving.value = false;
-                        if (result && result.status === 'success') {
-                            showToast('🎉 ' + result.message, 'success');
-                            showHandoffModal.value = false;
-                            showLeadModal.value = false;
-                            refreshData();
-                        } else {
-                            showToast('❌ ' + (result.message || 'Error en el handoff'), 'error');
-                        }
-                    })
-                    .withFailureHandler(function (err) {
-                        saving.value = false;
-                        showToast('❌ Error: ' + err.message, 'error');
-                    })
-                    .processHandoff(payload);
-            }
-
             function loadStats() {
                 google.script.run
                     .withSuccessHandler(function (response) {
@@ -1757,39 +1706,36 @@
 
             function submitHandoff() {
                 saving.value = true;
-                const lead = handoffLead.value;
-                const row = lead._row;
-
-                // Build updates: Status = 'Paso a Ventas' + BANT fields + notes
-                const updates = {
-                    'Status': 'Paso a Ventas',
-                    '¿Cuál es tu necesidad puntual?': handoffData.necesidad_puntual,
-                    '¿Necesitas tocar base con alguién para decidir la compra?': handoffData.necesita_decision_tercero,
-                    '¿Tienes presupuesto asignado para este proyecto, en este año?': handoffData.tiene_presupuesto,
-                    '¿Cuánto?': handoffData.monto_presupuesto,
-                    'Notas': handoffData.notas_bandeja_plata
+                var lead = handoffLead.value;
+                var payload = {
+                    leadId: lead._id || '',
+                    leadRow: lead._row || '',
+                    aeEmail: handoffData.aeEmail || '',
+                    notas: handoffData.notas_bandeja_plata || '',
+                    bant: {
+                        necesidad_puntual: handoffData.necesidad_puntual || '',
+                        necesita_decision_tercero: handoffData.necesita_decision_tercero || '',
+                        tiene_presupuesto: handoffData.tiene_presupuesto || '',
+                        monto_presupuesto: handoffData.monto_presupuesto || ''
+                    }
                 };
-
                 google.script.run
                     .withSuccessHandler(function (result) {
                         saving.value = false;
-                        if (result && result.status === 'error') {
-                            showToast('❌ Error en el traspaso: ' + result.message, 'error');
-                            return;
+                        if (result && result.status === 'success') {
+                            showToast('🎉 ' + result.message, 'success');
+                            showHandoffModal.value = false;
+                            showLeadModal.value = false;
+                            refreshData();
+                        } else {
+                            showToast('❌ ' + (result.message || 'Error en el handoff'), 'error');
                         }
-                        // Update local state
-                        lead._colW_Status = 'Paso a Ventas';
-                        lead['Status'] = 'Paso a Ventas';
-
-                        showHandoffModal.value = false;
-                        showToast('✅ Ficha de Negociación creada — Lead #' + (lead._id || row) + ' enviado al AE', 'success');
-                        refreshData();
                     })
                     .withFailureHandler(function (err) {
                         saving.value = false;
                         showToast('❌ Error: ' + err.message, 'error');
                     })
-                    .updateLeadMultiple(row, updates, false);
+                    .processHandoff(payload);
             }
 
             // ── Email Compose Functions ──
