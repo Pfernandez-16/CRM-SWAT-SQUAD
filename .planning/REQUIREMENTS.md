@@ -13,9 +13,9 @@ Requirements for pre-delivery milestone. Each maps to roadmap phases.
 
 ### Bug Fixes
 
-- [ ] **BUG-01**: submitHandoff llama a processHandoff (routing-aware) en vez de updateLeadMultiple — activando la lógica de asignación inteligente de AE
+- [x] **BUG-01**: submitHandoff llama a processHandoff (routing-aware) en vez de updateLeadMultiple — activando la lógica de asignación inteligente de AE
 - [x] **BUG-02**: SDR Ranking CVR calcula correctamente usando lead.status === 'Paso a Ventas' o existencia de deal en vez de cal.status_lead inexistente
-- [ ] **BUG-03**: Funciones duplicadas eliminadas en App.html — solo queda una definición de openHandoffModal, cancelHandoff, submitHandoff (la que usa processHandoff)
+- [x] **BUG-03**: Funciones duplicadas eliminadas en App.html — solo queda una definición de openHandoffModal, cancelHandoff, submitHandoff (la que usa processHandoff)
 - [x] **BUG-04**: processHandoff escribe status canónico 'Paso a Ventas' en vez de 'Pase a Ventas'
 
 ### Handoff & Routing
@@ -77,9 +77,9 @@ Requirements for pre-delivery milestone. Each maps to roadmap phases.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| BUG-01 | Phase 7 | Pending |
+| BUG-01 | Phase 7 | Complete |
 | BUG-02 | Phase 7 | Complete |
-| BUG-03 | Phase 7 | Pending |
+| BUG-03 | Phase 7 | Complete |
 | BUG-04 | Phase 7 | Complete |
 | ROUTE-01 | Phase 8 | Pending |
 | ROUTE-02 | Phase 8 | Pending |
