@@ -122,10 +122,11 @@ Plans:
   2. La sección Ranking SDRs muestra CVR real (leads con status 'Paso a Ventas' / total leads) en vez de 0% para todos los SDRs
   3. App.html contiene exactamente una definición de openHandoffModal, cancelHandoff y submitHandoff — sin código duplicado silencioso
   4. Los leads pasados a ventas tienen status 'Paso a Ventas' (sin tilde en 'Paso') en fact_leads y fact_deals
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 07-01-PLAN.md
+- [ ] 07-01-PLAN.md — Fix SDR Ranking CVR (BUG-02) + processHandoff status typo (BUG-04)
+- [ ] 07-02-PLAN.md — Remove duplicate handoff functions (BUG-03) + rewire submitHandoff to processHandoff (BUG-01)
 
 #### Phase 8: Handoff Routing End-to-End
 **Goal**: El gerente puede configurar el modo de asignación de AEs, y el flujo SDR→AE opera correctamente en los tres modos (SDR Choice, Round Robin, Manager Review)
@@ -194,7 +195,7 @@ Phases 7 → 8 → (9 and 10 can execute in parallel after 7) → 11
 | 4. Deals Backend + Frontend | v1.0 | 2/2 | Complete | 2026-03-11 |
 | 5. Comparativa Personalizada + Ranking SDRs | v1.0 | 2/2 | Complete | 2026-03-11 |
 | 6. Visual Intelligence | v1.0 | 2/2 | Complete | 2026-03-11 |
-| 7. Bug Fixes Críticos | v2.0 | 0/TBD | Not started | - |
+| 7. Bug Fixes Críticos | v2.0 | 0/2 | Planned | - |
 | 8. Handoff Routing End-to-End | v2.0 | 0/TBD | Not started | - |
 | 9. Pricing UI | v2.0 | 0/TBD | Not started | - |
 | 10. Deal Fichas Reestructuradas | v2.0 | 0/TBD | Not started | - |
