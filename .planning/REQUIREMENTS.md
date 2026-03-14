@@ -1,86 +1,50 @@
-# Requirements: CRM SWAT Squad — Módulo de Reportería
+# Requirements: CRM SWAT Squad — Pre-Entrega al Cliente
 
-**Defined:** 2026-03-11
-**Core Value:** El reporte cuadra con la base de datos al 100% — confiabilidad es lo que retiene al cliente
+**Defined:** 2026-03-14
+**Core Value:** El reporte cuadra con la base de datos al 100% y el flujo SDR→AE funciona sin fricciones
 
-## v1 Requirements
+## v1 Requirements (Complete — Milestone v1.0)
 
-### Selector de Período
+All 39 v1/v1.1 requirements shipped in milestone v1.0 (Reportería). See MILESTONES.md for details.
 
-- [x] **PERIOD-01**: Usuario puede seleccionar fecha de inicio y fecha de fin del período a analizar
-- [x] **PERIOD-02**: Usuario puede elegir tipo de comparación: "vs período anterior" o "vs año anterior"
-- [x] **PERIOD-03**: Al cambiar el período, todos los reportes se actualizan con los nuevos datos
+## v2.0 Requirements
 
-### Embudo General
+Requirements for pre-delivery milestone. Each maps to roadmap phases.
 
-- [x] **FUNNEL-01**: Reporte muestra total de leads del período con desglose Manufacturados vs Individuales
-- [x] **FUNNEL-02**: Reporte muestra métricas de contactabilidad: Contactables, Contactados, Con Respuesta
-- [x] **FUNNEL-03**: Reporte muestra métricas de calidad de diálogo: Diálogo Completo, Diálogo Intermitente
-- [x] **FUNNEL-04**: Reporte muestra métricas de avance: Con Interés, Descartados, Asignados a Ventas, Carry Over
-- [x] **FUNNEL-05**: Reporte muestra métricas monetarias: Montos de Inversión, Deals Cerrados, Monto de Cierres
-- [x] **FUNNEL-06**: Cada métrica muestra ratio de conversión respecto a la etapa anterior (fórmulas de funnel)
-- [x] **FUNNEL-07**: Cada métrica muestra delta % comparado con el período seleccionado (sube/baja)
-- [x] **FUNNEL-08**: Desglose visual Manufacturados vs Individuales en cada métrica
+### Bug Fixes
 
-### Incontactables
+- [ ] **BUG-01**: submitHandoff llama a processHandoff (routing-aware) en vez de updateLeadMultiple — activando la lógica de asignación inteligente de AE
+- [ ] **BUG-02**: SDR Ranking CVR calcula correctamente usando lead.status === 'Paso a Ventas' o existencia de deal en vez de cal.status_lead inexistente
+- [ ] **BUG-03**: Funciones duplicadas eliminadas en App.html — solo queda una definición de openHandoffModal, cancelHandoff, submitHandoff (la que usa processHandoff)
+- [ ] **BUG-04**: processHandoff escribe status canónico 'Paso a Ventas' en vez de 'Pase a Ventas'
 
-- [x] **INCONT-01**: Reporte muestra leads Duplicados con desglose Manufacturados vs Individuales + delta
-- [x] **INCONT-02**: Reporte muestra leads Equivocados con desglose Manufacturados vs Individuales + delta
-- [x] **INCONT-03**: Reporte muestra leads Spam con desglose Manufacturados vs Individuales + delta
+### Handoff & Routing
 
-### Cross Selling
+- [ ] **ROUTE-01**: Modo SDR_CHOICE funcional: SDR selecciona AE manualmente desde dropdown en handoff modal, processHandoff usa ese email para crear el deal
+- [ ] **ROUTE-02**: Modo AUTO funcional: Round Robin asigna AE automáticamente al confirmar handoff, dropdown de AE se oculta
+- [ ] **ROUTE-03**: Modo MANAGER_REVIEW funcional: Handoff crea deal sin AE asignado, queda pendiente hasta que gerente apruebe y asigne
+- [ ] **ROUTE-04**: Configuración de routing editable desde panel Admin — gerente/admin puede seleccionar modo activo (SDR_CHOICE/AUTO/MANAGER_REVIEW)
 
-- [x] **CROSS-01**: Reporte muestra deals de tipo Cross-sell con desglose Manufacturados vs Individuales + delta
+### Pricing & Valuación
 
-### Toques / Contactabilidad (Matriz Vertical)
+- [ ] **PRICE-01**: Monto estimado auto-calculado y visible al paso a ventas (Tipo 1: ticket promedio × factor según tipo de cliente — Fichas×12, Proyectos×1, SaaS×licencias×12)
+- [ ] **PRICE-02**: Monto cotizado editable por AE en ficha de deal (Tipo 2) — campo independiente del monto estimado
+- [ ] **PRICE-03**: Pricing calculator integrado en handoff modal (muestra monto estimado antes de confirmar) y en deal detail modal (permite ver/editar pricing)
 
-- [x] **TOQUES-01**: Tabla de contactabilidad muestra toques como FILAS (Toque 1 al 10) y productos/países como COLUMNAS
-- [x] **TOQUES-02**: Cada celda muestra cuántos leads llegaron a ese toque en ese producto/país
-- [x] **TOQUES-03**: Semáforo Contesto: grid canal (Teléfono/WhatsApp/Correo) × toque con resultado "Contesto"
-- [x] **TOQUES-04**: Semáforo No Contesto: grid canal × toque con resultado "No Contesto"
-- [x] **TOQUES-05**: Indicador de Sin Respuesta al 6to toque (leads con 6+ toques sin contacto)
+### Deal Fichas
 
-### Razones No Pasó a Ventas
+- [ ] **DEAL-01**: Ficha de deal separada en sección Cotización (monto cotizado + fecha de cotización) y sección Cierre (monto cierre + monto apartado + fecha de cierre) — visualmente distintas en el modal
+- [ ] **DEAL-02**: Timestamps automáticos: fecha_cotizacion se graba al llenar monto cotizado, fecha_cierre se graba al cambiar status a Vendido
+- [ ] **DEAL-03**: Soporte multi-producto por deal — tabla de productos con nombre, cantidad, precio unitario, descuento % por línea
+- [ ] **DEAL-04**: Clasificación automática cross-selling/up-selling/venta directa — compara producto de interés del SDR con producto(s) de cierre del AE
 
-- [x] **RAZNES-01**: Reporte muestra 6 categorías de razones: No Perfil Adecuado, Sin Presupuesto, Sin Interés Genuino, Necesita Tercero, No Entendió el Marketing, Otros
-- [x] **RAZNES-02**: Cada razón muestra % de representatividad sobre el total de descartados (base 100)
-- [x] **RAZNES-03**: Cada razón muestra delta % vs período de comparación
+### QA & Limpieza
 
-### Razones Perdió la Venta
+- [ ] **QA-01**: CHECKLIST_REUNION_CLIENTE.md actualizado reflejando que toda la sección 9 (Reportería) está completa
+- [ ] **QA-02**: Código muerto eliminado de App.html — funciones duplicadas, variables no referenciadas, imports sin usar
+- [ ] **QA-03**: Verificación end-to-end del flujo completo: crear lead → toques → calificar BANT → handoff → deal creado con AE → cotizar → negociar → cerrar
 
-- [x] **RAZPERD-01**: Reporte muestra 13+ categorías de razones de pérdida de venta
-- [x] **RAZPERD-02**: Cada razón muestra % de representatividad sobre el total de pérdidas (base 100)
-- [x] **RAZPERD-03**: Cada razón muestra delta % vs período de comparación
-
-### Reporte de Deals / Negociaciones (Nuevo — Backend + Frontend)
-
-- [x] **DEALS-01**: Backend: agregar campos booleanos a fact_deals: cotizo, en_negociacion, asistio_demo, firmo_contrato, fondeo
-- [x] **DEALS-02**: Backend: nueva función calculateDealsReport_() en Analytics.js que calcula métricas Sí/No por etapa
-- [ ] **DEALS-03**: Frontend: reporte muestra flujo Contactado→Cotizado→Negociación→Demo→Contrato→Fondeo con conteos Sí/No
-- [ ] **DEALS-04**: Frontend: cada etapa muestra monto cotizado y monto de cierre donde aplica
-- [ ] **DEALS-05**: Frontend: razones de pérdida por deal con conteos
-
-## v1.1 Requirements
-
-### Comparativa Personalizada
-
-- [x] **CUSTOM-01**: Usuario puede seleccionar un tercer modo de comparación "Personalizado" en el selector de período
-- [x] **CUSTOM-02**: Al activar modo personalizado, aparecen dos date pickers adicionales para elegir inicio y fin del período de comparación libremente
-- [x] **CUSTOM-03**: El backend recibe las fechas personalizadas y calcula todas las métricas contra ese período libre (sin modificar la lógica existente de prev_period/yoy)
-
-### Ranking SDRs
-
-- [x] **SDR-01**: Backend: nueva función calculateSDRRankingReport_() que calcula total leads, leads con_interes y CVR por id_vendedor_sdr para período actual y anterior, con delta
-- [x] **SDR-02**: Frontend: sección "Ranking SDRs" muestra tabla con nombre del SDR, total leads, CVR actual, CVR anterior y delta — ordenada de mayor a menor CVR
-- [x] **SDR-03**: Ranking SDR incluido en respuesta de getSDRReport() — se actualiza al cambiar el período selector
-
-### Visual Intelligence
-
-- [x] **CHART-01**: Sección Embudo General incluye gráfica de embudo (Chart.js CDN) además de la tabla, mostrando volumen por etapa visualmente
-- [x] **ALERT-01**: Deltas con variación ≥ ±20% se destacan visualmente (color/icono distinto) en todas las tablas de reportes
-- [x] **VELOCITY-01**: Sección Deals muestra velocidad de cierre promedio (días desde fecha_pase_ventas hasta fondeo=TRUE) con delta vs período anterior
-
-## v2 Requirements
+## v3 Requirements (Deferred)
 
 ### Autenticación
 
@@ -95,69 +59,48 @@
 ### Calendario Completo
 
 - **CAL-01**: Calendario interactivo con calls, seguimientos y tareas por rol
-- **CAL-02**: Edición directa desde el calendario
+- **CAL-02**: Edición directa desde el calendario con drag & drop
 
 ## Out of Scope
 
 | Feature | Reason |
 |---------|--------|
-| Looker Studio / herramientas BI externas | Decisión arquitectural: self-contained en GAS sin dependencias externas |
-| WebSockets / real-time push | Limitación de Google Apps Script — no viable |
+| Looker Studio / herramientas BI externas | Decisión arquitectural: self-contained en GAS |
+| WebSockets / real-time push | Limitación de Google Apps Script |
 | Migración a SQL | Cliente requiere Google Sheets como DB |
-| OAuth / SSO | No pedido — email/password es suficiente para v1 |
-| App móvil nativa | Web-first — GAS sirve como PWA suficiente |
+| OAuth / SSO | No pedido por el cliente |
+| App móvil nativa | Web-first — GAS sirve como PWA |
+| BANT score decay por Timing | Nice-to-have, no comprometido para entrega |
+| SPAM metric en incontactables | No hay columna fuente en schema — requiere cambio de proceso del cliente |
 
 ## Traceability
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PERIOD-01 | Phase 1 | Complete |
-| PERIOD-02 | Phase 1 | Complete |
-| PERIOD-03 | Phase 1 | Complete |
-| FUNNEL-01 | Phase 2 | Complete |
-| FUNNEL-02 | Phase 2 | Complete |
-| FUNNEL-03 | Phase 2 | Complete |
-| FUNNEL-04 | Phase 2 | Complete |
-| FUNNEL-05 | Phase 2 | Complete |
-| FUNNEL-06 | Phase 2 | Complete |
-| FUNNEL-07 | Phase 2 | Complete |
-| FUNNEL-08 | Phase 2 | Complete |
-| INCONT-01 | Phase 2 | Complete |
-| INCONT-02 | Phase 2 | Complete |
-| INCONT-03 | Phase 2 | Complete |
-| CROSS-01 | Phase 2 | Complete |
-| TOQUES-01 | Phase 3 | Complete |
-| TOQUES-02 | Phase 3 | Complete |
-| TOQUES-03 | Phase 3 | Complete |
-| TOQUES-04 | Phase 3 | Complete |
-| TOQUES-05 | Phase 3 | Complete |
-| RAZNES-01 | Phase 3 | Complete |
-| RAZNES-02 | Phase 3 | Complete |
-| RAZNES-03 | Phase 3 | Complete |
-| RAZPERD-01 | Phase 3 | Complete |
-| RAZPERD-02 | Phase 3 | Complete |
-| RAZPERD-03 | Phase 3 | Complete |
-| DEALS-01 | Phase 4 | Complete |
-| DEALS-02 | Phase 4 | Complete |
-| DEALS-03 | Phase 4 | Complete |
-| DEALS-04 | Phase 4 | Complete |
-| DEALS-05 | Phase 4 | Complete |
-| CUSTOM-01 | Phase 5 | Complete |
-| CUSTOM-02 | Phase 5 | Complete |
-| CUSTOM-03 | Phase 5 | Complete |
-| SDR-01 | Phase 5 | Complete |
-| SDR-02 | Phase 5 | Complete |
-| SDR-03 | Phase 5 | Complete |
-| CHART-01 | Phase 6 | Complete |
-| ALERT-01 | Phase 6 | Complete |
-| VELOCITY-01 | Phase 6 | Complete |
+| BUG-01 | TBD | Pending |
+| BUG-02 | TBD | Pending |
+| BUG-03 | TBD | Pending |
+| BUG-04 | TBD | Pending |
+| ROUTE-01 | TBD | Pending |
+| ROUTE-02 | TBD | Pending |
+| ROUTE-03 | TBD | Pending |
+| ROUTE-04 | TBD | Pending |
+| PRICE-01 | TBD | Pending |
+| PRICE-02 | TBD | Pending |
+| PRICE-03 | TBD | Pending |
+| DEAL-01 | TBD | Pending |
+| DEAL-02 | TBD | Pending |
+| DEAL-03 | TBD | Pending |
+| DEAL-04 | TBD | Pending |
+| QA-01 | TBD | Pending |
+| QA-02 | TBD | Pending |
+| QA-03 | TBD | Pending |
 
 **Coverage:**
-- v1 requirements: 30 total (complete)
-- v1.1 requirements: 9 total
-- Mapped to phases: 39
-- Unmapped: 0
+- v2.0 requirements: 18 total
+- Mapped to phases: 0 (pending roadmap)
+- Unmapped: 18 ⚠️
 
 ---
-*Requirements defined: 2026-03-11*
-*Last updated: 2026-03-11 — v1.1 requirements added: custom comparison, SDR ranking, visual intelligence*
+*Requirements defined: 2026-03-14*
+*Last updated: 2026-03-14 after milestone v2.0 definition*
