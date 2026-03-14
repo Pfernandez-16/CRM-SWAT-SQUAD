@@ -1511,7 +1511,7 @@ function copyLeadToDeals_(ss, leadsSheet, row, leadsColMap, leadId) {
 
 
   var user = Session.getActiveUser().getEmail() || 'System';
-  logChange_('Lead', leadId, user, 'Pase a Ventas', '', 'Deal creado');
+  logChange_('Lead', leadId, user, 'Paso a Ventas', '', 'Deal creado');
   logChange_('Deal', nextDealId, user, 'Deal Creado', '', 'Desde Lead #' + leadId);
 
   return { success: true, dealRow: insertRow, leadId: leadId };
@@ -2352,7 +2352,7 @@ function deleteCalendarEvent(eventId) {
   }
 }
 
-// ============ API: HANDOFF (Pase a Ventas) ============
+// ============ API: HANDOFF (Paso a Ventas) ============
 
 /**
  * Crea una ficha de negociación (deal) a partir de un lead calificado y asigna al AE
@@ -2444,15 +2444,15 @@ function processHandoff(payload) {
       }
     }
 
-    // 6. Update lead status to "Pase a Ventas"
+    // 6. Update lead status to "Paso a Ventas"
     var leadColMap = getColumnMap_(leadSheet);
     if (lead._row && leadColMap['status']) {
-      leadSheet.getRange(lead._row, leadColMap['status']).setValue('Pase a Ventas');
+      leadSheet.getRange(lead._row, leadColMap['status']).setValue('Paso a Ventas');
     }
 
     // 7. Log the transaction
     var user = Session.getActiveUser().getEmail();
-    logChange_('DEAL', newDealId, user, 'HANDOFF', '', 'Pase a Ventas → AE: ' + aeNombre + ' (' + aeEmail + ') [' + assignmentMethod + ']');
+    logChange_('DEAL', newDealId, user, 'HANDOFF', '', 'Paso a Ventas → AE: ' + aeNombre + ' (' + aeEmail + ') [' + assignmentMethod + ']');
 
     return {
       status: 'success',
