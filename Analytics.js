@@ -1172,8 +1172,7 @@ function calculateSDRRankingReport_(currentLeads, previousLeads, calificacionIdx
     if (!sdrId) continue;
     if (!currentBySDR[sdrId]) { currentBySDR[sdrId] = { leads: 0, closed: 0 }; }
     currentBySDR[sdrId].leads++;
-    var cal = calificacionIdx[String(lead.id_lead || '')];
-    if (cal && (cal.status_lead === 'Cerrado' || cal.status_lead === 'Deal Cerrado')) {
+    if (String(lead.status || '').trim() === 'Paso a Ventas') {
       currentBySDR[sdrId].closed++;
     }
   }
@@ -1186,8 +1185,7 @@ function calculateSDRRankingReport_(currentLeads, previousLeads, calificacionIdx
     if (!psdrId) continue;
     if (!previousBySDR[psdrId]) { previousBySDR[psdrId] = { leads: 0, closed: 0 }; }
     previousBySDR[psdrId].leads++;
-    var pcal = calificacionIdx[String(plead.id_lead || '')];
-    if (pcal && (pcal.status_lead === 'Cerrado' || pcal.status_lead === 'Deal Cerrado')) {
+    if (String(plead.status || '').trim() === 'Paso a Ventas') {
       previousBySDR[psdrId].closed++;
     }
   }
