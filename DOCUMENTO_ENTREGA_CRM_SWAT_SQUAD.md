@@ -11,7 +11,7 @@
 
 Se entrega un CRM completo con módulos de Prospectos (SDR), Negociaciones (AE), Reportería avanzada, Calendario, y Administración. El sistema opera sobre Google Sheets como base de datos y Google Apps Script como backend, con una interfaz Vue 3 moderna con temas claro/oscuro.
 
-**Total de requerimientos entregados:** 70+ funcionalidades implementadas y verificadas.
+**Total de requerimientos entregados:** 70+ funcionalidades implementadas y verificadas, incluyendo sistema de autenticación propio.
 
 ---
 
@@ -161,13 +161,20 @@ Estas funcionalidades NO fueron pedidas en el requerimiento original ni en el sc
 | E.28 | **Plantillas de notas SDR** con variables auto-reemplazadas | Templates {nombre}, {empresa} etc. |
 | E.29 | **Preguntas parametrizables** adicionales al BANT por cliente | Admin configura desde panel |
 
+### Features agregados Post-Entrega Final (sin costo adicional)
+
+| # | Feature | Descripción |
+|---|---------|-------------|
+| E.30 | **Login con email + contraseña** | Pantalla de inicio de sesión con credenciales propias (email + password almacenado en config_users). Sesión persistente por 8 horas via localStorage — el usuario no necesita re-autenticarse al refrescar o reabrir el CRM durante su jornada. Botón de cerrar sesión en el sidebar. Validación de usuario activo/desactivado. Password por defecto "123456" para nuevos usuarios. |
+| E.31 | **Centrado de tablas en Reportes** | Corrección de alineación de todas las tablas de reportería (SDR y AE) — headers y datos numéricos centrados, columna de nombres alineada a la izquierda |
+
 ---
 
 ## 5. LO QUE NO SE PUDO HACER Y POR QUÉ
 
 | # | Feature | Razón |
 |---|---------|-------|
-| 5.1 | **Login con email + contraseña** | Diferido a Fase 2. Google Apps Script maneja autenticación via cuenta Google del usuario. Implementar auth propia requiere infraestructura adicional (tokens, sesiones, encriptación) que excede el scope del MVP. Se usa el sistema nativo de GAS. |
+| ~~5.1~~ | ~~**Login con email + contraseña**~~ | **IMPLEMENTADO** — Movido a sección 4 como E.30 |
 | 5.2 | **Importación masiva CSV/Excel** | Diferido a Fase 2. Requiere parseo de archivos, mapeo de campos dinámico, validación de datos y manejo de errores masivos. Es una funcionalidad completa por sí sola. |
 | 5.3 | **Test 70/30** (split automático de leads entrantes SDR vs AE directo) | Diferido a Fase 2. Requiere lógica de distribución automática al ingreso, reglas de negocio por campaña, y dashboard de resultados del test. |
 | 5.4 | **BANT Score Decay por Timing** | Nice-to-have. El score disminuiría conforme la fecha de Timing se aleja. Funcionalidad cosmética que no bloquea operación. Diferido por acuerdo mutuo. |
@@ -185,13 +192,14 @@ Estas funcionalidades NO fueron pedidas en el requerimiento original ni en el sc
 | Presupuesto original (16 horas) | $200 USD |
 | Scope adicional (4 features) | $150 USD |
 | **Total acordado** | **$350 USD** |
-| Extras entregados sin costo (~29 funcionalidades) | $0 |
+| Extras entregados sin costo (~31 funcionalidades) | $0 |
 | Pagos recibidos a la fecha | $0 |
 
 ### Lo absorbido sin costo incluye:
 - 3 features absorbidos originalmente: Roles, BANT, Pricing Calculator (~5-8h de trabajo)
 - 12 extras del primer milestone (v1.0)
 - 9 features adicionales de Checkpoints 2 y 3 (v3.0)
+- 2 features post-entrega final: Login con contraseña + Centrado de tablas reportería
 
 ---
 

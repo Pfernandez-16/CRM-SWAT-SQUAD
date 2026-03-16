@@ -213,8 +213,19 @@
     var DEFAULT_LEAD_LAYOUT = expandLayout_(DEFAULT_LEAD_LAYOUT_RAW);
     var DEFAULT_DEAL_LAYOUT = expandLayout_(DEFAULT_DEAL_LAYOUT_RAW);
 
+    // ── Session Constants ──
+    var SESSION_KEY = 'crm-session';
+    var SESSION_TTL_MS = 8 * 60 * 60 * 1000; // 8 hours
+
     const app = createApp({
         setup() {
+            // ── Auth State ──
+            const isLoggedIn = ref(false);
+            const loginEmail = ref('');
+            const loginPassword = ref('');
+            const loginError = ref('');
+            const loginLoading = ref(false);
+
             // ── State ──
             const loading = ref(true);
             const refreshing = ref(false);
@@ -1995,23 +2006,107 @@
                 });
             }
 
-            function loadUser() {
-                return new Promise((resolve) => {
-                    google.script.run
-                        .withSuccessHandler(function (data) {
-                            currentUser.value = data || { email: 'Unknown', nombre: 'Unknown', rol: 'GUEST' };
-                            userConnected.value = data && data.isConnected;
-                            if (data && data.isConnected && data.clockInTime) {
-                                clockInTime.value = new Date(data.clockInTime);
+            // ── Session Management ──
+            function getSession() {
+                try {
+                    var raw = localStorage.getItem(SESSION_KEY);
+                    if (!raw) return null;
+                    var session = JSON.parse(raw);
+                    if (!session || !session.email || !session.ts) return null;
+                    if (Date.now() - session.ts > SESSION_TTL_MS) {
+                        localStorage.removeItem(SESSION_KEY);
+                        return null;
+                    }
+                    return session;
+                } catch (e) { return null; }
+            }
+
+            function saveSession(email) {
+                localStorage.setItem(SESSION_KEY, JSON.stringify({ email: email, ts: Date.now() }));
+            }
+
+            function clearSession() {
+                localStorage.removeItem(SESSION_KEY);
+            }
+
+            function handleLogin() {
+                if (!loginEmail.value.trim() || !loginPassword.value.trim()) {
+                    loginError.value = 'Ingresa email y contraseña';
+                    return;
+                }
+                loginError.value = '';
+                loginLoading.value = true;
+                google.script.run
+                    .withSuccessHandler(function (result) {
+                        loginLoading.value = false;
+                        if (result && result.status === 'success') {
+                            saveSession(result.data.email);
+                            currentUser.value = result.data;
+                            userConnected.value = result.data.isConnected;
+                            if (result.data.isConnected && result.data.clockInTime) {
+                                clockInTime.value = new Date(result.data.clockInTime);
                                 startClockTimer_();
                             }
-                            resolve();
-                        })
-                        .withFailureHandler(function (err) {
-                            console.error('Error loading user config:', err);
-                            resolve();
-                        })
-                        .getUserConfig();
+                            isLoggedIn.value = true;
+                            loginEmail.value = '';
+                            loginPassword.value = '';
+                            initAfterLogin();
+                        } else {
+                            loginError.value = (result && result.message) || 'Error de autenticación';
+                        }
+                    })
+                    .withFailureHandler(function (err) {
+                        loginLoading.value = false;
+                        loginError.value = 'Error de conexión: ' + err.message;
+                    })
+                    .loginUser(loginEmail.value.trim(), loginPassword.value.trim());
+            }
+
+            function handleLogout() {
+                clearSession();
+                isLoggedIn.value = false;
+                currentUser.value = { email: '', nombre: '', rol: 'GUEST', sheetId: '' };
+                loading.value = true;
+                // Reset clock state
+                if (userConnected.value) {
+                    google.script.run.clockOut();
+                }
+                userConnected.value = false;
+                clockInTime.value = null;
+                clockTimer.value = '';
+                if (clockInterval) { clearInterval(clockInterval); clockInterval = null; }
+                if (inactivityTimeout) { clearTimeout(inactivityTimeout); inactivityTimeout = null; }
+            }
+
+            function loadUser() {
+                return new Promise((resolve) => {
+                    var session = getSession();
+                    if (session && session.email) {
+                        google.script.run
+                            .withSuccessHandler(function (data) {
+                                if (data && data.inactive) {
+                                    clearSession();
+                                    isLoggedIn.value = false;
+                                    resolve();
+                                    return;
+                                }
+                                currentUser.value = data || { email: 'Unknown', nombre: 'Unknown', rol: 'GUEST' };
+                                userConnected.value = data && data.isConnected;
+                                if (data && data.isConnected && data.clockInTime) {
+                                    clockInTime.value = new Date(data.clockInTime);
+                                    startClockTimer_();
+                                }
+                                isLoggedIn.value = true;
+                                resolve();
+                            })
+                            .withFailureHandler(function (err) {
+                                console.error('Error loading user config:', err);
+                                resolve();
+                            })
+                            .getUserConfigByEmail(session.email);
+                    } else {
+                        resolve();
+                    }
                 });
             }
 
@@ -2944,6 +3039,25 @@
                 }
             });
 
+            // ── Post-login data load ──
+            async function initAfterLogin() {
+                loading.value = true;
+                await Promise.all([loadLeads(), loadCatalogs(), loadPricing()]);
+                loadStats();
+                loadActiveAEs();
+                loadRoutingConfig();
+                loadSchema();
+                loadPricingConfig();
+                loadFieldLayout();
+                loadPlantillas();
+                loading.value = false;
+
+                ['click', 'keydown', 'mousemove', 'scroll'].forEach(ev => {
+                    document.addEventListener(ev, resetInactivityTimer_, { passive: true });
+                });
+                nextTick(() => initKanbanDragDrop());
+            }
+
             // ── Init ──
             onMounted(async () => {
                 // Apply saved theme
@@ -2952,23 +3066,27 @@
                     if (saved) setTheme(saved); else setTheme('dark');
                 } catch (e) { setTheme('dark'); }
 
-                // Load all data
-                await Promise.all([loadLeads(), loadCatalogs(), loadPricing(), loadUser()]);
-                loadStats();
-                loadActiveAEs();
-                loadRoutingConfig();
-                loadSchema(); // Phase 3B
-                loadPricingConfig(); // Phase 8
-                loadFieldLayout(); // Phase 8
-                loadPlantillas(); // Phase 23
+                // Check existing session
+                await loadUser();
+
+                if (isLoggedIn.value) {
+                    // Valid session — load CRM data
+                    await Promise.all([loadLeads(), loadCatalogs(), loadPricing()]);
+                    loadStats();
+                    loadActiveAEs();
+                    loadRoutingConfig();
+                    loadSchema();
+                    loadPricingConfig();
+                    loadFieldLayout();
+                    loadPlantillas();
+
+                    ['click', 'keydown', 'mousemove', 'scroll'].forEach(ev => {
+                        document.addEventListener(ev, resetInactivityTimer_, { passive: true });
+                    });
+                    nextTick(() => initKanbanDragDrop());
+                }
+
                 loading.value = false;
-
-                // Set up inactivity listener
-                ['click', 'keydown', 'mousemove', 'scroll'].forEach(ev => {
-                    document.addEventListener(ev, resetInactivityTimer_, { passive: true });
-                });
-
-                nextTick(() => initKanbanDragDrop());
             });
 
             // Cleanup event listeners y timers al desmontar (fix MEM #1)
@@ -2981,6 +3099,9 @@
             });
 
             return {
+                // Auth
+                isLoggedIn, loginEmail, loginPassword, loginError, loginLoading,
+                handleLogin, handleLogout,
                 // State
                 loading, refreshing, saving, savingCatalog, savingHMN, savingUsers,
                 sidebarCollapsed, currentView, viewMode, searchQuery, filterStatus, filterDealStatus,

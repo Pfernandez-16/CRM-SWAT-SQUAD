@@ -1097,6 +1097,80 @@ function getUserConfig() {
   }
 }
 
+/**
+ * Autentica un usuario por email y password contra config_users.
+ * Retorna el config del usuario si las credenciales son válidas.
+ */
+function loginUser(email, password) {
+  try {
+    if (!email || !password) return { status: 'error', message: 'Email y contraseña son requeridos' };
+
+    var rows = readTable_(T_USERS);
+    for (var i = 0; i < rows.length; i++) {
+      var row = rows[i];
+      if (String(row.email || '').trim().toLowerCase() === email.trim().toLowerCase()) {
+        // Check activo
+        var isActive = row.activo === true || row.activo === 'TRUE' || row.activo === 1 || row.activo === 'true';
+        if (!isActive) return { status: 'error', message: 'Usuario desactivado. Contacta al administrador.' };
+
+        // Check password
+        var storedPwd = String(row.password || '').trim();
+        if (storedPwd !== password.trim()) return { status: 'error', message: 'Contraseña incorrecta' };
+
+        return {
+          status: 'success',
+          data: {
+            email: String(row.email || '').trim(),
+            nombre: String(row.nombre || email),
+            rol: String(row.rol || 'GUEST').toUpperCase(),
+            sheetId: SHEET_ID,
+            isConnected: row.conectado === true || row.conectado === 'TRUE' || row.conectado === 1,
+            clockInTime: row.ultimo_clockin ? String(row.ultimo_clockin) : null,
+            _row: row._row
+          }
+        };
+      }
+    }
+    return { status: 'error', message: 'Usuario no encontrado' };
+  } catch (err) {
+    Logger.log('loginUser error: ' + err.message);
+    return { status: 'error', message: 'Error de autenticación: ' + err.message };
+  }
+}
+
+/**
+ * Obtiene la config de un usuario por email (sin depender de Session).
+ * Usado para restaurar sesión desde localStorage.
+ */
+function getUserConfigByEmail(email) {
+  try {
+    if (!email) return { email: '', nombre: 'Error', rol: 'GUEST', sheetId: SHEET_ID, isConnected: false, clockInTime: null };
+
+    var rows = readTable_(T_USERS);
+    for (var i = 0; i < rows.length; i++) {
+      var row = rows[i];
+      if (String(row.email || '').trim().toLowerCase() === email.trim().toLowerCase()) {
+        var isActive = row.activo === true || row.activo === 'TRUE' || row.activo === 1 || row.activo === 'true';
+        if (!isActive) return { email: email, nombre: 'Desactivado', rol: 'GUEST', sheetId: SHEET_ID, isConnected: false, clockInTime: null, inactive: true };
+
+        return {
+          email: String(row.email || '').trim(),
+          nombre: String(row.nombre || email),
+          rol: String(row.rol || 'GUEST').toUpperCase(),
+          sheetId: SHEET_ID,
+          isConnected: row.conectado === true || row.conectado === 'TRUE' || row.conectado === 1,
+          clockInTime: row.ultimo_clockin ? String(row.ultimo_clockin) : null,
+          _row: row._row
+        };
+      }
+    }
+    return { email: email, nombre: email, rol: 'GUEST', sheetId: SHEET_ID, isConnected: false, clockInTime: null };
+  } catch (err) {
+    Logger.log('getUserConfigByEmail error: ' + err.message);
+    return { email: '', nombre: 'Error', rol: 'GUEST', sheetId: SHEET_ID, isConnected: false, clockInTime: null, error: err.message };
+  }
+}
+
 function clockIn() {
   try {
     var email = Session.getActiveUser().getEmail();
@@ -2363,6 +2437,7 @@ function createUser(email, nombre, rol) {
     if (colMap['rol']) newRow[colMap['rol'] - 1] = (rol || 'SDR').toUpperCase();
     if (colMap['activo']) newRow[colMap['activo'] - 1] = true;
     if (colMap['conectado']) newRow[colMap['conectado'] - 1] = false;
+    if (colMap['password']) newRow[colMap['password'] - 1] = '123456';
 
     sheet.getRange(insertRow, 1, 1, numCols).setValues([newRow]);
     logChange_('User', email, Session.getActiveUser().getEmail() || 'API', 'createUser', '', rol);

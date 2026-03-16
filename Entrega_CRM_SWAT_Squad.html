@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Documento de Entrega — CRM SWAT Squad</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Source+Serif+4:wght@400;600&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+:root {
+  --choc: #482010;
+  --amber: #D4952A;
+  --gold: #E8A832;
+  --cream: #F7F4EE;
+  --mid: #6B3A1F;
+  --dark: #2A1508;
+  --green: #2e7d32;
+}
+body { font-family:'Outfit',sans-serif; background:#d6d1c8; color:var(--dark); }
+
+.page {
+  width:210mm; height:297mm; margin:0 auto 8mm;
+  background:var(--cream); position:relative; overflow:hidden;
+  page-break-after:always; page-break-inside:avoid;
+}
+
+/* ---- COVER ---- */
+.cover { background:var(--choc); display:flex; flex-direction:column; justify-content:space-between; }
+.cover-top { padding:13mm 15mm 0; display:flex; justify-content:space-between; align-items:flex-start; }
+.cover-brand-name { font-size:12px; font-weight:700; color:var(--gold); letter-spacing:2px; text-transform:uppercase; text-align:right; }
+.cover-brand-tag { font-size:8.5px; color:rgba(247,244,238,.52); margin-top:2px; text-align:right; }
+.cover-hero { padding:0 15mm; margin-top:20mm; }
+.cover-eyebrow { font-size:8px; font-weight:700; letter-spacing:3px; text-transform:uppercase; color:var(--amber); margin-bottom:5mm; }
+.cover-title { font-family:'Source Serif 4',Georgia,serif; font-size:40px; font-weight:600; color:var(--cream); line-height:1.12; margin-bottom:6mm; }
+.cover-title span { color:var(--gold); }
+.cover-div { width:38mm; height:2px; background:linear-gradient(90deg,var(--amber),transparent); margin-bottom:6mm; }
+.cover-sub { font-size:12px; color:rgba(247,244,238,.72); line-height:1.65; max-width:150mm; font-weight:300; }
+.cover-pills { display:flex; gap:3mm; flex-wrap:wrap; margin-top:10mm; }
+.pill { background:rgba(212,149,42,.13); border:1px solid rgba(212,149,42,.35); color:var(--gold);
+        font-size:8.5px; font-weight:600; letter-spacing:1px; text-transform:uppercase; padding:3px 10px; border-radius:20px; }
+.cover-bottom { padding:9mm 15mm; display:flex; justify-content:space-between; align-items:flex-end;
+                border-top:1px solid rgba(212,149,42,.16); margin-top:auto; }
+.cover-client { font-size:9.5px; color:rgba(247,244,238,.46); }
+.cover-client strong { display:block; color:var(--cream); font-size:13px; font-weight:700; margin-bottom:1mm; letter-spacing:.5px; }
+.cover-date { font-size:8.5px; color:rgba(247,244,238,.36); text-align:right; }
+
+/* ---- INNER PAGES ---- */
+.inner { padding:13mm 15mm 14mm; }
+.ph { display:flex; justify-content:space-between; align-items:center; margin-bottom:9mm; padding-bottom:3.5mm; border-bottom:2px solid var(--amber); }
+.ph-brand { font-size:7.5px; font-weight:700; color:var(--amber); letter-spacing:2px; text-transform:uppercase; }
+.ph-label { font-size:7.5px; color:var(--mid); letter-spacing:1px; text-transform:uppercase; }
+.accent-bar { height:3px; background:linear-gradient(90deg,var(--amber),var(--gold),transparent); margin-bottom:6mm; }
+.eyebrow { font-size:7.5px; font-weight:700; letter-spacing:3px; text-transform:uppercase; color:var(--amber); margin-bottom:2.5mm; }
+.sec-title { font-family:'Source Serif 4',Georgia,serif; font-size:26px; font-weight:600; color:var(--choc); line-height:1.18; margin-bottom:4mm; }
+.sec-lead { font-size:11px; color:var(--mid); line-height:1.7; margin-bottom:6mm; font-weight:300; max-width:158mm; }
+
+table.pt { width:100%; border-collapse:collapse; margin:3mm 0; font-size:10px; }
+table.pt th { background:var(--choc); color:var(--gold); font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:3mm 4mm; text-align:left; }
+table.pt td { padding:2.5mm 4mm; border-bottom:1px solid rgba(72,32,16,.08); vertical-align:top; }
+table.pt tr:nth-child(even) td { background:rgba(247,244,238,.55); }
+table.pt .status { font-weight:700; color:var(--green); font-size:9.5px; }
+table.pt .status-moved { font-weight:600; color:var(--amber); font-size:9px; }
+
+.card { background:#fff; border-radius:6px; padding:5mm; margin-bottom:3mm; border-left:3px solid var(--amber); box-shadow:0 1px 4px rgba(72,32,16,.07); }
+.card h3 { font-size:12px; font-weight:700; color:var(--choc); margin-bottom:2mm; }
+.card p, .card li { font-size:9.5px; color:var(--mid); line-height:1.55; }
+.card ul { padding-left:0; list-style:none; }
+.card ul li { padding:0.8mm 0; }
+.card ul li::before { content:"-> "; color:var(--amber); font-weight:700; }
+
+.card-dark { background:var(--choc); border-left-color:var(--gold); }
+.card-dark h3 { color:var(--gold); }
+.card-dark p, .card-dark li { color:rgba(247,244,238,.82); }
+
+.callout { background:linear-gradient(135deg,var(--choc),#6B3A1F); border-radius:7px; padding:5.5mm 6mm; color:var(--cream); margin:4mm 0; }
+.callout-title { font-family:'Source Serif 4',Georgia,serif; font-size:14px; font-weight:600; color:var(--gold); margin-bottom:2mm; }
+.callout p { font-size:10px; line-height:1.6; color:rgba(247,244,238,.87); }
+
+.grid2 { display:grid; grid-template-columns:1fr 1fr; gap:3mm; margin-bottom:3mm; }
+.grid3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:3mm; margin-bottom:3mm; }
+
+.extra-item { background:#fff; border-radius:5px; padding:3.5mm 4mm; border-top:2px solid var(--amber); box-shadow:0 1px 3px rgba(72,32,16,.06); }
+.extra-num { font-size:7.5px; font-weight:700; letter-spacing:1.5px; color:var(--amber); margin-bottom:1mm; }
+.extra-title { font-size:10px; font-weight:700; color:var(--choc); margin-bottom:1mm; }
+.extra-desc { font-size:8.5px; color:var(--mid); line-height:1.45; }
+
+.pf { position:absolute; bottom:0; left:0; right:0; height:7.5mm; background:var(--choc);
+      display:flex; align-items:center; justify-content:space-between; padding:0 15mm; }
+.pf span { font-size:7px; color:rgba(212,149,42,.65); letter-spacing:.5px; }
+
+.fin-row { display:flex; justify-content:space-between; padding:3mm 0; border-bottom:1px solid rgba(72,32,16,.1); font-size:11px; }
+.fin-row.total { border-bottom:none; background:var(--choc); color:var(--cream); padding:4mm 5mm; border-radius:5px; margin-top:2mm; }
+.fin-label { color:var(--mid); font-weight:400; }
+.fin-val { font-weight:700; color:var(--choc); }
+.fin-row.total .fin-label { color:rgba(247,244,238,.75); }
+.fin-row.total .fin-val { color:var(--gold); font-size:14px; }
+
+.contact-box { background:var(--choc); border-radius:7px; padding:5mm 6mm; margin-top:6mm; }
+.contact-name { font-size:11px; font-weight:700; color:var(--gold); margin-bottom:1mm; }
+.contact-info { font-size:9px; color:rgba(247,244,238,.65); }
+
+@media print {
+  body { background:#fff; }
+  .page { margin:0; box-shadow:none; }
+  @page { size:210mm 297mm; margin:0; }
+}
+</style>
+</head>
+<body>
+
+<!-- ========== PAGE 1: PORTADA ========== -->
+<div class="page cover">
+  <div class="cover-top">
+    <div></div>
+    <div>
+      <div class="cover-brand-name">Castillo & Company</div>
+      <div class="cover-brand-tag">Mejoramos la salud y direcci&oacute;n de las empresas</div>
+    </div>
+  </div>
+  <div class="cover-hero">
+    <div class="cover-eyebrow">Documento de Entrega &mdash; Desarrollo de Software</div>
+    <h1 class="cover-title">
+      CRM SWAT Squad<br>
+      <span>Entrega completa.</span>
+    </h1>
+    <div class="cover-div"></div>
+    <p class="cover-sub">
+      CRM completo con m&oacute;dulos de Prospectos (SDR), Negociaciones (AE), Reporter&iacute;a avanzada,
+      Calendario, Administraci&oacute;n y Sistema de Login. Construido sobre Google Apps Script + Vue 3
+      con 70+ funcionalidades implementadas y verificadas.
+    </p>
+    <div class="cover-pills">
+      <span class="pill">Google Apps Script</span>
+      <span class="pill">Vue 3 + Tailwind</span>
+      <span class="pill">Google Sheets</span>
+      <span class="pill">70+ Features</span>
+      <span class="pill">Dark/Light Theme</span>
+    </div>
+  </div>
+  <div class="cover-bottom">
+    <div class="cover-client">Preparado para<strong>Christian Mu&ntilde;iz &mdash; SWAT Squad</strong></div>
+    <div class="cover-date">Marzo 2026<br>Confidencial</div>
+  </div>
+</div>
+
+<!-- ========== PAGE 2: REQUERIMIENTOS ORIGINALES ========== -->
+<div class="page">
+  <div class="inner">
+    <div class="ph">
+      <span class="ph-brand">Castillo & Company</span>
+      <span class="ph-label">01 &mdash; Requerimientos Originales ($200)</span>
+    </div>
+    <div class="accent-bar"></div>
+    <div class="eyebrow">Presupuesto Inicial</div>
+    <h2 class="sec-title">Lo que se pidi&oacute;<br>y lo que se entreg&oacute;.</h2>
+    <p class="sec-lead">
+      Todos los requerimientos del presupuesto original fueron implementados y verificados.
+      Flujo completo: crear lead &rarr; toques &rarr; BANT &rarr; handoff &rarr; deal &rarr; cotizar &rarr; negociar &rarr; cerrar.
+    </p>
+
+    <table class="pt">
+      <tr><th style="width:30%">Secci&oacute;n</th><th>Requerimiento</th><th style="width:12%;text-align:center;">Estado</th></tr>
+      <tr><td style="font-weight:600;">Base de Datos</td><td>Integraci&oacute;n formulario landing &rarr; CRM, dimensiones normalizadas, campos parametrizables</td><td class="status" style="text-align:center;">&#10003; Entregado</td></tr>
+      <tr><td style="font-weight:600;">Prospectos (SDR)</td><td>Vista Tabla + Kanban, registro de toques, creaci&oacute;n manual, concurrencia multi-SDR</td><td class="status" style="text-align:center;">&#10003; Entregado</td></tr>
+      <tr><td style="font-weight:600;">Paso a Ventas</td><td>Formulario BANT obligatorio, confirmaci&oacute;n, asignaci&oacute;n SDR&rarr;AE, ficha t&eacute;cnica, regresar etapa, monto por columna</td><td class="status" style="text-align:center;">&#10003; Entregado</td></tr>
+      <tr><td style="font-weight:600;">Negociaciones (AE)</td><td>Vista separada para AEs, segmentaci&oacute;n por rol</td><td class="status" style="text-align:center;">&#10003; Entregado</td></tr>
+      <tr><td style="font-weight:600;">Pricing (3 Tipos)</td><td>Monto estimado, cotizado, cierre. Modelos Proyecto, Fichas/Suscripciones, SaaS</td><td class="status" style="text-align:center;">&#10003; Entregado</td></tr>
+      <tr><td style="font-weight:600;">BANT Score</td><td>Calificaci&oacute;n autom&aacute;tica: Budget, Authority, Need, Timing. F&oacute;rmula Alto/Medio/Bajo</td><td class="status" style="text-align:center;">&#10003; Entregado</td></tr>
+      <tr><td style="font-weight:600;">Distribuci&oacute;n</td><td>Directo a AE, SDR asigna, Gerente distribuye, Round-robin autom&aacute;tico</td><td class="status" style="text-align:center;">&#10003; Entregado</td></tr>
+      <tr><td style="font-weight:600;">Calendario</td><td>Calendario digital con llamadas, seguimientos, tareas por rol, edici&oacute;n directa</td><td class="status" style="text-align:center;">&#10003; Entregado</td></tr>
+      <tr><td style="font-weight:600;">Reporter&iacute;a</td><td>Selector de per&iacute;odo, comparaci&oacute;n vs anterior/YOY, embudo, incontactables, cross-selling, semáforos, razones, deals</td><td class="status" style="text-align:center;">&#10003; Entregado</td></tr>
+      <tr><td style="font-weight:600;">Administraci&oacute;n</td><td>Gesti&oacute;n de roles/permisos, activaci&oacute;n/desactivaci&oacute;n, panel HMN configurable</td><td class="status" style="text-align:center;">&#10003; Entregado</td></tr>
+    </table>
+
+    <div class="callout" style="margin-top:5mm;">
+      <div class="callout-title">100% de requerimientos originales entregados</div>
+      <p>Cada uno de los 30+ requerimientos documentados en la reuni&oacute;n del 26 de febrero fue implementado, testeado y desplegado en producci&oacute;n.</p>
+    </div>
+  </div>
+  <div class="pf"><span>CASTILLO & COMPANY &mdash; CONFIDENCIAL</span><span>Entrega CRM SWAT Squad &middot; Marzo 2026</span></div>
+</div>
+
+<!-- ========== PAGE 3: SCOPE ADICIONAL ========== -->
+<div class="page">
+  <div class="inner">
+    <div class="ph">
+      <span class="ph-brand">Castillo & Company</span>
+      <span class="ph-label">02 &mdash; Scope Adicional ($150 extra)</span>
+    </div>
+    <div class="accent-bar"></div>
+    <div class="eyebrow">Presupuesto Adicional</div>
+    <h2 class="sec-title">4 features acordados<br>como scope extra.</h2>
+    <p class="sec-lead">Total del proyecto: $350 USD ($200 base + $150 adicional).</p>
+
+    <div class="grid2">
+      <div class="card">
+        <h3>A.1 &mdash; Deal Fichas Reestructuradas</h3>
+        <p>Secciones Cotizaci&oacute;n y Cierre separadas visualmente, timestamps autom&aacute;ticos, multi-producto por deal, clasificaci&oacute;n autom&aacute;tica cross-sell/up-sell/venta directa.</p>
+      </div>
+      <div class="card">
+        <h3>A.2 &mdash; Cross-Selling Logic</h3>
+        <p>Comparaci&oacute;n autom&aacute;tica del producto de inter&eacute;s del SDR vs productos de cierre del AE para clasificar tipo de transacci&oacute;n.</p>
+      </div>
+      <div class="card">
+        <h3>A.3 &mdash; AE Analytics / Reporte AE</h3>
+        <p>Vista de reporte dedicada para Account Executives con m&eacute;tricas de deal pipeline, ranking AE por cierre, montos promedio y velocidad.</p>
+      </div>
+      <div class="card">
+        <h3>A.4 &mdash; Comparativa Personalizada</h3>
+        <p>Tercer modo de comparaci&oacute;n con fechas libres: cualquier rango vs cualquier rango. Carry-over incluido.</p>
+      </div>
+    </div>
+
+    <div class="callout">
+      <div class="callout-title">Resumen Financiero</div>
+      <p style="margin-bottom:3mm;">Desglose completo del proyecto:</p>
+    </div>
+
+    <div class="fin-row"><span class="fin-label">Presupuesto original (16 horas)</span><span class="fin-val">$200 USD</span></div>
+    <div class="fin-row"><span class="fin-label">Scope adicional (4 features)</span><span class="fin-val">$150 USD</span></div>
+    <div class="fin-row total"><span class="fin-label">Total acordado</span><span class="fin-val">$350 USD</span></div>
+    <div class="fin-row"><span class="fin-label">Extras entregados sin costo (~31 funcionalidades)</span><span class="fin-val" style="color:var(--green);">$0</span></div>
+    <div class="fin-row"><span class="fin-label">Pagos recibidos a la fecha</span><span class="fin-val">$0</span></div>
+
+    <div style="margin-top:6mm;">
+      <div class="eyebrow">Lo absorbido sin costo incluye:</div>
+      <div class="card" style="margin-top:2mm;">
+        <ul>
+          <li>3 features absorbidos originalmente: Roles, BANT, Pricing Calculator (~5-8h de trabajo)</li>
+          <li>12 extras del primer milestone (v1.0)</li>
+          <li>9 features adicionales de Checkpoints 2 y 3 (v3.0)</li>
+          <li>2 features post-entrega final: Login con contrase&ntilde;a + Centrado de tablas de reporter&iacute;a</li>
+        </ul>
+      </div>
+    </div>
+
+  </div>
+  <div class="pf"><span>CASTILLO & COMPANY &mdash; CONFIDENCIAL</span><span>Entrega CRM SWAT Squad &middot; Marzo 2026</span></div>
+</div>
+
+<!-- ========== PAGE 4: EXTRAS (PARTE 1) ========== -->
+<div class="page">
+  <div class="inner">
+    <div class="ph">
+      <span class="ph-brand">Castillo & Company</span>
+      <span class="ph-label">03 &mdash; Extras sin costo (Parte 1)</span>
+    </div>
+    <div class="accent-bar"></div>
+    <div class="eyebrow">Valor agregado</div>
+    <h2 class="sec-title">31 funcionalidades<br>entregadas sin costo.</h2>
+    <p class="sec-lead">Estas funcionalidades NO fueron pedidas en el requerimiento original ni en el scope adicional. Se entregaron como valor agregado.</p>
+
+    <div class="grid2">
+      <div class="extra-item">
+        <div class="extra-num">E.1</div>
+        <div class="extra-title">Clock-In / Clock-Out</div>
+        <div class="extra-desc">Auditar horas activas de SDRs; indicador operacional</div>
+      </div>
+      <div class="extra-item">
+        <div class="extra-num">E.2</div>
+        <div class="extra-title">Historial de Cambios</div>
+        <div class="extra-desc">Trazabilidad completa: qui&eacute;n cambi&oacute; qu&eacute;, cu&aacute;ndo, valor anterior &rarr; nuevo (27 puntos de registro)</div>
+      </div>
+      <div class="extra-item">
+        <div class="extra-num">E.3</div>
+        <div class="extra-title">Secci&oacute;n de Tareas</div>
+        <div class="extra-desc">SDRs organizan su d&iacute;a sin salir del CRM</div>
+      </div>
+      <div class="extra-item">
+        <div class="extra-num">E.4</div>
+        <div class="extra-title">Star Schema (12 tablas)</div>
+        <div class="extra-desc">Escalabilidad y limpieza de datos a largo plazo</div>
+      </div>
+      <div class="extra-item">
+        <div class="extra-num">E.5</div>
+        <div class="extra-title">Gr&aacute;fica de Embudo Visual</div>
+        <div class="extra-desc">Chart.js &mdash; presentaci&oacute;n ejecutiva lista para reuniones</div>
+      </div>
+      <div class="extra-item">
+        <div class="extra-num">E.6</div>
+        <div class="extra-title">Delta Alerts Visuales</div>
+        <div class="extra-desc">&plusmn;20% destacado en colores para anomal&iacute;as</div>
+      </div>
+      <div class="extra-item">
+        <div class="extra-num">E.7</div>
+        <div class="extra-title">Velocidad de Cierre</div>
+        <div class="extra-desc">D&iacute;as promedio + delta para medir eficiencia de AEs</div>
+      </div>
+      <div class="extra-item">
+        <div class="extra-num">E.8</div>
+        <div class="extra-title">Ranking SDRs</div>
+        <div class="extra-desc">CVR + delta + ordenamiento por performance</div>
+      </div>
+      <div class="extra-item">
+        <div class="extra-num">E.9</div>
+        <div class="extra-title">Multi-producto por Deal</div>
+        <div class="extra-desc">Tabla de productos con cantidad, precio, descuento por l&iacute;nea</div>
+      </div>
+      <div class="extra-item">
+        <div class="extra-num">E.10</div>
+        <div class="extra-title">Timestamps Autom&aacute;ticos</div>
+        <div class="extra-desc">Fecha cotizaci&oacute;n al llenar monto, fecha cierre al marcar Vendido</div>
+      </div>
+      <div class="extra-item">
+        <div class="extra-num">E.11</div>
+        <div class="extra-title">Pricing en Handoff</div>
+        <div class="extra-desc">SDR ve monto estimado con desglose de f&oacute;rmula antes de confirmar</div>
+      </div>
+      <div class="extra-item">
+        <div class="extra-num">E.12</div>
+        <div class="extra-title">Monto Estimado SDR</div>
+        <div class="extra-desc">Banner read-only en la ficha del deal para contexto del AE</div>
+      </div>
+      <div class="extra-item">
+        <div class="extra-num">E.13</div>
+        <div class="extra-title">3 Modos de Routing</div>
+        <div class="extra-desc">SDR Choice, Round Robin, Manager Review &mdash; configurables desde Admin</div>
+      </div>
+      <div class="extra-item">
+        <div class="extra-num">E.14</div>
+        <div class="extra-title">Columna AE Asignado</div>
+        <div class="extra-desc">Visibilidad inmediata en tabla de negociaciones</div>
+      </div>
+      <div class="extra-item">
+        <div class="extra-num">E.15</div>
+        <div class="extra-title">Badge Pendiente Revisi&oacute;n</div>
+        <div class="extra-desc">Deals sin AE se marcan visualmente para Manager Review</div>
+      </div>
+      <div class="extra-item">
+        <div class="extra-num">E.16</div>
+        <div class="extra-title">Config Routing desde Admin</div>
+        <div class="extra-desc">Selector de modo + reorden drag &amp; drop para Round Robin</div>
+      </div>
+    </div>
+  </div>
+  <div class="pf"><span>CASTILLO & COMPANY &mdash; CONFIDENCIAL</span><span>Entrega CRM SWAT Squad &middot; Marzo 2026</span></div>
+</div>
+
+<!-- ========== PAGE 5: EXTRAS (PARTE 2) ========== -->
+<div class="page">
+  <div class="inner">
+    <div class="ph">
+      <span class="ph-brand">Castillo & Company</span>
+      <span class="ph-label">04 &mdash; Extras sin costo (Parte 2)</span>
+    </div>
+    <div class="accent-bar"></div>
+    <div class="eyebrow">Valor agregado &mdash; continuaci&oacute;n</div>
+    <h2 class="sec-title">A&uacute;n m&aacute;s valor<br>entregado sin costo.</h2>
+
+    <div class="grid2">
+      <div class="extra-item">
+        <div class="extra-num">E.17</div>
+        <div class="extra-title">Dark/Light Theme</div>
+        <div class="extra-desc">UI moderna con glassmorphism y dos temas</div>
+      </div>
+      <div class="extra-item">
+        <div class="extra-num">E.18</div>
+        <div class="extra-title">Gesti&oacute;n de Roles</div>
+        <div class="extra-desc">SDR, AE, Gerente, Admin con permisos diferenciados</div>
+      </div>
+      <div class="extra-item">
+        <div class="extra-num">E.19</div>
+        <div class="extra-title">BANT Auto-Score</div>
+        <div class="extra-desc">Calificaci&oacute;n sin intervenci&oacute;n manual</div>
+      </div>
+      <div class="extra-item">
+        <div class="extra-num">E.20</div>
+        <div class="extra-title">Pricing Calculator</div>
+        <div class="extra-desc">C&aacute;lculos autom&aacute;ticos por modelo de negocio</div>
+      </div>
+    </div>
+
+    <div style="margin-top:4mm;">
+      <div class="eyebrow">Checkpoint 2 y 3 (Post-Entrega v1.0)</div>
+    </div>
+    <div class="grid2" style="margin-top:3mm;">
+      <div class="extra-item">
+        <div class="extra-num">E.21</div>
+        <div class="extra-title">Ocultar Campo Index</div>
+        <div class="extra-desc">Limpieza UI del formulario de negociaci&oacute;n</div>
+      </div>
+      <div class="extra-item">
+        <div class="extra-num">E.22</div>
+        <div class="extra-title">Dropdown Razones de P&eacute;rdida</div>
+        <div class="extra-desc">Opci&oacute;n "Otros" + texto libre para UX mejorada</div>
+      </div>
+      <div class="extra-item">
+        <div class="extra-num">E.23</div>
+        <div class="extra-title">Notas de Cotizaci&oacute;n</div>
+        <div class="extra-desc">Campo editable persistente en secci&oacute;n Cotizaci&oacute;n del deal</div>
+      </div>
+      <div class="extra-item">
+        <div class="extra-num">E.24</div>
+        <div class="extra-title">Toques Enriquecidos</div>
+        <div class="extra-desc">Canal/medio por toque: Llamada, WhatsApp, Email</div>
+      </div>
+      <div class="extra-item">
+        <div class="extra-num">E.25</div>
+        <div class="extra-title">Toques Monot&oacute;nicos</div>
+        <div class="extra-desc">No se puede retroceder en n&uacute;mero de toque &mdash; integridad de datos</div>
+      </div>
+      <div class="extra-item">
+        <div class="extra-num">E.26</div>
+        <div class="extra-title">Detecci&oacute;n de Duplicados</div>
+        <div class="extra-desc">Alerta al crear lead por email o tel&eacute;fono duplicado</div>
+      </div>
+      <div class="extra-item">
+        <div class="extra-num">E.27</div>
+        <div class="extra-title">Presupuesto Dual</div>
+        <div class="extra-desc">Monto exacto $ o rango De $X a $Y</div>
+      </div>
+      <div class="extra-item">
+        <div class="extra-num">E.28</div>
+        <div class="extra-title">Plantillas de Notas SDR</div>
+        <div class="extra-desc">Templates con variables {nombre}, {empresa} auto-reemplazadas</div>
+      </div>
+      <div class="extra-item">
+        <div class="extra-num">E.29</div>
+        <div class="extra-title">Preguntas Parametrizables</div>
+        <div class="extra-desc">Adicionales al BANT, configurables por Admin</div>
+      </div>
+    </div>
+
+    <div style="margin-top:4mm;">
+      <div class="eyebrow">Post-Entrega Final</div>
+    </div>
+    <div class="grid2" style="margin-top:3mm;">
+      <div class="card-dark card">
+        <h3>E.30 &mdash; Login con Email + Contrase&ntilde;a</h3>
+        <p>Pantalla de inicio de sesi&oacute;n con credenciales propias. Sesi&oacute;n persistente por 8 horas via localStorage. Bot&oacute;n de cerrar sesi&oacute;n en sidebar. Validaci&oacute;n de usuario activo/desactivado.</p>
+      </div>
+      <div class="card-dark card">
+        <h3>E.31 &mdash; Centrado de Tablas en Reportes</h3>
+        <p>Correcci&oacute;n de alineaci&oacute;n de todas las tablas de reporter&iacute;a (SDR y AE). Headers y datos num&eacute;ricos centrados, nombres alineados a la izquierda.</p>
+      </div>
+    </div>
+
+  </div>
+  <div class="pf"><span>CASTILLO & COMPANY &mdash; CONFIDENCIAL</span><span>Entrega CRM SWAT Squad &middot; Marzo 2026</span></div>
+</div>
+
+<!-- ========== PAGE 6: PENDIENTES + ESTADO TÉCNICO ========== -->
+<div class="page">
+  <div class="inner">
+    <div class="ph">
+      <span class="ph-brand">Castillo & Company</span>
+      <span class="ph-label">05 &mdash; Pendientes y Estado T&eacute;cnico</span>
+    </div>
+    <div class="accent-bar"></div>
+    <div class="eyebrow">Diferidos a Fase 2</div>
+    <h2 class="sec-title">Lo que no se incluy&oacute;<br>y por qu&eacute;.</h2>
+    <p class="sec-lead">Funcionalidades que requieren infraestructura o procesos adicionales fuera del scope actual.</p>
+
+    <table class="pt">
+      <tr><th>Feature</th><th>Raz&oacute;n</th></tr>
+      <tr><td style="font-weight:600;">Importaci&oacute;n masiva CSV/Excel</td><td>Requiere parseo de archivos, mapeo din&aacute;mico, validaci&oacute;n masiva. Funcionalidad completa por s&iacute; sola.</td></tr>
+      <tr><td style="font-weight:600;">Test 70/30 (split autom&aacute;tico)</td><td>Requiere l&oacute;gica de distribuci&oacute;n al ingreso, reglas por campa&ntilde;a, y dashboard de resultados.</td></tr>
+      <tr><td style="font-weight:600;">BANT Score Decay</td><td>Nice-to-have: score disminuye conforme Timing se aleja. No bloquea operaci&oacute;n.</td></tr>
+      <tr><td style="font-weight:600;">M&eacute;trica SPAM</td><td>No hay columna fuente. El cliente necesita definir proceso operativo para marcar leads como Spam.</td></tr>
+      <tr><td style="font-weight:600;">Correo con dominio propio</td><td>Limitaci&oacute;n de GAS: env&iacute;a desde cuenta Google del usuario, no permite dominio personalizado.</td></tr>
+      <tr><td style="font-weight:600;">Landing page parametrizable</td><td>Requiere hosting separado o GAS Web App dedicada.</td></tr>
+    </table>
+
+    <div style="margin-top:8mm;">
+      <div class="eyebrow">Estado t&eacute;cnico del sistema</div>
+      <h2 class="sec-title" style="font-size:22px;">Sistema en producci&oacute;n.</h2>
+    </div>
+
+    <div class="grid2" style="margin-top:3mm;">
+      <div class="card">
+        <h3>Codebase</h3>
+        <p>~11,500 l&iacute;neas de c&oacute;digo en 5 archivos. Google Apps Script ES5 (backend) + Vue 3 Composition API (frontend).</p>
+      </div>
+      <div class="card">
+        <h3>Base de Datos</h3>
+        <p>Star Schema v6 con 12 tablas normalizadas en Google Sheets. Escalable y limpia.</p>
+      </div>
+      <div class="card">
+        <h3>QA</h3>
+        <p>4 bugs cr&iacute;ticos encontrados y corregidos (handoff routing, SDR CVR, duplicados, status can&oacute;nico). Verificaci&oacute;n end-to-end completada.</p>
+      </div>
+      <div class="card">
+        <h3>Deploy</h3>
+        <p>Sistema en producci&oacute;n via Google Apps Script. Deploy con clasp push.</p>
+      </div>
+    </div>
+
+    <div class="contact-box" style="margin-top:8mm;">
+      <div class="contact-name">Juan C. Matute &mdash; Fundador &amp; Estratega de Datos</div>
+      <div class="contact-info">(58) 412-2477540 &nbsp;&middot;&nbsp; Juancarlos_matute@hotmail.com &nbsp;&middot;&nbsp; Coro, Falc&oacute;n</div>
+      <div style="font-size:8px;color:rgba(247,244,238,.4);margin-top:2mm;">Castillo & Company &mdash; Mejoramos la salud y direcci&oacute;n de las empresas</div>
+    </div>
+
+  </div>
+  <div class="pf"><span>CASTILLO & COMPANY &mdash; CONFIDENCIAL</span><span>Entrega CRM SWAT Squad &middot; Marzo 2026</span></div>
+</div>
+
+</body>
+</html>
