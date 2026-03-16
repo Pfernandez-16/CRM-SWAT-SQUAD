@@ -3,7 +3,8 @@
 ## Milestones
 
 - ✅ **v1.0 Reporteria** - Phases 1-6 (shipped 2026-03-11)
-- 🚧 **v2.0 Pre-Entrega al Cliente** - Phases 7-11 (in progress)
+- ✅ **v2.0 Pre-Entrega al Cliente** - Phases 7-11 (shipped 2026-03-14)
+- ✅ **v3.0 Optimización Post-Entrega** - Phases 12-20 (shipped 2026-03-15)
 
 ## Phases
 
@@ -109,7 +110,7 @@ Plans:
 
 ---
 
-### 🚧 v2.0 Pre-Entrega al Cliente (In Progress)
+### ✅ v2.0 Pre-Entrega al Cliente (Complete — 2026-03-14)
 
 **Milestone Goal:** Corregir bugs críticos del handoff, activar routing inteligente de AEs, implementar pricing UI en fichas, reestructurar deal fichas, y QA general para la entrega a Christian.
 
@@ -125,8 +126,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 07-01-PLAN.md — Fix SDR Ranking CVR (BUG-02) + processHandoff status typo (BUG-04)
-- [ ] 07-02-PLAN.md — Remove duplicate handoff functions (BUG-03) + rewire submitHandoff to processHandoff (BUG-01)
+- [x] 07-01-PLAN.md — Fix SDR Ranking CVR (BUG-02) + processHandoff status typo (BUG-04)
+- [x] 07-02-PLAN.md — Remove duplicate handoff functions (BUG-03) + rewire submitHandoff to processHandoff (BUG-01)
 
 #### Phase 8: Handoff Routing End-to-End
 **Goal**: El gerente puede configurar el modo de asignación de AEs, y el flujo SDR→AE opera correctamente en los tres modos (SDR Choice, Round Robin, Manager Review)
@@ -137,10 +138,10 @@ Plans:
   2. En modo AUTO (Round Robin), el dropdown de AEs se oculta y el sistema asigna el siguiente AE en turno automáticamente al confirmar
   3. En modo MANAGER_REVIEW, el deal se crea sin AE asignado y queda visible para el gerente como pendiente de aprobación
   4. El panel Admin tiene un selector de modo de routing (SDR_CHOICE / AUTO / MANAGER_REVIEW) que el gerente puede cambiar y guardar
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] 08-01-PLAN.md
+- [x] 08-01-PLAN.md — Fix handoff dropdown (activeAEs), reset aeEmail, pending review badge, AE column in Negociaciones
 
 #### Phase 9: Pricing UI
 **Goal**: Tanto SDRs como AEs ven y pueden editar montos estimados y cotizados durante el flujo de handoff y en fichas de deal
@@ -150,10 +151,10 @@ Plans:
   1. En el handoff modal, el SDR ve el monto estimado auto-calculado (ticket promedio × factor por tipo: Fichas×12, Proyectos×1, SaaS×licencias×12) antes de confirmar
   2. En la ficha de deal, el AE puede ver y editar el monto cotizado en un campo independiente del monto estimado
   3. La calculadora de pricing muestra el desglose del cálculo (tipo de cliente, factor, resultado) tanto en el handoff modal como en el deal modal
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] 09-01-PLAN.md
+- [x] 09-01-PLAN.md — Handoff pricing calculator (handoffMontoEstimado) + Monto Estimado SDR reference in deal tab
 
 #### Phase 10: Deal Fichas Reestructuradas
 **Goal**: Las fichas de deal tienen secciones Cotización y Cierre visualmente separadas, con timestamps automáticos y soporte multi-producto con clasificación automática
@@ -164,10 +165,10 @@ Plans:
   2. La fecha de cotización se graba automáticamente al ingresar monto cotizado; la fecha de cierre se graba automáticamente al cambiar status a "Vendido"
   3. El AE puede agregar múltiples productos por deal en una tabla con nombre, cantidad, precio unitario y descuento % por línea
   4. El sistema clasifica automáticamente el deal como cross-selling, up-selling o venta directa al comparar el producto de interés del SDR con el/los producto(s) de cierre del AE
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] 10-01-PLAN.md
+- [x] 10-01-PLAN.md — Cotización/Cierre split, auto-timestamps, multi-producto table, auto-classification
 
 #### Phase 11: QA y Limpieza Pre-Entrega
 **Goal**: El sistema pasa una verificación end-to-end completa, el código muerto está eliminado, y el checklist de reunión con el cliente refleja el estado real
@@ -177,15 +178,139 @@ Plans:
   1. CHECKLIST_REUNION_CLIENTE.md tiene la sección 9 (Reportería) marcada como completa con todos sus ítems verificados
   2. App.html no contiene funciones duplicadas, variables no referenciadas ni imports sin usar — auditoría de código limpia
   3. El flujo completo crear lead → toques → calificar BANT → handoff → deal creado con AE → cotizar → negociar → cerrar funciona sin errores en producción
+**Plans**: 1 plan
+
+Plans:
+- [x] 11-01-PLAN.md — Dead code removal (activeDataset, calendarDate) + E2E static verification
+
+---
+
+### ✅ v3.0 Optimización Post-Entrega (Complete — 2026-03-15)
+
+**Milestone Goal:** Implementar requerimientos de Checkpoints 2 y 3 — duplicados, toques enriquecidos, reporte AE, audit log, preguntas parametrizables, y mejoras UI/UX.
+
+#### Phase 12: Quick Wins UI/UX
+**Goal**: Cambios rápidos de UI que no requieren lógica backend compleja
+**Depends on**: Phase 11 (v2.0 complete)
+**Requirements**: QW-01, QW-02, QW-03, QW-04
+**Success Criteria** (what must be TRUE):
+  1. Campo "Index" no es visible en el formulario de negociación
+  2. Al seleccionar "Otros" en razón de pérdida, aparece un campo de texto libre para especificar
+  3. El catálogo Status de Venta muestra "Cotización" en lugar de "Propuesta enviada"
+  4. La sección Cotización del deal tiene un campo "Notas de Cotización" editable que se persiste en fact_deals
 **Plans**: TBD
 
 Plans:
-- [ ] 11-01-PLAN.md
+- [ ] 12-01-PLAN.md
+
+#### Phase 13: Toques Enriquecidos
+**Goal**: Cada toque registra el canal/medio usado y el sistema impide retroceder en número de toque
+**Depends on**: Phase 12
+**Requirements**: TOQUE-01, TOQUE-02
+**Success Criteria** (what must be TRUE):
+  1. Al registrar un toque, el canal (Llamada/WhatsApp/Email/etc.) se guarda en fact_toques.canal
+  2. La tabla de historial de toques muestra columna "Canal" con el medio de cada toque
+  3. El dropdown de toques solo permite seleccionar números mayores al toque actual del lead
+**Plans**: TBD
+
+Plans:
+- [ ] 13-01-PLAN.md
+
+#### Phase 14: Detección de Duplicados
+**Goal**: Al crear un lead, el sistema alerta si ya existe otro con mismo email o teléfono
+**Depends on**: Phase 12
+**Requirements**: DUP-01
+**Success Criteria** (what must be TRUE):
+  1. Al intentar crear un lead con email o teléfono existente, aparece alerta con datos del lead duplicado
+  2. El usuario puede continuar creando (sin fusión automática) o cancelar
+**Plans**: TBD
+
+Plans:
+- [ ] 14-01-PLAN.md
+
+#### Phase 15: Reporte de Ejecutivos (AE)
+**Goal**: Vista de reporte dedicada para Account Executives con métricas de deal pipeline
+**Depends on**: Phase 12
+**Requirements**: AERPT-01
+**Success Criteria** (what must be TRUE):
+  1. Existe una sección/tab "Reporte AE" en la vista de Reportes
+  2. Muestra funnel de deals, ranking AE por cierre, montos promedio y velocidad de cierre
+  3. Soporta comparación contra período anterior
+**Plans**: TBD
+
+Plans:
+- [ ] 15-01-PLAN.md
+
+#### Phase 16: Presupuesto Dual
+**Goal**: El campo presupuesto permite modo exacto ($) o modo rango (De $X a $Y)
+**Depends on**: Phase 12
+**Requirements**: BUDGET-01
+**Success Criteria** (what must be TRUE):
+  1. El formulario muestra toggle entre "Monto exacto" y "Rango de inversión"
+  2. En modo rango, aparecen dos campos (mínimo y máximo)
+  3. La ficha muestra el formato correcto según modo seleccionado
+**Plans**: TBD
+
+Plans:
+- [ ] 16-01-PLAN.md
+
+#### Phase 17: Plantillas de Notas SDR
+**Goal**: SDR puede seleccionar templates pre-escritas para acelerar documentación
+**Depends on**: Phase 12
+**Requirements**: TMPL-01
+**Success Criteria** (what must be TRUE):
+  1. Admin puede crear/editar/eliminar plantillas de notas desde panel de configuración
+  2. SDR ve dropdown "Insertar plantilla" junto al textarea de Notas
+  3. Al seleccionar plantilla, el texto se inserta con variables reemplazadas ({nombre}, {empresa})
+**Plans**: TBD
+
+Plans:
+- [ ] 17-01-PLAN.md
+
+#### Phase 18: Historial de Cambios (Audit Log)
+**Goal**: Cada modificación a un lead/deal queda registrada con quién, qué, cuándo
+**Depends on**: Phase 12
+**Requirements**: AUDIT-01
+**Success Criteria** (what must be TRUE):
+  1. Cada saveLeadChanges/updateLeadField escribe a log_cambios con campo, valor anterior, valor nuevo, usuario
+  2. Tab "Historial de Cambios" visible en modal de lead/deal para GERENTE y ADMIN
+  3. Tabla cronológica muestra timestamp, usuario, campo, valor anterior → valor nuevo
+**Plans**: TBD
+
+Plans:
+- [ ] 18-01-PLAN.md
+
+#### Phase 19: Preguntas Parametrizables
+**Goal**: Admin puede configurar preguntas adicionales al BANT específicas por cliente
+**Depends on**: Phase 12
+**Requirements**: PARAM-01
+**Success Criteria** (what must be TRUE):
+  1. Nueva tabla config_preguntas_custom con schema (id, pregunta, tipo_respuesta, opciones, orden, activa)
+  2. Admin puede crear/editar/desactivar preguntas desde panel de configuración
+  3. Las preguntas activas aparecen como sección dinámica en el formulario de lead
+  4. Las respuestas se guardan y son recuperables
+**Plans**: TBD
+
+Plans:
+- [ ] 19-01-PLAN.md
+
+#### Phase 20: QA y Deploy v3.0
+**Goal**: Verificación E2E de todos los flujos v3.0 y deploy final
+**Depends on**: All phases 12-19
+**Requirements**: QA3-01
+**Success Criteria** (what must be TRUE):
+  1. Todos los flujos nuevos verificados por code trace
+  2. Sin código muerto introducido
+  3. Deploy exitoso
+**Plans**: TBD
+
+Plans:
+- [ ] 20-01-PLAN.md
 
 ## Progress
 
 **Execution Order:**
-Phases 7 → 8 → (9 and 10 can execute in parallel after 7) → 11
+Phase 12 → (13, 14, 15 can run after 12) → 16 → 17 → 18 → 19 → 20
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
@@ -195,8 +320,17 @@ Phases 7 → 8 → (9 and 10 can execute in parallel after 7) → 11
 | 4. Deals Backend + Frontend | v1.0 | 2/2 | Complete | 2026-03-11 |
 | 5. Comparativa Personalizada + Ranking SDRs | v1.0 | 2/2 | Complete | 2026-03-11 |
 | 6. Visual Intelligence | v1.0 | 2/2 | Complete | 2026-03-11 |
-| 7. Bug Fixes Críticos | v2.0 | 0/2 | Planned | - |
-| 8. Handoff Routing End-to-End | v2.0 | 0/TBD | Not started | - |
-| 9. Pricing UI | v2.0 | 0/TBD | Not started | - |
-| 10. Deal Fichas Reestructuradas | v2.0 | 0/TBD | Not started | - |
-| 11. QA y Limpieza Pre-Entrega | v2.0 | 0/TBD | Not started | - |
+| 7. Bug Fixes Críticos | v2.0 | 2/2 | Complete | 2026-03-14 |
+| 8. Handoff Routing End-to-End | v2.0 | 1/1 | Complete | 2026-03-14 |
+| 9. Pricing UI | v2.0 | 1/1 | Complete | 2026-03-14 |
+| 10. Deal Fichas Reestructuradas | v2.0 | 1/1 | Complete | 2026-03-14 |
+| 11. QA y Limpieza Pre-Entrega | v2.0 | 1/1 | Complete | 2026-03-14 |
+| 12. Quick Wins UI/UX | v3.0 | 1/1 | Complete | 2026-03-14 |
+| 13. Toques Enriquecidos | v3.0 | 1/1 | Complete | 2026-03-14 |
+| 14. Detección de Duplicados | v3.0 | 1/1 | Complete | 2026-03-14 |
+| 15. Reporte de Ejecutivos (AE) | v3.0 | 1/1 | Complete | 2026-03-14 |
+| 16. Presupuesto Dual | v3.0 | 1/1 | Complete | 2026-03-14 |
+| 17. Plantillas de Notas SDR | v3.0 | 1/1 | Complete | 2026-03-14 |
+| 18. Historial de Cambios | v3.0 | 1/1 | Complete (pre-existing) | 2026-03-14 |
+| 19. Preguntas Parametrizables | v3.0 | 1/1 | Complete | 2026-03-15 |
+| 20. QA y Deploy v3.0 | v3.0 | 1/1 | Complete | 2026-03-15 |

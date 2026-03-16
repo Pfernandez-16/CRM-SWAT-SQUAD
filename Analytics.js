@@ -1222,6 +1222,272 @@ function calculateSDRRankingReport_(currentLeads, previousLeads, calificacionIdx
   return results;
 }
 
+// ============ AE RANKING REPORT (AERPT-01) ============
+
+function calculateAERankingReport_(allDeals, dateIn, dateOut, prevDateIn, prevDateOut) {
+  var dateInMs  = new Date(dateIn).getTime();
+  var dateOutMs = new Date(dateOut).getTime();
+  var prevInMs  = new Date(prevDateIn).getTime();
+  var prevOutMs = new Date(prevDateOut).getTime();
+  var today = new Date();
+
+  var allVendedores = readTable_(T_VENDEDORES);
+  var vendedoresIdx = {};
+  for (var v = 0; v < allVendedores.length; v++) {
+    var vend = allVendedores[v];
+    var vid = String(vend.id_vendedor || '');
+    if (vid) vendedoresIdx[vid] = vend.nombre || vid;
+  }
+
+  // Aggregate deals by AE for current period
+  var currentByAE = {};
+  for (var i = 0; i < allDeals.length; i++) {
+    var d = allDeals[i];
+    var fechaMs = new Date(d.fecha_pase_ventas || '').getTime();
+    if (isNaN(fechaMs) || fechaMs < dateInMs || fechaMs > dateOutMs) continue;
+    var aeId = String(d.id_vendedor_ae || '');
+    if (!aeId) continue;
+    if (!currentByAE[aeId]) { currentByAE[aeId] = { total: 0, ganados: 0, perdidos: 0, montoCot: 0, montoCierre: 0, daysSum: 0, closedCount: 0 }; }
+    var ae = currentByAE[aeId];
+    ae.total++;
+    var sv = String(d.status_venta || '').trim();
+    if (sv === 'Vendido') {
+      ae.ganados++;
+      ae.montoCierre += (Number(d.monto_cierre) || 0);
+      var startMs = new Date(d.fecha_pase_ventas || '').getTime();
+      var closeMs = new Date(d.fecha_cierre || '').getTime();
+      if (!isNaN(startMs) && !isNaN(closeMs) && closeMs > startMs) {
+        ae.daysSum += Math.round((closeMs - startMs) / 86400000);
+        ae.closedCount++;
+      }
+    }
+    if (sv === 'Perdido') ae.perdidos++;
+    ae.montoCot += (Number(d.monto_cotizacion) || 0);
+  }
+
+  // Aggregate previous period
+  var prevByAE = {};
+  for (var j = 0; j < allDeals.length; j++) {
+    var pd = allDeals[j];
+    var pfechaMs = new Date(pd.fecha_pase_ventas || '').getTime();
+    if (isNaN(pfechaMs) || pfechaMs < prevInMs || pfechaMs > prevOutMs) continue;
+    var paeId = String(pd.id_vendedor_ae || '');
+    if (!paeId) continue;
+    if (!prevByAE[paeId]) { prevByAE[paeId] = { total: 0, ganados: 0, perdidos: 0, montoCot: 0, montoCierre: 0 }; }
+    var pae = prevByAE[paeId];
+    pae.total++;
+    var psv = String(pd.status_venta || '').trim();
+    if (psv === 'Vendido') { pae.ganados++; pae.montoCierre += (Number(pd.monto_cierre) || 0); }
+    if (psv === 'Perdido') pae.perdidos++;
+    pae.montoCot += (Number(pd.monto_cotizacion) || 0);
+  }
+
+  // Build unified AE set
+  var aeIds = {};
+  for (var k in currentByAE) { aeIds[k] = true; }
+  for (var k2 in prevByAE) { aeIds[k2] = true; }
+
+  var results = [];
+  for (var aeId in aeIds) {
+    var cur  = currentByAE[aeId]  || { total: 0, ganados: 0, perdidos: 0, montoCot: 0, montoCierre: 0, daysSum: 0, closedCount: 0 };
+    var prev = prevByAE[aeId]     || { total: 0, ganados: 0, perdidos: 0, montoCot: 0, montoCierre: 0 };
+    var winRateCur  = cur.total  > 0 ? Math.round((cur.ganados  / cur.total)  * 10000) / 100 : 0;
+    var winRatePrev = prev.total > 0 ? Math.round((prev.ganados / prev.total) * 10000) / 100 : 0;
+    var avgDays = cur.closedCount > 0 ? Math.round(cur.daysSum / cur.closedCount) : 0;
+
+    results.push({
+      id: aeId,
+      nombre: vendedoresIdx[aeId] || aeId,
+      totalDeals: cur.total,
+      ganados: cur.ganados,
+      perdidos: cur.perdidos,
+      montoCotizacion: Math.round(cur.montoCot),
+      montoCierre: Math.round(cur.montoCierre),
+      winRate: winRateCur,
+      winRatePrev: winRatePrev,
+      winRateDelta: calcDelta_(winRateCur, winRatePrev),
+      avgDaysToClose: avgDays,
+      prevTotalDeals: prev.total,
+      prevMontoCierre: Math.round(prev.montoCierre)
+    });
+  }
+
+  results.sort(function (a, b) { return b.winRate - a.winRate; });
+  return results;
+}
+
+// ============ Phase 22: Full AE Report ============
+
+function calculateFullAEReport_(allDeals, dateIn, dateOut) {
+  var dateInMs  = new Date(dateIn).getTime();
+  var dateOutMs = new Date(dateOut).getTime();
+
+  var allVendedores = readTable_(T_VENDEDORES);
+  var vendedoresIdx = {};
+  for (var v = 0; v < allVendedores.length; v++) {
+    var vend = allVendedores[v];
+    var vid = String(vend.id_vendedor || '');
+    if (vid) vendedoresIdx[vid] = vend.nombre || vid;
+  }
+
+  // Filter deals in period by fecha_pase_ventas
+  var periodDeals = [];
+  for (var i = 0; i < allDeals.length; i++) {
+    var d = allDeals[i];
+    var fechaMs = new Date(d.fecha_pase_ventas || '').getTime();
+    if (!isNaN(fechaMs) && fechaMs >= dateInMs && fechaMs <= dateOutMs) {
+      periodDeals.push(d);
+    }
+  }
+
+  // Aggregate per AE
+  var byAE = {};
+  for (var j = 0; j < periodDeals.length; j++) {
+    var deal = periodDeals[j];
+    var aeId = String(deal.id_vendedor_ae || '');
+    if (!aeId) continue;
+
+    if (!byAE[aeId]) {
+      byAE[aeId] = {
+        total: 0, ganados: 0, perdidos: 0,
+        montoCot: 0, montoCierre: 0, montoApartado: 0,
+        // Funnel booleans
+        contactado: 0, cotizado: 0, enNeg: 0, demo: 0, firmo: 0, fondeo: 0,
+        // Ventas contacto
+        ventasContactoSi: 0, ventasContactoNo: 0,
+        // Proyeccion
+        proyAlta: 0, proyMedia: 0, proyBaja: 0,
+        // Recompra / cross
+        recompra: 0, crossSelling: 0,
+        // Loss reasons
+        razonesPerdida: {},
+        // Velocity
+        daysSum: 0, closedCount: 0
+      };
+    }
+    var ae = byAE[aeId];
+    ae.total++;
+
+    var sv = String(deal.status_venta || '').trim();
+    if (sv === 'Vendido') {
+      ae.ganados++;
+      ae.montoCierre += (Number(deal.monto_cierre) || 0);
+      var startMs = new Date(deal.fecha_pase_ventas || '').getTime();
+      var closeMs = new Date(deal.fecha_cierre || '').getTime();
+      if (!isNaN(startMs) && !isNaN(closeMs) && closeMs > startMs) {
+        ae.daysSum += Math.round((closeMs - startMs) / 86400000);
+        ae.closedCount++;
+      }
+    }
+    if (sv === 'Perdido') {
+      ae.perdidos++;
+      var razon = String(deal.razon_perdida || '').trim();
+      if (razon) ae.razonesPerdida[razon] = (ae.razonesPerdida[razon] || 0) + 1;
+    }
+
+    ae.montoCot += (Number(deal.monto_cotizacion) || 0);
+    ae.montoApartado += (Number(deal.monto_apartado) || 0);
+
+    // Funnel stages based on status_venta
+    var svLower = sv.toLowerCase();
+    if (svLower !== 'recien llegado' && sv) ae.contactado++;
+    if (Number(deal.monto_cotizacion) > 0) ae.cotizado++;
+    if (svLower === 'en negociación' || svLower === 'en negociacion') ae.enNeg++;
+    if (svLower === 'demo') ae.demo++;
+    if (svLower === 'vendido' || svLower === 'firmado') ae.firmo++;
+    if (svLower === 'fondeo' || svLower === 'fondeado') ae.fondeo++;
+
+    // Ventas contacto
+    var vc = String(deal.ventas_contacto_cliente || '').trim().toLowerCase();
+    if (vc === 'si' || vc === 'sí') ae.ventasContactoSi++;
+    else if (vc === 'no') ae.ventasContactoNo++;
+
+    // Proyeccion
+    var proy = String(deal.proyeccion || '').trim().toLowerCase();
+    if (proy === 'alta') ae.proyAlta++;
+    else if (proy === 'media') ae.proyMedia++;
+    else if (proy === 'baja') ae.proyBaja++;
+
+    // Recompra / Cross
+    var esRecompra = String(deal.es_recompra || '').trim().toLowerCase();
+    if (esRecompra === 'si' || esRecompra === 'sí' || esRecompra === 'true') ae.recompra++;
+    var cs = String(deal.cross_selling || '').trim().toLowerCase();
+    if (cs === 'si' || cs === 'sí' || cs === 'true') ae.crossSelling++;
+  }
+
+  // Build result arrays
+  var funnelByAE = [];
+  var proyeccionByAE = [];
+  var razonesByAE = [];
+  var contactoByAE = [];
+  var crossRecompraByAE = [];
+  var summaryByAE = [];
+
+  for (var aeId in byAE) {
+    var ae = byAE[aeId];
+    var nombre = vendedoresIdx[aeId] || aeId;
+    var ticketPromedio = ae.ganados > 0 ? Math.round(ae.montoCierre / ae.ganados) : 0;
+    var avgDays = ae.closedCount > 0 ? Math.round(ae.daysSum / ae.closedCount) : 0;
+    var winRate = ae.total > 0 ? Math.round((ae.ganados / ae.total) * 10000) / 100 : 0;
+
+    summaryByAE.push({
+      id: aeId, nombre: nombre,
+      total: ae.total, ganados: ae.ganados, perdidos: ae.perdidos,
+      montoCot: Math.round(ae.montoCot), montoCierre: Math.round(ae.montoCierre),
+      montoApartado: Math.round(ae.montoApartado),
+      ticketPromedio: ticketPromedio, winRate: winRate, avgDays: avgDays
+    });
+
+    funnelByAE.push({
+      id: aeId, nombre: nombre,
+      contactado: ae.contactado, cotizado: ae.cotizado, enNeg: ae.enNeg,
+      demo: ae.demo, firmo: ae.firmo, fondeo: ae.fondeo
+    });
+
+    proyeccionByAE.push({
+      id: aeId, nombre: nombre,
+      alta: ae.proyAlta, media: ae.proyMedia, baja: ae.proyBaja
+    });
+
+    // Top 3 loss reasons
+    var sortedRazones = [];
+    for (var r in ae.razonesPerdida) {
+      sortedRazones.push({ razon: r, count: ae.razonesPerdida[r] });
+    }
+    sortedRazones.sort(function (a, b) { return b.count - a.count; });
+    razonesByAE.push({
+      id: aeId, nombre: nombre,
+      razones: sortedRazones.slice(0, 3)
+    });
+
+    var totalContacto = ae.ventasContactoSi + ae.ventasContactoNo;
+    contactoByAE.push({
+      id: aeId, nombre: nombre,
+      contactoSi: ae.ventasContactoSi, contactoNo: ae.ventasContactoNo,
+      pctContacto: totalContacto > 0 ? Math.round((ae.ventasContactoSi / totalContacto) * 100) : 0
+    });
+
+    crossRecompraByAE.push({
+      id: aeId, nombre: nombre,
+      recompra: ae.recompra, crossSelling: ae.crossSelling
+    });
+  }
+
+  // Sort all by total desc
+  var sortByTotal = function (a, b) { return (b.total || 0) - (a.total || 0); };
+  summaryByAE.sort(sortByTotal);
+  funnelByAE.sort(sortByTotal);
+
+  return {
+    summary: summaryByAE,
+    funnel: funnelByAE,
+    proyeccion: proyeccionByAE,
+    razonesPerdida: razonesByAE,
+    contactoActividad: contactoByAE,
+    crossRecompra: crossRecompraByAE
+  };
+}
+
 // ============ MAIN ORCHESTRATOR ============
 
 /**
@@ -1299,6 +1565,8 @@ function getSDRReport(dateIn, dateOut, compareType, customPrevDateIn, customPrev
     var matrizContactabilidad = calculateMatrizContactabilidad_(currentLeads, interaccionesIdx, contactosIdx);
     var dealsReport = calculateDealsReport_(allDeals, dateIn, dateOut, prevDateIn, prevDateOut);
     var sdrRanking = calculateSDRRankingReport_(currentLeads, previousLeads, calificacionIdx);
+    var aeRanking = calculateAERankingReport_(allDeals, dateIn, dateOut, prevDateIn, prevDateOut);
+    var fullAEReport = calculateFullAEReport_(allDeals, dateIn, dateOut);
 
     // Build result
     var result = {
@@ -1322,7 +1590,9 @@ function getSDRReport(dateIn, dateOut, compareType, customPrevDateIn, customPrev
       razonesPerdioVenta: razonesPerdioVenta,
       matrizContactabilidad: matrizContactabilidad,
       dealsReport: dealsReport,
-      sdrRanking: sdrRanking
+      sdrRanking: sdrRanking,
+      aeRanking: aeRanking,
+      fullAEReport: fullAEReport
     };
 
     return JSON.stringify(result);

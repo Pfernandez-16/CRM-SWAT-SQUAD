@@ -298,6 +298,7 @@
                       <th>Teléfono</th>
                       <th>Email</th>
                       <th>Status de Venta</th>
+                      <th>AE Asignado</th>
                       <th>Monto de Cierre</th>
                       <th>Fecha de Cierre</th>
                       <th>Notas Vendedor</th>
@@ -311,8 +312,14 @@
                       <td>{{ deal._empresa }}</td>
                       <td>{{ deal._tel }}</td>
                       <td>{{ deal._email }}</td>
-                      <td><span class="status-badge" :style="{ background: getStatusColor(deal['Status de Venta']) }">{{
-                          deal['Status de Venta'] || 'N/A' }}</span></td>
+                      <td>
+                        <span class="status-badge" :style="{ background: getStatusColor(deal['Status de Venta']) }">{{
+                          deal['Status de Venta'] || 'N/A' }}</span>
+                        <span v-if="isDealPendingReview(deal)" class="status-badge"
+                          style="background: rgba(234,179,8,0.2); color: #b45309; font-size: 0.7rem; margin-left: 0.3rem;">
+                          ⏳ Pendiente</span>
+                      </td>
+                      <td>{{ getAeDisplayName(deal) }}</td>
                       <td>{{ deal['Monto de cierre'] ? '$' + Number(deal['Monto de cierre']).toLocaleString() : '—' }}
                       </td>
                       <td>{{ deal['Fecha de Cierre'] ? formatDate(deal['Fecha de Cierre']) : '—' }}</td>
@@ -348,6 +355,13 @@
                       </div>
                       <h4 class="card-name">{{ deal._name || 'Sin nombre' }}</h4>
                       <p class="card-empresa" v-if="deal._empresa">{{ deal._empresa }}</p>
+                      <div v-if="isDealPendingReview(deal)" style="margin: 0.25rem 0;">
+                        <span style="background: rgba(234,179,8,0.2); color: #b45309; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px;">
+                          ⏳ Pendiente revisión</span>
+                      </div>
+                      <div v-if="deal._colAQ_Vendedor" style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 0.2rem;">
+                        AE: {{ deal._colAQ_Vendedor }}
+                      </div>
                       <div class="card-footer">
                         <span class="card-contact" v-if="deal._tel" title="Teléfono">📞 {{ deal._tel }}</span>
                         <span class="card-contact" v-if="deal._email" title="Email">📧</span>
@@ -407,6 +421,20 @@
               </div>
             </div>
 
+            <!-- Phase 22: Report Mode Toggle (SDR | AE) -->
+            <div v-if="reportData && !reportData._empty" style="display:flex; gap:0; margin-bottom:1rem;">
+              <button class="btn" :class="reportViewMode === 'sdr' ? 'btn-primary' : 'btn-secondary'"
+                @click="reportViewMode = 'sdr'"
+                style="border-radius:0.5rem 0 0 0.5rem; font-size:0.85rem; padding:0.5rem 1.2rem;">
+                Reporte SDR
+              </button>
+              <button class="btn" :class="reportViewMode === 'ae' ? 'btn-primary' : 'btn-secondary'"
+                @click="reportViewMode = 'ae'"
+                style="border-radius:0 0.5rem 0.5rem 0; font-size:0.85rem; padding:0.5rem 1.2rem;">
+                Reporte AE
+              </button>
+            </div>
+
             <!-- Error state -->
             <div v-if="reportError" class="report-error-card">
               <span class="material-symbols-outlined" style="font-size:2rem; color:var(--accent-danger);">error</span>
@@ -422,6 +450,9 @@
 
             <!-- Report content -->
             <div v-else-if="reportData" class="report-content">
+
+              <!-- ═══ SDR REPORT VIEW ═══ -->
+              <div v-show="reportViewMode === 'sdr'">
               <!-- Quick-nav -->
               <div class="quick-nav">
                 <button v-for="section in reportSections" :key="section.id" class="quick-nav-btn"
@@ -1474,10 +1505,235 @@
                     </table>
                   </div>
 
+                  <!-- Ranking AEs Table (AERPT-01) -->
+                  <div v-else-if="section.id === 'rankingAEs'" class="report-table-wrapper">
+                    <table class="report-table">
+                      <thead>
+                        <tr>
+                          <th style="min-width:140px;">Account Executive</th>
+                          <th data-tooltip="Total deals asignados en el período">Deals</th>
+                          <th data-tooltip="Deals con status Vendido">Ganados</th>
+                          <th data-tooltip="Deals con status Perdido">Perdidos</th>
+                          <th data-tooltip="Win Rate: ganados / total">Win Rate</th>
+                          <th data-tooltip="Win Rate período anterior">WR Ant.</th>
+                          <th data-tooltip="Cambio porcentual Win Rate">Delta%</th>
+                          <th data-tooltip="Suma de montos cotizados">$ Cotizado</th>
+                          <th data-tooltip="Suma de montos de cierre">$ Cierre</th>
+                          <th data-tooltip="Promedio de días entre pase a ventas y cierre">Vel. Cierre</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr v-for="row in aeRankingRows" :key="row.id">
+                          <td class="col-metric">{{ row.nombre }}</td>
+                          <td class="col-count">{{ row.totalDeals }}</td>
+                          <td class="col-count" style="color:var(--accent-success);">{{ row.ganados }}</td>
+                          <td class="col-count" style="color:var(--accent-danger);">{{ row.perdidos }}</td>
+                          <td class="col-count" style="font-weight:600;">{{ row.winRate }}%</td>
+                          <td class="col-count" style="color:var(--text-secondary);">{{ row.winRatePrev }}%</td>
+                          <td class="col-delta">
+                            <span v-if="Number(row.winRateDelta) > 0"
+                              :class="['delta-positive', Math.abs(Number(row.winRateDelta)) >= 20 ? 'delta-alert' : '']">
+                              <span class="material-symbols-outlined">arrow_upward</span>+{{ row.winRateDelta }}%
+                            </span>
+                            <span v-else-if="Number(row.winRateDelta) < 0"
+                              :class="['delta-negative', Math.abs(Number(row.winRateDelta)) >= 20 ? 'delta-alert' : '']">
+                              <span class="material-symbols-outlined">arrow_downward</span>{{ row.winRateDelta }}%
+                            </span>
+                            <span v-else class="delta-neutral">
+                              <span class="material-symbols-outlined">remove</span>0%
+                            </span>
+                          </td>
+                          <td class="col-count">${{ Number(row.montoCotizacion).toLocaleString() }}</td>
+                          <td class="col-count" style="font-weight:600; color:var(--accent-success);">${{ Number(row.montoCierre).toLocaleString() }}</td>
+                          <td class="col-count">{{ row.avgDaysToClose ? row.avgDaysToClose + 'd' : '—' }}</td>
+                        </tr>
+                        <tr v-if="!aeRankingRows.length">
+                          <td colspan="10" style="color:var(--text-muted); text-align:center; padding:1rem;">
+                            Sin datos de AE para el período seleccionado
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
                   <!-- Placeholder for other sections -->
                   <p v-else style="color: var(--text-muted); padding: 1rem;">Seccion en construccion...</p>
                 </div>
               </div>
+              </div><!-- /SDR REPORT VIEW -->
+
+              <!-- ═══ AE REPORT VIEW (Phase 22) ═══ -->
+              <div v-show="reportViewMode === 'ae'">
+
+                <!-- AE Section 1: Summary / Ranking Mejorado -->
+                <div class="report-section" style="margin-bottom:1.5rem;">
+                  <div class="section-header" @click="toggleSection('aeSummary')">
+                    <span class="material-symbols-outlined section-chevron">{{ openSections.includes('aeSummary') ? 'expand_more' : 'chevron_right' }}</span>
+                    <h3 class="chart-title">Ranking AE Detallado</h3>
+                  </div>
+                  <div v-show="openSections.includes('aeSummary')" class="section-body">
+                    <div class="report-table-wrapper">
+                      <table class="report-table">
+                        <thead><tr>
+                          <th>AE</th><th>Total</th><th>Ganados</th><th>Perdidos</th><th>Win Rate</th>
+                          <th>$ Cotizado</th><th>$ Cierre</th><th>$ Apartado</th><th>Ticket Prom.</th><th>Vel. Cierre</th>
+                        </tr></thead>
+                        <tbody>
+                          <tr v-for="row in fullAESummary" :key="row.id">
+                            <td class="col-metric">{{ row.nombre }}</td>
+                            <td class="col-count">{{ row.total }}</td>
+                            <td class="col-count" style="color:var(--accent-success);">{{ row.ganados }}</td>
+                            <td class="col-count" style="color:var(--accent-danger);">{{ row.perdidos }}</td>
+                            <td class="col-count" style="font-weight:600;">{{ row.winRate }}%</td>
+                            <td class="col-count">${{ Number(row.montoCot).toLocaleString() }}</td>
+                            <td class="col-count" style="font-weight:600; color:var(--accent-success);">${{ Number(row.montoCierre).toLocaleString() }}</td>
+                            <td class="col-count">${{ Number(row.montoApartado).toLocaleString() }}</td>
+                            <td class="col-count">${{ Number(row.ticketPromedio).toLocaleString() }}</td>
+                            <td class="col-count">{{ row.avgDays ? row.avgDays + 'd' : '—' }}</td>
+                          </tr>
+                          <tr v-if="!fullAESummary.length"><td colspan="10" style="text-align:center; color:var(--text-muted); padding:1rem;">Sin datos</td></tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- AE Section 2: Funnel por AE -->
+                <div class="report-section" style="margin-bottom:1.5rem;">
+                  <div class="section-header" @click="toggleSection('aeFunnel')">
+                    <span class="material-symbols-outlined section-chevron">{{ openSections.includes('aeFunnel') ? 'expand_more' : 'chevron_right' }}</span>
+                    <h3 class="chart-title">Funnel por AE</h3>
+                  </div>
+                  <div v-show="openSections.includes('aeFunnel')" class="section-body">
+                    <div class="report-table-wrapper">
+                      <table class="report-table">
+                        <thead><tr>
+                          <th>AE</th><th>Contactado</th><th>Cotizado</th><th>En Neg.</th><th>Demo</th><th>Firmado</th><th>Fondeo</th>
+                        </tr></thead>
+                        <tbody>
+                          <tr v-for="row in fullAEFunnel" :key="row.id">
+                            <td class="col-metric">{{ row.nombre }}</td>
+                            <td class="col-count">{{ row.contactado }}</td>
+                            <td class="col-count">{{ row.cotizado }}</td>
+                            <td class="col-count">{{ row.enNeg }}</td>
+                            <td class="col-count">{{ row.demo }}</td>
+                            <td class="col-count">{{ row.firmo }}</td>
+                            <td class="col-count">{{ row.fondeo }}</td>
+                          </tr>
+                          <tr v-if="!fullAEFunnel.length"><td colspan="7" style="text-align:center; color:var(--text-muted); padding:1rem;">Sin datos</td></tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- AE Section 3: Proyeccion por AE -->
+                <div class="report-section" style="margin-bottom:1.5rem;">
+                  <div class="section-header" @click="toggleSection('aeProyeccion')">
+                    <span class="material-symbols-outlined section-chevron">{{ openSections.includes('aeProyeccion') ? 'expand_more' : 'chevron_right' }}</span>
+                    <h3 class="chart-title">Proyeccion por AE</h3>
+                  </div>
+                  <div v-show="openSections.includes('aeProyeccion')" class="section-body">
+                    <div class="report-table-wrapper">
+                      <table class="report-table">
+                        <thead><tr>
+                          <th>AE</th><th style="color:var(--accent-success);">Alta</th><th style="color:var(--accent-warning);">Media</th><th style="color:var(--accent-danger);">Baja</th>
+                        </tr></thead>
+                        <tbody>
+                          <tr v-for="row in fullAEProyeccion" :key="row.id">
+                            <td class="col-metric">{{ row.nombre }}</td>
+                            <td class="col-count" style="color:var(--accent-success); font-weight:600;">{{ row.alta }}</td>
+                            <td class="col-count" style="color:var(--accent-warning); font-weight:600;">{{ row.media }}</td>
+                            <td class="col-count" style="color:var(--accent-danger); font-weight:600;">{{ row.baja }}</td>
+                          </tr>
+                          <tr v-if="!fullAEProyeccion.length"><td colspan="4" style="text-align:center; color:var(--text-muted); padding:1rem;">Sin datos</td></tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- AE Section 4: Razones de Perdida por AE -->
+                <div class="report-section" style="margin-bottom:1.5rem;">
+                  <div class="section-header" @click="toggleSection('aeRazones')">
+                    <span class="material-symbols-outlined section-chevron">{{ openSections.includes('aeRazones') ? 'expand_more' : 'chevron_right' }}</span>
+                    <h3 class="chart-title">Razones de Perdida por AE</h3>
+                  </div>
+                  <div v-show="openSections.includes('aeRazones')" class="section-body">
+                    <div class="report-table-wrapper">
+                      <table class="report-table">
+                        <thead><tr><th>AE</th><th>Top 1</th><th>Top 2</th><th>Top 3</th></tr></thead>
+                        <tbody>
+                          <tr v-for="row in fullAERazones" :key="row.id">
+                            <td class="col-metric">{{ row.nombre }}</td>
+                            <td v-for="(r, idx) in [0,1,2]" :key="idx" class="col-count" style="font-size:0.8rem;">
+                              <template v-if="row.razones[r]">{{ row.razones[r].razon }} ({{ row.razones[r].count }})</template>
+                              <span v-else style="color:var(--text-muted);">—</span>
+                            </td>
+                          </tr>
+                          <tr v-if="!fullAERazones.length"><td colspan="4" style="text-align:center; color:var(--text-muted); padding:1rem;">Sin datos</td></tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- AE Section 5: Actividad de Contacto -->
+                <div class="report-section" style="margin-bottom:1.5rem;">
+                  <div class="section-header" @click="toggleSection('aeContacto')">
+                    <span class="material-symbols-outlined section-chevron">{{ openSections.includes('aeContacto') ? 'expand_more' : 'chevron_right' }}</span>
+                    <h3 class="chart-title">Actividad de Contacto</h3>
+                  </div>
+                  <div v-show="openSections.includes('aeContacto')" class="section-body">
+                    <div class="report-table-wrapper">
+                      <table class="report-table">
+                        <thead><tr><th>AE</th><th>Contacto Si</th><th>Contacto No</th><th>% Contacto</th></tr></thead>
+                        <tbody>
+                          <tr v-for="row in fullAEContacto" :key="row.id">
+                            <td class="col-metric">{{ row.nombre }}</td>
+                            <td class="col-count" style="color:var(--accent-success);">{{ row.contactoSi }}</td>
+                            <td class="col-count" style="color:var(--accent-danger);">{{ row.contactoNo }}</td>
+                            <td class="col-count" style="font-weight:600;">
+                              <div style="display:flex; align-items:center; gap:0.5rem;">
+                                <div style="flex:1; height:6px; background:var(--border-color); border-radius:3px; overflow:hidden;">
+                                  <div :style="{ width: row.pctContacto + '%', height:'100%', background:'var(--accent-success)', borderRadius:'3px' }"></div>
+                                </div>
+                                {{ row.pctContacto }}%
+                              </div>
+                            </td>
+                          </tr>
+                          <tr v-if="!fullAEContacto.length"><td colspan="4" style="text-align:center; color:var(--text-muted); padding:1rem;">Sin datos</td></tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- AE Section 6: Cross-selling & Recompras -->
+                <div class="report-section" style="margin-bottom:1.5rem;">
+                  <div class="section-header" @click="toggleSection('aeCross')">
+                    <span class="material-symbols-outlined section-chevron">{{ openSections.includes('aeCross') ? 'expand_more' : 'chevron_right' }}</span>
+                    <h3 class="chart-title">Cross-selling & Recompras</h3>
+                  </div>
+                  <div v-show="openSections.includes('aeCross')" class="section-body">
+                    <div class="report-table-wrapper">
+                      <table class="report-table">
+                        <thead><tr><th>AE</th><th>Recompras</th><th>Cross-selling</th></tr></thead>
+                        <tbody>
+                          <tr v-for="row in fullAECrossRecompra" :key="row.id">
+                            <td class="col-metric">{{ row.nombre }}</td>
+                            <td class="col-count">{{ row.recompra }}</td>
+                            <td class="col-count">{{ row.crossSelling }}</td>
+                          </tr>
+                          <tr v-if="!fullAECrossRecompra.length"><td colspan="3" style="text-align:center; color:var(--text-muted); padding:1rem;">Sin datos</td></tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+
+              </div><!-- /AE REPORT VIEW -->
+
             </div>
 
             <!-- Initial state (no report generated yet, no error) -->
@@ -1742,6 +1998,198 @@
                 </button>
               </div>
             </div>
+
+            <!-- ═══ Phase 8: Pricing del Cliente (Admin/Gerente Only) ═══ -->
+            <div v-if="userRole === 'ADMIN' || userRole === 'GERENTE'" class="config-editor" style="margin-top: 1.5rem;">
+              <div class="config-editor-header">
+                <h3>💰 Pricing del Cliente</h3>
+              </div>
+              <div class="form-grid" style="padding: 1rem;">
+                <div class="form-group">
+                  <label>Tipo de Cliente</label>
+                  <select v-model="pricingConfig.tipoCliente" class="form-select">
+                    <option value="">— Seleccionar —</option>
+                    <option value="SaaS">SaaS</option>
+                    <option value="Fichas Mensuales (FEE)">Fichas Mensuales (FEE)</option>
+                    <option value="Proyectos">Proyectos</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Ticket Promedio</label>
+                  <input type="number" step="0.01" v-model.number="pricingConfig.ticketPromedio" class="form-input" placeholder="$0.00" />
+                </div>
+                <div class="form-group" v-if="pricingConfig.tipoCliente === 'SaaS'">
+                  <label>Licencias Promedio</label>
+                  <input type="number" v-model.number="pricingConfig.licenciasPromedio" class="form-input" placeholder="0" />
+                </div>
+                <div class="form-group">
+                  <label>Monto Aproximado (Preview)</label>
+                  <div style="padding: 0.6rem 0.8rem; background: var(--bg-elevated); border-radius: 8px; font-weight: 700; font-size: 1.1rem; color: var(--accent-success, #10b981);">
+                    ${{ Number(calculoMontoAproximado || 0).toLocaleString() }}
+                  </div>
+                </div>
+              </div>
+              <div class="config-actions" style="padding: 0 1rem 1rem;">
+                <button class="btn btn-success" @click="savePricingConfigFn" :disabled="savingPricing">
+                  {{ savingPricing ? 'Guardando...' : 'Guardar Configuración de Pricing' }}
+                </button>
+              </div>
+            </div>
+
+            <!-- ═══ Phase 3B: Configuración de Campos (Admin Only) ═══ -->
+            <div v-if="userRole === 'ADMIN'" class="config-editor" style="margin-top: 1.5rem;">
+              <div class="config-editor-header">
+                <h3>Configuración de Campos</h3>
+                <button class="btn-sm" @click="refreshSchema" title="Actualizar schema desde la base de datos"
+                  style="font-size:0.75rem; padding:0.2rem 0.5rem; display:inline-flex; align-items:center; gap:0.3rem;">
+                  <span class="material-symbols-outlined" style="font-size:0.9rem;">sync</span> Sync BD
+                </button>
+              </div>
+              <div style="padding: 1rem;">
+
+                <!-- Toggle tabs: Lead / Deal -->
+                <div style="display:flex; gap:0; margin-bottom:1rem;">
+                  <button class="btn" :class="fieldLayoutEditType === 'lead' ? 'btn-primary' : 'btn-secondary'"
+                    @click="startEditFieldLayout('lead')" style="border-radius:0.5rem 0 0 0.5rem; font-size:0.85rem; padding:0.4rem 1rem;">
+                    Ficha Prospecto
+                  </button>
+                  <button class="btn" :class="fieldLayoutEditType === 'deal' ? 'btn-primary' : 'btn-secondary'"
+                    @click="startEditFieldLayout('deal')" style="border-radius:0 0.5rem 0.5rem 0; font-size:0.85rem; padding:0.4rem 1rem;">
+                    Ficha Negociación
+                  </button>
+                </div>
+
+                <!-- Toolbar: Create section + info -->
+                <div v-if="fieldLayoutEditFields.length > 0"
+                  style="display:flex; gap:0.4rem; margin-bottom:1rem; align-items:flex-end; flex-wrap:wrap;">
+                  <div class="form-group" style="flex:1; min-width:150px; margin:0;">
+                    <label style="font-size:0.75rem;">Nueva Sección</label>
+                    <input type="text" v-model="newSectionName" class="form-input" placeholder="Nombre de la sección"
+                      style="font-size:0.8rem; padding:0.3rem 0.5rem;" />
+                  </div>
+                  <div class="form-group" style="width:60px; margin:0;">
+                    <label style="font-size:0.75rem;">Icono</label>
+                    <input type="text" v-model="newSectionIcon" class="form-input" placeholder="📋"
+                      style="font-size:0.8rem; padding:0.3rem 0.5rem; text-align:center;" />
+                  </div>
+                  <button class="btn-sm btn-primary" @click="createNewSection" style="height:32px; font-size:0.8rem;">
+                    + Crear Sección
+                  </button>
+                </div>
+
+                <!-- Preview-style field layout editor -->
+                <div v-if="fieldLayoutEditFields.length > 0" style="background:var(--bg-color); border:1px solid var(--border-color); border-radius:10px; padding:1rem; max-height:60vh; overflow-y:auto;">
+
+                  <template v-for="(section, sIdx) in editLayoutSections" :key="section.name">
+                    <!-- Section header (editable) -->
+                    <div style="display:flex; align-items:center; gap:0.4rem; margin-top:1rem; margin-bottom:0.5rem; padding:0.4rem 0.6rem; background:var(--bg-tertiary); border-radius:6px;">
+                      <span style="font-size:1rem;">{{ section.icono }}</span>
+                      <strong style="flex:1; color:var(--accent-primary); font-size:0.9rem;">{{ section.name }}</strong>
+                      <span style="font-size:0.7rem; color:var(--text-muted);">{{ section.fields.filter(f => f.visible).length }}/{{ section.fields.length }}</span>
+                      <button type="button" class="btn-icon" @click="moveSectionUp(sIdx)" :disabled="sIdx === 0"
+                        style="padding:0.1rem;" title="Subir sección">
+                        <span class="material-symbols-outlined" style="font-size:0.9rem;">expand_less</span>
+                      </button>
+                      <button type="button" class="btn-icon" @click="moveSectionDown(sIdx)" :disabled="sIdx === editLayoutSections.length - 1"
+                        style="padding:0.1rem;" title="Bajar sección">
+                        <span class="material-symbols-outlined" style="font-size:0.9rem;">expand_more</span>
+                      </button>
+                      <button type="button" class="btn-icon" @click="renameSection(section)"
+                        style="padding:0.1rem;" title="Renombrar">
+                        <span class="material-symbols-outlined" style="font-size:0.9rem;">edit</span>
+                      </button>
+                      <button type="button" class="btn-icon" @click="deleteSection(section)"
+                        style="padding:0.1rem; color:var(--accent-danger);" title="Eliminar sección">
+                        <span class="material-symbols-outlined" style="font-size:0.9rem;">delete</span>
+                      </button>
+                    </div>
+
+                    <!-- Fields in a grid preview mimicking the actual ficha layout -->
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:0.4rem;">
+                      <div v-for="(field, idx) in section.fields" :key="field.campo_key"
+                        :style="{
+                          gridColumn: field.ancho === 'full' ? '1 / -1' : '',
+                          opacity: field.visible ? 1 : 0.4,
+                          border: '1px solid ' + (field.visible ? 'var(--border-color)' : 'var(--accent-danger, #ef4444)'),
+                          borderRadius: '6px',
+                          padding: '0.4rem 0.5rem',
+                          background: field._isAutoGenerated ? 'rgba(99,102,241,0.06)' : 'var(--bg-elevated)',
+                          display: 'flex', flexDirection: 'column', gap: '0.25rem',
+                          position: 'relative',
+                          borderLeft: field.visible ? '' : '3px solid var(--accent-danger, #ef4444)'
+                        }">
+
+                        <!-- Field controls row -->
+                        <div style="display:flex; align-items:center; gap:0.3rem; font-size:0.7rem;">
+                          <!-- Drag handle -->
+                          <span class="material-symbols-outlined drag-handle" style="cursor:grab; color:var(--text-muted); font-size:0.85rem;">drag_indicator</span>
+                          <!-- Visible toggle -->
+                          <input type="checkbox" v-model="field.visible" style="width:14px; height:14px; cursor:pointer;" :title="field.visible ? 'Visible — click para ocultar' : 'Oculto — click para mostrar'" />
+                          <!-- Auto-generated badge -->
+                          <span v-if="field._isAutoGenerated"
+                            style="font-size:0.55rem; background:var(--accent-primary); color:white; padding:1px 4px; border-radius:3px; font-weight:600;">NUEVO</span>
+                          <!-- Disabled indicator -->
+                          <span v-if="!field.visible" style="font-size:0.6rem; color:var(--accent-danger); font-weight:600;">OCULTO</span>
+                          <!-- Spacer -->
+                          <span style="flex:1;"></span>
+                          <!-- Ancho toggle -->
+                          <select v-model="field.ancho" style="font-size:0.65rem; padding:0.1rem; border-radius:3px; background:var(--bg-tertiary); color:var(--text-primary); border:1px solid var(--border-color);">
+                            <option value="half">1/2</option>
+                            <option value="full">Full</option>
+                          </select>
+                          <!-- Section move -->
+                          <select v-model="field.seccion" @change="changeFieldSection(field, field.seccion)"
+                            style="font-size:0.6rem; padding:0.1rem; max-width:80px; border-radius:3px; background:var(--bg-tertiary); color:var(--text-primary); border:1px solid var(--border-color);">
+                            <option v-for="s in allSectionNames" :key="s" :value="s">{{ s }}</option>
+                          </select>
+                          <!-- Move arrows -->
+                          <button type="button" class="btn-icon" @click="moveFieldUp(section.fields, idx)" :disabled="idx === 0" style="padding:0;">
+                            <span class="material-symbols-outlined" style="font-size:0.85rem;">arrow_upward</span>
+                          </button>
+                          <button type="button" class="btn-icon" @click="moveFieldDown(section.fields, idx)" :disabled="idx === section.fields.length - 1" style="padding:0;">
+                            <span class="material-symbols-outlined" style="font-size:0.85rem;">arrow_downward</span>
+                          </button>
+                        </div>
+
+                        <!-- Field label (editable) + type preview -->
+                        <div style="display:flex; align-items:center; gap:0.3rem;">
+                          <input type="text" v-model="field.campo_label" class="form-input"
+                            style="flex:1; font-size:0.8rem; padding:0.2rem 0.4rem; font-weight:500;"
+                            :style="{ textDecoration: field.visible ? 'none' : 'line-through', color: field.visible ? 'var(--text-primary)' : 'var(--text-muted)' }" />
+                          <span style="font-size:0.6rem; color:var(--text-muted); background:var(--bg-tertiary); padding:1px 4px; border-radius:3px; white-space:nowrap;">
+                            {{ field.tipo_input }}
+                          </span>
+                        </div>
+
+                        <!-- Simulated input preview -->
+                        <div v-if="field.tipo_input === 'text' || field.tipo_input === 'number' || field.tipo_input === 'date' || field.tipo_input === 'time'"
+                          style="height:28px; border:1px dashed var(--border-color); border-radius:4px; background:var(--bg-tertiary); opacity:0.5; display:flex; align-items:center; padding:0 0.4rem;">
+                          <span style="font-size:0.7rem; color:var(--text-muted);">{{ field.tipo_input === 'number' ? '0.00' : field.tipo_input === 'date' ? 'dd/mm/yyyy' : field.tipo_input === 'time' ? 'hh:mm' : 'Texto...' }}</span>
+                        </div>
+                        <div v-else-if="field.tipo_input === 'select' || field.tipo_input === 'select_yn' || field.tipo_input === 'select_or_text'"
+                          style="height:28px; border:1px dashed var(--border-color); border-radius:4px; background:var(--bg-tertiary); opacity:0.5; display:flex; align-items:center; justify-content:space-between; padding:0 0.4rem;">
+                          <span style="font-size:0.7rem; color:var(--text-muted);">— Seleccionar —</span>
+                          <span class="material-symbols-outlined" style="font-size:0.8rem; color:var(--text-muted);">expand_more</span>
+                        </div>
+                        <div v-else-if="field.tipo_input === 'textarea'"
+                          style="height:40px; border:1px dashed var(--border-color); border-radius:4px; background:var(--bg-tertiary); opacity:0.5;"></div>
+                      </div>
+                    </div>
+                  </template>
+
+                </div>
+                <div v-else style="text-align:center; padding:2rem; color:var(--text-muted);">
+                  Selecciona "Ficha Prospecto" o "Ficha Negociación" para editar los campos.
+                </div>
+
+              </div>
+              <div class="config-actions" style="padding: 0 1rem 1rem;">
+                <button class="btn btn-success" @click="saveFieldLayoutFn" :disabled="savingFieldLayout || fieldLayoutEditFields.length === 0">
+                  {{ savingFieldLayout ? 'Guardando...' : 'Guardar Configuración de Campos' }}
+                </button>
+              </div>
+            </div>
+
           </div>
 
 
@@ -1759,6 +2207,101 @@
                     <button class="btn-sm" :class="{ 'btn-primary': !isDark }" @click="setTheme('light')">☀️
                       Claro</button>
                   </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Phase v3.2: Plantillas Management (notas + email) -->
+            <div v-if="userRole === 'SDR' || userRole === 'AE' || userRole === 'ADMIN' || userRole === 'GERENTE'"
+              style="max-width:700px; margin:1.5rem auto 0;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                <h3 style="color: var(--text-primary); font-size:1.1rem;">Mis Plantillas</h3>
+                <button class="btn btn-primary" style="font-size:0.85rem;" @click="openPlantillaForm(null, fichaPlantillasTipo)">
+                  + Nueva Plantilla
+                </button>
+              </div>
+
+              <!-- Tipo toggle -->
+              <div style="display:flex; gap:0; margin-bottom:1rem;">
+                <button class="btn" :class="fichaPlantillasTipo === 'nota' ? 'btn-primary' : 'btn-secondary'"
+                  @click="fichaPlantillasTipo = 'nota'" style="border-radius:0.5rem 0 0 0.5rem; font-size:0.85rem; padding:0.4rem 1rem;">
+                  Plantillas de Notas
+                </button>
+                <button class="btn" :class="fichaPlantillasTipo === 'email' ? 'btn-primary' : 'btn-secondary'"
+                  @click="fichaPlantillasTipo = 'email'" style="border-radius:0 0.5rem 0.5rem 0; font-size:0.85rem; padding:0.4rem 1rem;">
+                  Plantillas de Email
+                </button>
+              </div>
+
+              <!-- Plantilla Form (create/edit) -->
+              <div v-if="showPlantillaForm"
+                style="background: var(--bg-elevated); border: 1px solid var(--border-color); border-radius: 0.5rem; padding: 1rem; margin-bottom: 1rem;">
+                <div class="form-group" style="margin-bottom:0.75rem;">
+                  <label style="font-size:0.85rem; font-weight:600;">Nombre</label>
+                  <input v-model="plantillaForm.nombre" type="text" class="form-input" placeholder="Ej: Saludo inicial">
+                </div>
+                <div class="form-group" style="margin-bottom:0.75rem;">
+                  <label style="font-size:0.85rem; font-weight:600;">Tipo</label>
+                  <div style="display:flex; gap:1rem;">
+                    <label style="display:flex; align-items:center; gap:0.4rem; font-size:0.85rem; cursor:pointer;">
+                      <input type="radio" v-model="plantillaForm.tipo" value="nota"> Nota
+                    </label>
+                    <label style="display:flex; align-items:center; gap:0.4rem; font-size:0.85rem; cursor:pointer;">
+                      <input type="radio" v-model="plantillaForm.tipo" value="email"> Email
+                    </label>
+                  </div>
+                </div>
+                <div class="form-group" style="margin-bottom:0.75rem;">
+                  <label style="font-size:0.85rem; font-weight:600;">Contenido</label>
+                  <textarea v-model="plantillaForm.contenido" class="notes-textarea" :rows="plantillaForm.tipo === 'email' ? 8 : 4"
+                    :placeholder="plantillaForm.tipo === 'email' ? 'HTML del correo. Variables: {nombre}, {apellido}, {empresa}, {producto}, {telefono}' : 'Texto de la plantilla. Variables: {nombre}, {apellido}, {empresa}, {producto}, {telefono}'"></textarea>
+                  <span v-if="plantillaForm.tipo === 'email'" style="font-size:0.7rem; color:var(--text-muted); margin-top:0.25rem; display:block;">
+                    Las plantillas de email soportan HTML. El contenido se insertara en el editor de correo con formato.
+                  </span>
+                </div>
+                <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:0.75rem;">
+                  <label style="display:flex; align-items:center; gap:0.4rem; font-size:0.85rem; cursor:pointer;">
+                    <input type="checkbox" v-model="plantillaForm.compartida"> Compartir con el equipo
+                  </label>
+                </div>
+                <div style="display:flex; gap:0.5rem;">
+                  <button class="btn btn-success" style="font-size:0.85rem;" @click="savePlantillaForm">
+                    {{ plantillaForm.editId ? 'Actualizar' : 'Crear' }}
+                  </button>
+                  <button class="btn btn-secondary" style="font-size:0.85rem;" @click="showPlantillaForm = false">Cancelar</button>
+                </div>
+              </div>
+
+              <!-- My Templates List (filtered by fichaPlantillasTipo) -->
+              <div v-if="userPlantillas.mine.filter(t => (t.tipo || 'nota') === fichaPlantillasTipo).length">
+                <div v-for="p in userPlantillas.mine.filter(t => (t.tipo || 'nota') === fichaPlantillasTipo)" :key="p.id"
+                  style="background: var(--bg-elevated); border: 1px solid var(--border-color); border-radius: 0.5rem; padding: 0.75rem 1rem; margin-bottom: 0.5rem; display:flex; justify-content:space-between; align-items:flex-start;">
+                  <div style="flex:1; min-width:0;">
+                    <div style="font-weight:600; font-size:0.9rem;">{{ p.nombre }}
+                      <span v-if="p.compartida" style="font-size:0.7rem; background:rgba(59,130,246,0.15); color:var(--accent-info, #3b82f6); padding:2px 6px; border-radius:0.75rem; margin-left:0.5rem;">Compartida</span>
+                      <span style="font-size:0.65rem; background:rgba(139,92,246,0.12); color:#8b5cf6; padding:2px 6px; border-radius:0.75rem; margin-left:0.3rem;">{{ (p.tipo || 'nota') }}</span>
+                    </div>
+                    <div style="font-size:0.8rem; color:var(--text-secondary); margin-top:0.25rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ p.contenido }}</div>
+                  </div>
+                  <div style="display:flex; gap:0.3rem; margin-left:0.5rem; flex-shrink:0;">
+                    <button class="btn-sm" style="font-size:0.75rem;" @click="openPlantillaForm(p)">Editar</button>
+                    <button class="btn-sm" style="font-size:0.75rem; color:var(--accent-danger);" @click="deletePlantillaItem(p.id)">Eliminar</button>
+                  </div>
+                </div>
+              </div>
+              <p v-else style="color:var(--text-muted); font-size:0.85rem; text-align:center; padding:1rem;">
+                No tienes plantillas de {{ fichaPlantillasTipo === 'email' ? 'correo' : 'notas' }}. Crea una para agilizar tu trabajo.
+              </p>
+
+              <!-- Shared Templates (filtered by tipo) -->
+              <div v-if="userPlantillas.shared.filter(t => (t.tipo || 'nota') === fichaPlantillasTipo).length" style="margin-top:1.5rem;">
+                <h4 style="color: var(--text-secondary); font-size:0.95rem; margin-bottom:0.75rem;">Plantillas Compartidas</h4>
+                <div v-for="p in userPlantillas.shared.filter(t => (t.tipo || 'nota') === fichaPlantillasTipo)" :key="'sh'+p.id"
+                  style="background: var(--bg-elevated); border: 1px solid var(--border-color); border-radius: 0.5rem; padding: 0.75rem 1rem; margin-bottom: 0.5rem;">
+                  <div style="font-weight:600; font-size:0.9rem;">{{ p.nombre }}
+                    <span style="font-size:0.7rem; color:var(--text-muted);">por {{ (p.owner || '').split('@')[0] }}</span>
+                  </div>
+                  <div style="font-size:0.8rem; color:var(--text-secondary); margin-top:0.25rem;">{{ p.contenido }}</div>
                 </div>
               </div>
             </div>
@@ -1785,6 +2328,17 @@
                 :class="'calidad-' + (editLead['Calidad de Contacto'] || '').toLowerCase().replace(' ', '-')"
                 style="font-size:0.75rem; padding:3px 10px; font-weight:600;">
                 ⭐ {{ editLead['Calidad de Contacto'] }}
+              </span>
+              <!-- Phase 21: Duplicate badge -->
+              <span v-if="leadDuplicates.length > 0"
+                style="background: rgba(239,68,68,0.15); color: var(--accent-danger); font-size:0.75rem; padding:3px 10px; border-radius:1rem; font-weight:600;">
+                {{ leadDuplicates.length }} duplicado{{ leadDuplicates.length > 1 ? 's' : '' }}
+              </span>
+              <!-- Phase 21: Link to original lead -->
+              <span v-if="selectedLead._leadOriginalId"
+                style="font-size:0.8rem; color: var(--accent-info, #3b82f6); cursor:pointer;"
+                @click="closeLeadModal(); $nextTick(() => { var orig = leads.find(l => String(l._id) === String(selectedLead._leadOriginalId)); if(orig) openLeadDetail(orig); })">
+                Ver lead original #{{ selectedLead._leadOriginalId }}
               </span>
             </div>
           </div>
@@ -1819,636 +2373,458 @@
         </div>
 
         <div class="modal-body">
-          <!-- TAB: Lead -->
+          <!-- TAB: Lead (Phase 8: Dynamic Field Renderer) -->
           <div v-if="modalTab === 'Lead'" class="tab-content">
             <div class="form-grid">
 
-              <!-- ═══════════════════════════════════════════════════════════ -->
-              <!-- SECTION 1: Header / Vendedor Asignado (TOP RIGHT)         -->
-              <!-- ═══════════════════════════════════════════════════════════ -->
-
-              <!-- Phase 1.5: Warning banner when Lead already has a Deal -->
+              <!-- Contextual banners (not part of field layout) -->
               <div v-if="selectedLead._hasDeal"
                 style="grid-column: 1 / -1; background: rgba(234, 179, 8, 0.15); border: 1px solid rgba(234, 179, 8, 0.5); border-radius: 0.5rem; padding: 0.75rem 1rem; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
                 <span style="font-size: 1.3rem;">⚠️</span>
                 <span style="color: var(--text-primary); font-size: 0.85rem;">Este prospecto ya tiene una
-                  <strong>Negociación abierta</strong> en el pipeline de ventas. <strong>(ID: {{ selectedLead._dealId
-                    }})</strong></span>
+                  <strong>Negociación abierta</strong> en el pipeline de ventas. <strong>(ID: {{ selectedLead._dealId }})</strong></span>
               </div>
 
-              <h4 style="grid-column: 1 / -1; color: var(--accent-primary); margin-bottom: 0.5rem; text-align: center;">
-                🏷️ Propietario del Lead</h4>
-              <div class="form-group">
-                <label>Vendedor Asignado (SDR)</label>
-                <!-- For Deals: show plain text (backend sends nombre) -->
-                <input v-if="isReadOnlySdrFields" type="text" :value="editLead['Vendedor asignado (SDR)']"
-                  class="form-input" disabled />
-                <!-- For Leads: editable select by ID -->
-                <select v-else v-model="editLead['Vendedor asignado (SDR)']" class="form-select">
-                  <option value="">— Seleccionar —</option>
-                  <option v-for="v in sdrList" :key="v.id_vendedor" :value="v.id_vendedor">{{ v.nombre }}
-                  </option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label>Fecha y Hora de Asignación</label>
-                <input type="text" :value="formatDate(editLead['Fecha y Hora de asignación'])" class="form-input"
-                  disabled />
-              </div>
-
-              <div class="form-divider" style="grid-column: 1 / -1; margin-top: 1rem;"></div>
-
-              <!-- ═══════════════════════════════════════════════════════════ -->
-              <!-- SECTION 2: Información de Contacto                        -->
-              <!-- ═══════════════════════════════════════════════════════════ -->
-              <h4 style="grid-column: 1 / -1; color: var(--accent-primary); margin-bottom: 0.5rem; text-align: center;">
-                📇 Información de Contacto</h4>
-              <div class="form-group">
-                <label>Nombre</label>
-                <input type="text" v-model="editLead['Nombre']" class="form-input" :disabled="isReadOnlySdrFields" />
-              </div>
-              <div class="form-group">
-                <label>Apellido</label>
-                <input type="text" v-model="editLead['Apellido']" class="form-input" :disabled="isReadOnlySdrFields" />
-              </div>
-              <div class="form-group">
-                <label>Email</label>
-                <input type="email" v-model="editLead['Email']" class="form-input" :disabled="isReadOnlySdrFields" />
-              </div>
-              <div class="form-group">
-                <label>Teléfono</label>
-                <input type="text" v-model="editLead['Teléfono']" class="form-input" :disabled="isReadOnlySdrFields" />
-              </div>
-              <div class="form-group">
-                <label>Teléfono 2</label>
-                <input type="text" v-model="editLead['Teléfono 2']" class="form-input"
-                  :disabled="isReadOnlySdrFields" />
-              </div>
-              <div class="form-group">
-                <label>Empresa</label>
-                <input type="text" v-model="editLead['empresa']" class="form-input" :disabled="isReadOnlySdrFields" />
-              </div>
-              <div class="form-group">
-                <label>Área / Cargo</label>
-                <input type="text" v-model="editLead['Area']" class="form-input" :disabled="isReadOnlySdrFields" />
-              </div>
-              <div class="form-group">
-                <label>País</label>
-                <input type="text" v-model="editLead['Pais']" class="form-input" :disabled="isReadOnlySdrFields" />
-              </div>
-              <div class="form-group">
-                <label>Ciudad</label>
-                <input type="text" v-model="editLead['City']" class="form-input" :disabled="isReadOnlySdrFields" />
-              </div>
-              <div class="form-group">
-                <label>Empleados</label>
-                <input type="text" v-model="editLead['Empleados']" class="form-input" :disabled="isReadOnlySdrFields" />
-              </div>
-              <div class="form-group">
-                <label>Nivel</label>
-                <input type="text" v-model="editLead['Nivel']" class="form-input" :disabled="isReadOnlySdrFields" />
-              </div>
-              <div class="form-group">
-                <label>Servicio</label>
-                <input type="text" v-model="editLead['Servicio']" class="form-input" :disabled="isReadOnlySdrFields" />
+              <div v-if="leadDuplicates.length > 0 && !isCreating"
+                style="grid-column: 1 / -1; background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.3); border-radius: 0.5rem; padding: 0.75rem 1rem; margin-bottom: 0.75rem;">
+                <details>
+                  <summary style="cursor:pointer; font-weight:600; font-size:0.85rem; color: var(--accent-danger);">
+                    <span class="material-symbols-outlined" style="font-size:1rem; vertical-align:middle;">content_copy</span>
+                    {{ leadDuplicates.length }} Lead{{ leadDuplicates.length > 1 ? 's' : '' }} Duplicado{{ leadDuplicates.length > 1 ? 's' : '' }}
+                  </summary>
+                  <div style="margin-top: 0.5rem;">
+                    <div v-for="dup in leadDuplicates" :key="dup.id_lead"
+                      style="display:flex; justify-content:space-between; align-items:center; padding:0.4rem 0; border-bottom:1px solid var(--border-color); font-size:0.8rem;">
+                      <div><strong>#{{ dup.id_lead }}</strong> — {{ dup.nombre || 'Sin nombre' }}
+                        <span v-if="dup.email" style="color:var(--text-secondary);"> ({{ dup.email }})</span>
+                      </div>
+                      <div style="display:flex; gap:0.5rem; align-items:center;">
+                        <span class="status-badge" style="font-size:0.7rem; padding:2px 8px;" :style="{ background: getStatusColor(dup.status) }">{{ dup.status }}</span>
+                        <span style="color:var(--text-muted); font-size:0.75rem;">{{ dup.fecha_ingreso ? new Date(dup.fecha_ingreso).toLocaleDateString() : '' }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </details>
               </div>
 
-              <div class="form-divider" style="grid-column: 1 / -1; margin-top: 1rem;"></div>
+              <!-- ═══ Dynamic Field Renderer ═══ -->
+              <template v-for="section in leadSections" :key="section.name">
+                <div class="form-divider" style="grid-column: 1 / -1; margin-top: 1rem;"></div>
+                <h4 style="grid-column: 1 / -1; color: var(--accent-primary); margin-bottom: 0.5rem; text-align: center;">
+                  {{ section.icono }} {{ section.name }}</h4>
 
-              <!-- ═══════════════════════════════════════════════════════════ -->
-              <!-- SECTION 3: Información de Campaña (READ-ONLY)             -->
-              <!-- ═══════════════════════════════════════════════════════════ -->
-              <h4 style="grid-column: 1 / -1; color: var(--accent-primary); margin-bottom: 0.5rem; text-align: center;">
-                📊 Información de Campaña (Solo Lectura)</h4>
-              <div class="form-group">
-                <label>Source</label>
-                <input type="text" :value="editLead['source']" class="form-input" disabled />
-              </div>
-              <div class="form-group">
-                <label>Medium</label>
-                <input type="text" :value="editLead['medium']" class="form-input" disabled />
-              </div>
-              <div class="form-group">
-                <label>Campaign</label>
-                <input type="text" :value="editLead['campaign']" class="form-input" disabled />
-              </div>
-              <div class="form-group">
-                <label>Term</label>
-                <input type="text" :value="editLead['term']" class="form-input" disabled />
-              </div>
-              <div class="form-group">
-                <label>Content</label>
-                <input type="text" :value="editLead['content']" class="form-input" disabled />
-              </div>
-              <div class="form-group">
-                <label>fbclid</label>
-                <input type="text" :value="editLead['fbclid']" class="form-input" disabled />
-              </div>
-              <div class="form-group">
-                <label>IP</label>
-                <input type="text" :value="editLead['Ip']" class="form-input" disabled />
-              </div>
-              <div class="form-group">
-                <label>Link</label>
-                <input type="text" :value="editLead['Link']" class="form-input" disabled />
-              </div>
+                <template v-for="field in section.fields" :key="field.campo_key">
 
-              <div class="form-divider" style="grid-column: 1 / -1; margin-top: 1rem;"></div>
+                  <!-- ══ SPECIAL: SDR Select ══ -->
+                  <div v-if="field.tipo_input === 'sdr_select'" class="form-group">
+                    <label>{{ field.campo_label }}</label>
+                    <input v-if="isReadOnlySdrFields" type="text" :value="editLead[field.campo_key]" class="form-input" disabled />
+                    <select v-else v-model="editLead[field.campo_key]" class="form-select">
+                      <option value="">— Seleccionar —</option>
+                      <option v-for="v in sdrList" :key="v.id_vendedor" :value="v.id_vendedor">{{ v.nombre }}</option>
+                    </select>
+                  </div>
 
-              <!-- ═══════════════════════════════════════════════════════════ -->
-              <!-- SECTION 4: Información de Seguimiento                     -->
-              <!-- ═══════════════════════════════════════════════════════════ -->
-              <h4 style="grid-column: 1 / -1; color: var(--accent-primary); margin-bottom: 0.5rem; text-align: center;">
-                📞 Información de Seguimiento</h4>
-              <div class="form-group">
-                <label>Status</label>
-                <select v-model="editLead['Status']" class="form-select" :disabled="isReadOnlySdrFields">
-                  <option v-for="s in (catalogs['Status'] || [])" :key="s" :value="s">{{ s }}</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label>Calidad de Contacto <span style="font-size:0.7rem; color:var(--text-muted); font-weight:400;">(auto-calculado del BANT)</span></label>
-                <div style="padding: 6px 0;">
-                  <span v-if="editLead['Calidad de Contacto']"
-                    class="card-calidad"
-                    :class="'calidad-' + (editLead['Calidad de Contacto'] || '').toLowerCase().replace(' ', '-')"
-                    style="font-size:0.85rem; padding:4px 12px; font-weight:600;">
-                    ⭐ {{ editLead['Calidad de Contacto'] }}
-                  </span>
-                  <span v-else style="color:var(--text-muted); font-size:0.85rem; font-style:italic;">Sin calificar — completa el BANT</span>
-                </div>
-              </div>
-              <div class="form-group">
-                <label>Toque Actual (1-10)</label>
-                <select v-model="editLead['Toques de Contactación']" class="form-select" :disabled="isReadOnlySdrFields"
-                  @change="onToqueChange($event.target.value)">
-                  <option value="">— Seleccionar —</option>
-                  <option v-for="n in 10" :key="n" :value="String(n)">{{ n }}</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label>Timestamp (Último Toque)</label>
-                <input type="text" :value="formatDate(editLead['Timestamp'])" class="form-input" disabled />
-              </div>
-              <div class="form-group">
-                <label>Tipo de Seguimiento</label>
-                <select v-model="editLead['Tipo de Seguimiento']" class="form-select" :disabled="isReadOnlySdrFields">
-                  <option value="">— Seleccionar —</option>
-                  <option v-for="s in (catalogs['Tipo de Seguimiento'] || [])" :key="s" :value="s">{{ s }}</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label>Status del Seguimiento</label>
-                <select v-model="editLead['Status del Seguimiento']" class="form-select"
-                  :disabled="isReadOnlySdrFields">
-                  <option value="">— Seleccionar —</option>
-                  <option v-for="s in (catalogs['Status del Seguimiento'] || [])" :key="s" :value="s">{{ s }}</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label>Razón de Pérdida</label>
-                <select v-model="editLead['Razón de pérdida']" class="form-select" :disabled="isReadOnlySdrFields">
-                  <option value="">— Seleccionar —</option>
-                  <option v-for="s in (catalogs['Razón de pérdida'] || [])" :key="s" :value="s">{{ s }}</option>
-                </select>
-              </div>
+                  <!-- ══ SPECIAL: Date Display (formatted, read-only) ══ -->
+                  <div v-else-if="field.tipo_input === 'date_display'" class="form-group">
+                    <label>{{ field.campo_label }}</label>
+                    <input type="text" :value="formatDate(editLead[field.campo_key])" class="form-input" disabled />
+                  </div>
 
-              <div class="form-divider" style="grid-column: 1 / -1; margin-top: 1rem;"></div>
+                  <!-- ══ SPECIAL: Calidad Badge ══ -->
+                  <div v-else-if="field.tipo_input === 'calidad_badge'" class="form-group">
+                    <label>{{ field.campo_label }} <span style="font-size:0.7rem; color:var(--text-muted); font-weight:400;">(auto-calculado del BANT)</span></label>
+                    <div style="padding: 6px 0;">
+                      <span v-if="editLead[field.campo_key]"
+                        class="card-calidad"
+                        :class="'calidad-' + (editLead[field.campo_key] || '').toLowerCase().replace(' ', '-')"
+                        style="font-size:0.85rem; padding:4px 12px; font-weight:600;">
+                        {{ editLead[field.campo_key] }}
+                      </span>
+                      <span v-else style="color:var(--text-muted); font-size:0.85rem; font-style:italic;">Sin calificar — completa el BANT</span>
+                    </div>
+                  </div>
 
-              <!-- ═══════════════════════════════════════════════════════════ -->
-              <!-- SECTION 5: Calificación (BANT & Pricing)                  -->
-              <!-- ═══════════════════════════════════════════════════════════ -->
-              <h4 style="grid-column: 1 / -1; color: var(--accent-primary); margin-bottom: 0.5rem; text-align: center;">
-                🎯 Calificación BANT & Pricing</h4>
-              <div class="form-group">
-                <label>¿Entendió el Marketing?</label>
-                <select v-model="editLead['¿Entendió la información de Marketing?']" class="form-select"
-                  :disabled="isReadOnlySdrFields">
-                  <option value="">—</option>
-                  <option>Si</option>
-                  <option>No</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label>¿Mostró Interés genuino?</label>
-                <select v-model="editLead['¿Mostró Interés genuino?']" class="form-select"
-                  :disabled="isReadOnlySdrFields">
-                  <option value="">—</option>
-                  <option>Si</option>
-                  <option>No</option>
-                </select>
-              </div>
-              <div class="form-group" style="grid-column: 1 / -1;">
-                <label>¿Cuál es tu necesidad puntual?</label>
-                <textarea v-model="editLead['¿Cuál es tu necesidad puntual?']" class="form-input" rows="3"
-                  placeholder="Describe la necesidad del prospecto..." :disabled="isReadOnlySdrFields"
-                  style="resize: vertical;"></textarea>
-              </div>
-              <div class="form-group">
-                <label>¿El perfil del prospecto es el adecuado?</label>
-                <select v-model="editLead['¿El perfil del prospecto es el adecuado?']" class="form-select"
-                  :disabled="isReadOnlySdrFields">
-                  <option value="">—</option>
-                  <option>Si</option>
-                  <option>No</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label>¿Necesitas tocar base con alguién para decidir?</label>
-                <select v-model="editLead['¿Necesitas tocar base con alguién para decidir la compra?']"
-                  class="form-select" :disabled="isReadOnlySdrFields">
-                  <option value="">—</option>
-                  <option>Si</option>
-                  <option>No</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label>¿Presupuesto asignado?</label>
-                <select v-model="editLead['¿Tienes presupuesto asignado para este proyecto, en este año?']"
-                  class="form-select" :disabled="isReadOnlySdrFields">
-                  <option value="">—</option>
-                  <option>Si</option>
-                  <option>No</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label>¿Han sido parte de alguna asociación?</label>
-                <select v-model="editLead['¿han sido parte de alguna asociación de la industria?']" class="form-select"
-                  :disabled="isReadOnlySdrFields">
-                  <option value="">—</option>
-                  <option>Si</option>
-                  <option>No</option>
-                </select>
-              </div>
+                  <!-- ══ SPECIAL: Toque Counter (SDR) ══ -->
+                  <div v-else-if="field.tipo_input === 'toque_counter'" class="form-group">
+                    <label>{{ field.campo_label }}</label>
+                    <div style="display:flex; align-items:center; gap:0.5rem;">
+                      <span style="font-size:1.4rem; font-weight:700; color:var(--accent-primary); min-width:2rem; text-align:center;">
+                        {{ editLead[field.campo_key] || '0' }}
+                      </span>
+                      <button type="button" class="btn-sm btn-primary" :disabled="isReadOnlySdrFields"
+                        style="padding:0.35rem 0.8rem; font-size:0.8rem; border-radius:8px;"
+                        @click="onToqueChange(String(Number(editLead[field.campo_key] || 0) + 1))">
+                        + Registrar Toque #{{ Number(editLead[field.campo_key] || 0) + 1 }}
+                      </button>
+                    </div>
+                  </div>
 
-              <div class="form-divider" style="grid-column: 1 / -1; margin-top: 1rem;"></div>
+                  <!-- ══ SPECIAL: Custom Questions (PARAM-01) ══ -->
+                  <template v-else-if="field.tipo_input === 'custom_questions'">
+                    <template v-if="catalogs['Preguntas Custom'] && catalogs['Preguntas Custom'].length">
+                      <div class="form-divider" style="grid-column: 1 / -1; margin-top: 0.5rem;"></div>
+                      <h4 style="grid-column: 1 / -1; color: var(--accent-info, #3b82f6); margin-bottom: 0.5rem; text-align: center;">
+                        Preguntas Adicionales</h4>
+                      <div v-for="q in catalogs['Preguntas Custom']" :key="q" class="form-group">
+                        <label>{{ q }}</label>
+                        <input type="text" v-model="customResponses[q]" class="form-input"
+                          :disabled="isReadOnlySdrFields" placeholder="Respuesta..." />
+                      </div>
+                      <div style="grid-column: 1 / -1; text-align: right;">
+                        <button type="button" class="btn-sm btn-primary" @click="saveCustomResponses"
+                          :disabled="isReadOnlySdrFields" style="font-size: 0.75rem; padding: 0.25rem 0.6rem;">
+                          Guardar Respuestas
+                        </button>
+                      </div>
+                    </template>
+                  </template>
 
-              <h4 style="grid-column: 1 / -1; color: var(--accent-primary); margin-bottom: 0.5rem; text-align: center;">
-                💰 Pricing (SDR)</h4>
-              <div class="form-group">
-                <label>Tipo de Cliente</label>
-                <select v-model="editLead['Tipo de Cliente']" class="form-select" :disabled="isReadOnlySdrFields">
-                  <option value="">— Seleccionar —</option>
-                  <option v-for="s in (catalogs['Tipo de Cliente'] || [])" :key="s" :value="s">{{ s }}</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label>Ticket Promedio</label>
-                <input type="number" step="0.01" v-model="editLead['Ticket Promedio']" class="form-input"
-                  placeholder="$0.00" :disabled="isReadOnlySdrFields" />
-              </div>
-              <div class="form-group" v-if="editLead['Tipo de Cliente'] === 'SaaS'">
-                <label>Licencias Promedio</label>
-                <input type="number" v-model="editLead['Licencias Promedio']" class="form-input" placeholder="0"
-                  :disabled="isReadOnlySdrFields" />
-              </div>
-              <div class="form-group">
-                <label>Monto Aproximado (Pipeline Value)</label>
-                <input type="text" :value="'$' + Number(calculoMontoAproximado || 0).toLocaleString()"
-                  class="form-input" disabled
-                  style="background: var(--bg-elevated, rgba(255,255,255,0.05)); font-weight: 700; color: var(--accent-success, #10b981);" />
-              </div>
-              <div class="form-group">
-                <label>¿Cual es su región?</label>
-                <select v-model="editLead['¿Cual es su región?']" class="form-select" :disabled="isReadOnlySdrFields">
-                  <option value="">— Seleccionar —</option>
-                  <option v-for="r in uniqueRegions" :key="r" :value="r">{{ r }}</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label>¿Que tipo de membresía es?</label>
-                <select v-model="editLead['¿Que tipo de membresía es?']" class="form-select"
-                  :disabled="isReadOnlySdrFields">
-                  <option value="">— Seleccionar —</option>
-                  <option v-for="m in uniqueMembershipTypes" :key="m" :value="m">{{ m }}</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label>Pricing Tier</label>
-                <select v-model="editLead['Pricing Tier']" class="form-select" :disabled="isReadOnlySdrFields">
-                  <option value="">— Seleccionar —</option>
-                  <option v-for="a in uniqueAttractions" :key="a" :value="a">{{ a }}</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label>¿Cuánto?</label>
-                <input type="text" v-model="editLead['¿Cuánto?']" class="form-input" placeholder="$0.00"
-                  :disabled="isReadOnlySdrFields" />
-              </div>
-              <div class="pricing-result" v-if="computedPricing" style="grid-column: 1 / -1;">
-                <div class="pricing-card">
-                  <span class="pricing-label">1 Año</span>
-                  <span class="pricing-value">${{ computedPricing.oneYear.toLocaleString() }}</span>
-                </div>
-                <div class="pricing-card">
-                  <span class="pricing-label">2 Años</span>
-                  <span class="pricing-value">${{ computedPricing.twoYear.toLocaleString() }}</span>
-                </div>
-              </div>
+                  <!-- ══ SPECIAL: Budget Dual Mode ══ -->
+                  <div v-else-if="field.tipo_input === 'budget_dual'" class="form-group" style="grid-column: 1 / -1;">
+                    <label>{{ field.campo_label }}</label>
+                    <div style="display:flex; gap:0.4rem; margin-bottom:0.4rem;">
+                      <button type="button" class="btn-sm" :disabled="isReadOnlySdrFields"
+                        :style="{ background: editLead['Modo Presupuesto'] !== 'Rango' ? 'var(--accent-primary)' : 'var(--bg-tertiary)',
+                                  color: editLead['Modo Presupuesto'] !== 'Rango' ? '#fff' : 'var(--text-primary)',
+                                  border:'none', borderRadius:'6px', padding:'0.3rem 0.7rem', cursor:'pointer', fontSize:'0.75rem' }"
+                        @click="editLead['Modo Presupuesto'] = 'Exacto'">$ Monto exacto</button>
+                      <button type="button" class="btn-sm" :disabled="isReadOnlySdrFields"
+                        :style="{ background: editLead['Modo Presupuesto'] === 'Rango' ? 'var(--accent-primary)' : 'var(--bg-tertiary)',
+                                  color: editLead['Modo Presupuesto'] === 'Rango' ? '#fff' : 'var(--text-primary)',
+                                  border:'none', borderRadius:'6px', padding:'0.3rem 0.7rem', cursor:'pointer', fontSize:'0.75rem' }"
+                        @click="editLead['Modo Presupuesto'] = 'Rango'">Rango de inversión</button>
+                    </div>
+                    <div v-if="editLead['Modo Presupuesto'] === 'Rango'" style="display:flex; gap:0.4rem; align-items:center;">
+                      <input type="number" v-model="editLead['¿Cuánto?']" class="form-input" placeholder="Desde $"
+                        :disabled="isReadOnlySdrFields" style="flex:1;" />
+                      <span style="color:var(--text-muted); font-size:0.8rem;">a</span>
+                      <input type="number" v-model="editLead['Presupuesto Rango Alto']" class="form-input" placeholder="Hasta $"
+                        :disabled="isReadOnlySdrFields" style="flex:1;" />
+                    </div>
+                    <input v-else type="text" v-model="editLead['¿Cuánto?']" class="form-input" placeholder="$0.00"
+                      :disabled="isReadOnlySdrFields" />
+                  </div>
 
-              <div class="form-divider"></div>
+                  <!-- ══ SPECIAL: Pricing Result (1yr/2yr) ══ -->
+                  <template v-else-if="field.tipo_input === 'pricing_result'">
+                    <div class="pricing-result" v-if="computedPricing" style="grid-column: 1 / -1;">
+                      <div class="pricing-card">
+                        <span class="pricing-label">1 Ano</span>
+                        <span class="pricing-value">${{ computedPricing.oneYear.toLocaleString() }}</span>
+                      </div>
+                      <div class="pricing-card">
+                        <span class="pricing-label">2 Anos</span>
+                        <span class="pricing-value">${{ computedPricing.twoYear.toLocaleString() }}</span>
+                      </div>
+                    </div>
+                  </template>
 
-              <!-- Notas del Lead (Read-only for AE) -->
-              <div class="form-group" style="grid-column: 1 / -1;">
-                <label>Notas</label>
-                <textarea v-model="editLead['Notas']" class="notes-textarea" rows="3" placeholder="Notas del deal..."
-                  disabled></textarea>
-              </div>
+                  <!-- ══ SPECIAL: Pricing Display (read-only global) ══ -->
+                  <div v-else-if="field.tipo_input === 'pricing_display'" class="form-group" :style="field.ancho === 'full' ? 'grid-column: 1 / -1' : ''">
+                    <label>{{ field.campo_label }}</label>
+                    <div style="background: var(--bg-elevated, rgba(255,255,255,0.05)); border: 1px solid rgba(16,185,129,0.2); border-radius: 8px; padding: 0.6rem 0.8rem; display: flex; align-items: center; justify-content: space-between;">
+                      <div>
+                        <span style="font-size: 0.75rem; color: var(--text-muted);">{{ pricingConfig.tipoCliente || 'Sin configurar' }}</span>
+                      </div>
+                      <span style="font-size: 1.1rem; font-weight: 700; color: var(--accent-success, #10b981);">
+                        ${{ Number(calculoMontoAproximado || 0).toLocaleString() }}
+                      </span>
+                    </div>
+                  </div>
 
-              <div class="form-divider"></div>
+                  <!-- ══ SPECIAL: Notes Readonly ══ -->
+                  <div v-else-if="field.tipo_input === 'notes_readonly'" class="form-group" style="grid-column: 1 / -1;" >
+                    <label>{{ field.campo_label }}</label>
+                    <textarea v-model="editLead[field.campo_key]" class="notes-textarea" rows="3" disabled
+                      :placeholder="field.campo_label + '...'"></textarea>
+                  </div>
+
+                  <!-- ══ GENERIC: Select Yes/No ══ -->
+                  <div v-else-if="field.tipo_input === 'select_yn'" class="form-group" :style="field.ancho === 'full' ? 'grid-column: 1 / -1' : ''">
+                    <label>{{ field.campo_label }}</label>
+                    <select v-model="editLead[field.campo_key]" class="form-select"
+                      :disabled="field.solo_lectura && isReadOnlySdrFields">
+                      <option value="">—</option>
+                      <option>Si</option>
+                      <option>No</option>
+                    </select>
+                  </div>
+
+                  <!-- ══ GENERIC: Select from catalog ══ -->
+                  <div v-else-if="field.tipo_input === 'select'" class="form-group" :style="field.ancho === 'full' ? 'grid-column: 1 / -1' : ''">
+                    <label>{{ field.campo_label }}</label>
+                    <select v-model="editLead[field.campo_key]" class="form-select"
+                      :disabled="field.solo_lectura && isReadOnlySdrFields">
+                      <option value="">— Seleccionar —</option>
+                      <option v-for="opt in getFieldOptions(field)" :key="opt" :value="opt">{{ opt }}</option>
+                    </select>
+                  </div>
+
+                  <!-- ══ GENERIC: Textarea ══ -->
+                  <div v-else-if="field.tipo_input === 'textarea'" class="form-group" :style="field.ancho === 'full' ? 'grid-column: 1 / -1' : ''">
+                    <label>{{ field.campo_label }}</label>
+                    <textarea v-model="editLead[field.campo_key]" class="notes-textarea" rows="3"
+                      :disabled="field.solo_lectura && isReadOnlySdrFields"
+                      :placeholder="field.campo_label + '...'" style="resize: vertical;"></textarea>
+                  </div>
+
+                  <!-- ══ GENERIC: Number ══ -->
+                  <div v-else-if="field.tipo_input === 'number'" class="form-group" :style="field.ancho === 'full' ? 'grid-column: 1 / -1' : ''">
+                    <label>{{ field.campo_label }}</label>
+                    <input type="number" step="0.01" v-model="editLead[field.campo_key]" class="form-input"
+                      :disabled="field.solo_lectura && isReadOnlySdrFields" placeholder="0" />
+                  </div>
+
+                  <!-- ══ GENERIC: Date ══ -->
+                  <div v-else-if="field.tipo_input === 'date'" class="form-group" :style="field.ancho === 'full' ? 'grid-column: 1 / -1' : ''">
+                    <label>{{ field.campo_label }}</label>
+                    <input type="date" v-model="editLead[field.campo_key]" class="form-input"
+                      :disabled="field.solo_lectura && isReadOnlySdrFields" />
+                  </div>
+
+                  <!-- ══ GENERIC: Badge (read-only) ══ -->
+                  <div v-else-if="field.tipo_input === 'badge'" class="form-group" :style="field.ancho === 'full' ? 'grid-column: 1 / -1' : ''">
+                    <label>{{ field.campo_label }}</label>
+                    <div class="form-input" style="opacity:0.7;" disabled>{{ editLead[field.campo_key] || '—' }}</div>
+                  </div>
+
+                  <!-- ══ GENERIC: Hidden ══ -->
+                  <input v-else-if="field.tipo_input === 'hidden'" type="hidden" v-model="editLead[field.campo_key]" />
+
+                  <!-- ══ GENERIC: Text (default) ══ -->
+                  <div v-else class="form-group" :style="field.ancho === 'full' ? 'grid-column: 1 / -1' : ''">
+                    <label>{{ field.campo_label }}</label>
+                    <input type="text" v-model="editLead[field.campo_key]" class="form-input"
+                      :disabled="field.solo_lectura || (field.solo_lectura !== false && isReadOnlySdrFields)" />
+                  </div>
+
+                </template>
+              </template>
 
             </div> <!-- End of Lead form-grid -->
           </div> <!-- End of Lead tab-content -->
 
-          <!-- TAB: Deal (EXCLUSIVO AE) -->
+          <!-- TAB: Deal (Phase 8: Dynamic Field Renderer) -->
           <div v-if="modalTab === 'Deal'" class="tab-content">
             <div class="form-grid">
 
-              <!-- ═══════════════════════════════════════════════════════════ -->
-              <!-- SECTION 1: AE Asignado                                    -->
-              <!-- ═══════════════════════════════════════════════════════════ -->
-              <h4 style="grid-column: 1 / -1; color: var(--accent-primary); margin-bottom: 0.5rem; text-align: center;">
-                🏷️ AE Asignado</h4>
-              <div class="form-group">
-                <label>Vendedor AE</label>
-                <select v-model="editLead['Vendedor Asignado para Seguimiento']" class="form-select">
-                  <option value="">— Sin asignar —</option>
-                  <option v-for="v in aeList" :key="v.id_vendedor" :value="v.id_vendedor">{{ v.nombre }}</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label>Fecha 1er Contacto AE</label>
-                <input type="text" :value="formatDate(editLead['Fecha de primer contacto AE'])" class="form-input"
-                  disabled />
-              </div>
-              <div class="form-group">
-                <label>Número de Toque AE</label>
-                <select v-model="editLead['Numero de toque']" class="form-select"
-                  @change="onAeToqueChange($event.target.value)">
-                  <option value="">— Sin toque —</option>
-                  <option v-for="n in 10" :key="n" :value="String(n)">{{ n }}</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label>Timestamp (Último Toque AE)</label>
-                <input type="text" :value="formatDate(editLead['Timestamp AE'])" class="form-input" disabled />
-              </div>
+              <!-- ═══ Dynamic Field Renderer for Deals ═══ -->
+              <template v-for="section in dealSections" :key="section.name">
+                <div class="form-divider" style="grid-column: 1 / -1; margin-top: 1rem;"></div>
+                <h4 style="grid-column: 1 / -1; color: var(--accent-primary); margin-bottom: 0.5rem; text-align: center;">
+                  {{ section.icono }} {{ section.name }}</h4>
 
-              <div class="form-divider" style="grid-column: 1 / -1; margin-top: 1rem;"></div>
+                <template v-for="field in section.fields" :key="field.campo_key">
 
-              <!-- ═══════════════════════════════════════════════════════════ -->
-              <!-- SECTION 2: Status de Venta & Agenda                       -->
-              <!-- ═══════════════════════════════════════════════════════════ -->
-              <h4 style="grid-column: 1 / -1; color: var(--accent-primary); margin-bottom: 0.5rem; text-align: center;">
-                📋 Status de Venta</h4>
-              <div class="form-group">
-                <label>Status de Venta</label>
-                <select v-if="catalogs['Status de Venta']?.length" v-model="editLead['Status de Venta']"
-                  class="form-select">
-                  <option value="">— Seleccionar —</option>
-                  <option v-for="s in catalogs['Status de Venta']" :key="s" :value="s">{{ s }}</option>
-                </select>
-                <input v-else type="text" v-model="editLead['Status de Venta']" class="form-input" />
-              </div>
-              <div class="form-group">
-                <label>¿Ventas Contactó Cliente?</label>
-                <select v-model="editLead['¿Ventas Contactó Cliente?']" class="form-select">
-                  <option value="">—</option>
-                  <option>Si</option>
-                  <option>No</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label>Fecha de Reagenda</label>
-                <div style="display:flex; gap:0.3rem; align-items:center;">
-                  <input type="date" v-model="editLead['Fecha de Reagenda']" class="form-input" style="flex:1;" />
-                  <button type="button" class="btn-icon" title="Agendar en Calendar"
-                    @click="openQuickCalendar('Reagenda', editLead['Fecha de Reagenda'], editLead['Hora de Reagenda'])">
-                    <span class="material-symbols-outlined"
-                      style="font-size:1.1rem; color:var(--accent-primary);">calendar_month</span>
-                  </button>
-                </div>
-              </div>
-              <div class="form-group">
-                <label>Hora de Reagenda</label>
-                <div style="display:flex; gap:0.3rem; align-items:center;">
-                  <input type="time" v-model="editLead['Hora de Reagenda']" class="form-input" style="flex:1;" />
-                  <button type="button" class="btn-icon" title="Agendar en Calendar"
-                    @click="openQuickCalendar('Reagenda', editLead['Fecha de Reagenda'], editLead['Hora de Reagenda'])">
-                    <span class="material-symbols-outlined"
-                      style="font-size:1.1rem; color:var(--accent-primary);">calendar_month</span>
-                  </button>
-                </div>
-              </div>
-              <div class="form-group">
-                <label>Index</label>
-                <select v-if="catalogs['Index']?.length" v-model="editLead['Index']" class="form-select">
-                  <option value="">— Seleccionar —</option>
-                  <option v-for="s in catalogs['Index']" :key="s" :value="s">{{ s }}</option>
-                </select>
-                <input v-else type="text" v-model="editLead['Index']" class="form-input" />
-              </div>
-              <div class="form-group" style="grid-column: 1 / -1;">
-                <label>¿Por qué perdimos la venta?</label>
-                <select v-if="catalogs['¿Por qué perdimos la venta?']?.length"
-                  v-model="editLead['¿Por qué perdimos la venta?']" class="form-select">
-                  <option value="">— Seleccionar —</option>
-                  <option v-for="s in catalogs['¿Por qué perdimos la venta?']" :key="s" :value="s">{{ s }}</option>
-                </select>
-                <textarea v-else v-model="editLead['¿Por qué perdimos la venta?']" class="notes-textarea" rows="2"
-                  placeholder="Razón de pérdida de la venta..."></textarea>
-              </div>
+                  <!-- ══ SPECIAL: AE Select ══ -->
+                  <div v-if="field.tipo_input === 'ae_select'" class="form-group">
+                    <label>{{ field.campo_label }}</label>
+                    <select v-model="editLead[field.campo_key]" class="form-select">
+                      <option value="">— Sin asignar —</option>
+                      <option v-for="v in aeList" :key="v.id_vendedor" :value="v.id_vendedor">{{ v.nombre }}</option>
+                    </select>
+                  </div>
 
-              <div class="form-divider" style="grid-column: 1 / -1; margin-top: 1rem;"></div>
+                  <!-- ══ SPECIAL: AE Toque Counter ══ -->
+                  <div v-else-if="field.tipo_input === 'ae_toque_counter'" class="form-group">
+                    <label>{{ field.campo_label }}</label>
+                    <div style="display:flex; align-items:center; gap:0.5rem;">
+                      <span style="font-size:1.4rem; font-weight:700; color:var(--accent-info, #3b82f6); min-width:2rem; text-align:center;">
+                        {{ editLead[field.campo_key] || '0' }}
+                      </span>
+                      <button type="button" class="btn-sm btn-primary"
+                        style="padding:0.35rem 0.8rem; font-size:0.8rem; border-radius:8px;"
+                        @click="onAeToqueChange(String(Number(editLead[field.campo_key] || 0) + 1))">
+                        + Registrar Toque #{{ Number(editLead[field.campo_key] || 0) + 1 }}
+                      </button>
+                    </div>
+                  </div>
 
-              <!-- ═══════════════════════════════════════════════════════════ -->
-              <!-- SECTION 3: Proyección y Cierre                            -->
-              <!-- ═══════════════════════════════════════════════════════════ -->
-              <h4 style="grid-column: 1 / -1; color: var(--accent-primary); margin-bottom: 0.5rem; text-align: center;">
-                💰 Proyección y Cierre</h4>
-              <div class="form-group">
-                <label>Proyección</label>
-                <select v-model="editLead['Proyeccion']" class="form-select">
-                  <option value="">—</option>
-                  <option v-for="s in (catalogs['Proyeccion'] || [])" :key="s" :value="s">{{ s }}</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label>Monto de Cotización</label>
-                <input type="number" step="0.01" v-model="editLead['Monto de Cotización']" class="form-input"
-                  placeholder="$0.00" />
-              </div>
-              <div class="form-group">
-                <label>Monto de Apartado</label>
-                <input type="number" step="0.01" v-model="editLead['Monto de Apartado']" class="form-input"
-                  placeholder="$0.00" />
-              </div>
-              <div class="form-group">
-                <label>Monto de Venta (Cierre)</label>
-                <input type="number" step="0.01" v-model="editLead['Monto de cierre']" class="form-input"
-                  placeholder="$0.00" />
-              </div>
-              <div class="form-group">
-                <label>Producto de Cierre</label>
-                <input type="text" v-model="editLead['Producto de Cierre']" class="form-input" />
-              </div>
-              <div class="form-group">
-                <label>Fecha de Cierre</label>
-                <div style="display:flex; gap:0.3rem; align-items:center;">
-                  <input type="date" v-model="editLead['Fecha de Cierre']" class="form-input" style="flex:1;" />
-                  <button type="button" class="btn-icon" title="Agendar en Calendar"
-                    @click="openQuickCalendar('Cierre', editLead['Fecha de Cierre'], '')">
-                    <span class="material-symbols-outlined"
-                      style="font-size:1.1rem; color:var(--accent-primary);">calendar_month</span>
-                  </button>
-                </div>
-              </div>
-              <div class="form-group">
-                <label>1 Year Mem</label>
-                <select v-if="catalogs['1 Year Mem']?.length" v-model="editLead['1 Year Mem']" class="form-select">
-                  <option value="">— Seleccionar —</option>
-                  <option v-for="s in catalogs['1 Year Mem']" :key="s" :value="s">{{ s }}</option>
-                </select>
-                <input v-else type="text" v-model="editLead['1 Year Mem']" class="form-input" />
-              </div>
-              <div class="form-group">
-                <label>2 Year Mem</label>
-                <select v-if="catalogs['2 Year Mem']?.length" v-model="editLead['2 Year Mem']" class="form-select">
-                  <option value="">— Seleccionar —</option>
-                  <option v-for="s in catalogs['2 Year Mem']" :key="s" :value="s">{{ s }}</option>
-                </select>
-                <input v-else type="text" v-model="editLead['2 Year Mem']" class="form-input" />
-              </div>
-              <div class="form-group">
-                <label>Descuento</label>
-                <select v-if="catalogs['Descuento']?.length" v-model="editLead['Descuento']" class="form-select">
-                  <option value="">— Seleccionar —</option>
-                  <option v-for="s in catalogs['Descuento']" :key="s" :value="s">{{ s }}</option>
-                </select>
-                <input v-else type="text" v-model="editLead['Descuento']" class="form-input" />
-              </div>
+                  <!-- ══ SPECIAL: Date Display ══ -->
+                  <div v-else-if="field.tipo_input === 'date_display'" class="form-group">
+                    <label>{{ field.campo_label }}</label>
+                    <input type="text" :value="formatDate(editLead[field.campo_key])" class="form-input" disabled />
+                  </div>
 
-              <div class="form-divider" style="grid-column: 1 / -1; margin-top: 1rem;"></div>
+                  <!-- ══ SPECIAL: Ventas Contactó Badge ══ -->
+                  <div v-else-if="field.tipo_input === 'ventas_contacto_badge'" class="form-group">
+                    <label>{{ field.campo_label }}</label>
+                    <div style="padding:0.5rem 0.75rem; border-radius:0.375rem; font-weight:600; font-size:0.85rem;"
+                      :style="editLead[field.campo_key] === 'Si'
+                        ? 'background:rgba(16,185,129,0.15); color:var(--accent-success, #10b981);'
+                        : 'background:rgba(239,68,68,0.1); color:var(--accent-danger, #ef4444);'">
+                      {{ editLead[field.campo_key] === 'Si' ? 'Si — Contactado' : 'No — Sin contacto AE' }}
+                    </div>
+                    <span style="font-size:0.7rem; color:var(--text-muted); margin-top:0.25rem; display:block;">
+                      Auto-calculado desde toques AE registrados
+                    </span>
+                  </div>
 
-              <!-- ═══════════════════════════════════════════════════════════ -->
-              <!-- SECTION 4: Cross Selling & Historial de Compras           -->
-              <!-- ═══════════════════════════════════════════════════════════ -->
-              <h4 style="grid-column: 1 / -1; color: var(--accent-primary); margin-bottom: 0.5rem; text-align: center;">
-                🔄 Cross Selling & Historial de Compras</h4>
-              <div class="form-group">
-                <label>¿Cross Selling?</label>
-                <select v-model="editLead['Cross Selling?']" class="form-select">
-                  <option value="">—</option>
-                  <option>Si</option>
-                  <option>No</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label>¿Es cliente activo?</label>
-                <select v-model="editLead['¿Es cliente activo?']" class="form-select">
-                  <option value="">—</option>
-                  <option>Si</option>
-                  <option>No</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label>¿Es recompra?</label>
-                <select v-model="editLead['¿Es recompra?']" class="form-select">
-                  <option value="">—</option>
-                  <option>Si</option>
-                  <option>No</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label>Producto de Recompra</label>
-                <input type="text" v-model="editLead['Producto de Recompra']" class="form-input" />
-              </div>
-              <div class="form-group">
-                <label>Valor de recompra</label>
-                <input type="number" step="0.01" v-model="editLead['Valor de recompra']" class="form-input"
-                  placeholder="$0.00" />
-              </div>
-              <div class="form-group">
-                <label>Fecha de recompra</label>
-                <div style="display:flex; gap:0.3rem; align-items:center;">
-                  <input type="date" v-model="editLead['Fecha de recompra']" class="form-input" style="flex:1;" />
-                  <button type="button" class="btn-icon" title="Agendar en Calendar"
-                    @click="openQuickCalendar('Recompra', editLead['Fecha de recompra'], '')">
-                    <span class="material-symbols-outlined"
-                      style="font-size:1.1rem; color:var(--accent-primary);">calendar_month</span>
-                  </button>
-                </div>
-              </div>
+                  <!-- ══ SPECIAL: Reagenda Date (with calendar button) ══ -->
+                  <div v-else-if="field.tipo_input === 'reagenda_date'" class="form-group">
+                    <label>{{ field.campo_label }}</label>
+                    <div style="display:flex; gap:0.3rem; align-items:center;">
+                      <input type="date" v-model="editLead[field.campo_key]" class="form-input" style="flex:1;" />
+                      <button type="button" class="btn-icon" title="Agendar en Calendar"
+                        @click="openQuickCalendar(field.campo_label, editLead[field.campo_key], '')">
+                        <span class="material-symbols-outlined" style="font-size:1.1rem; color:var(--accent-primary);">calendar_month</span>
+                      </button>
+                    </div>
+                  </div>
 
-              <div class="form-divider" style="grid-column: 1 / -1; margin-top: 1rem;"></div>
+                  <!-- ══ SPECIAL: Reagenda Time (with calendar button) ══ -->
+                  <div v-else-if="field.tipo_input === 'reagenda_time'" class="form-group">
+                    <label>{{ field.campo_label }}</label>
+                    <div style="display:flex; gap:0.3rem; align-items:center;">
+                      <input type="time" v-model="editLead[field.campo_key]" class="form-input" style="flex:1;" />
+                      <button type="button" class="btn-icon" title="Agendar en Calendar"
+                        @click="openQuickCalendar('Reagenda', editLead['Fecha de Reagenda'], editLead[field.campo_key])">
+                        <span class="material-symbols-outlined" style="font-size:1.1rem; color:var(--accent-primary);">calendar_month</span>
+                      </button>
+                    </div>
+                  </div>
 
-              <!-- ═══════════════════════════════════════════════════════════ -->
-              <!-- SECTION 5: Cobranza & Facturación                         -->
-              <!-- ═══════════════════════════════════════════════════════════ -->
-              <h4 style="grid-column: 1 / -1; color: var(--accent-primary); margin-bottom: 0.5rem; text-align: center;">
-                💳 Cobranza & Facturación</h4>
-              <div class="form-group">
-                <label>Link de Pago</label>
-                <select v-if="catalogs['Link de Pago']?.length" v-model="editLead['Link de Pago']" class="form-select">
-                  <option value="">— Seleccionar —</option>
-                  <option v-for="s in catalogs['Link de Pago']" :key="s" :value="s">{{ s }}</option>
-                </select>
-                <input v-else type="text" v-model="editLead['Link de Pago']" class="form-input" />
-              </div>
-              <div class="form-group">
-                <label>Renovación</label>
-                <select v-if="catalogs['Renovación']?.length" v-model="editLead['Renovación']" class="form-select">
-                  <option value="">— Seleccionar —</option>
-                  <option v-for="s in catalogs['Renovación']" :key="s" :value="s">{{ s }}</option>
-                </select>
-                <input v-else type="text" v-model="editLead['Renovación']" class="form-input" />
-              </div>
-              <div class="form-group">
-                <label>Soporte de pago</label>
-                <select v-if="catalogs['Soporte de pago']?.length" v-model="editLead['Soporte de pago']"
-                  class="form-select">
-                  <option value="">— Seleccionar —</option>
-                  <option v-for="s in catalogs['Soporte de pago']" :key="s" :value="s">{{ s }}</option>
-                </select>
-                <input v-else type="text" v-model="editLead['Soporte de pago']" class="form-input" />
-              </div>
-              <div class="form-group">
-                <label>Tipo de Transacción</label>
-                <input type="text" v-model="editLead['Tipo de Transacción']" class="form-input" />
-              </div>
-              <div class="form-group">
-                <label>Fuente de origen</label>
-                <input type="text" v-model="editLead['Fuente de origen']" class="form-input" />
-              </div>
-              <div class="form-group">
-                <label>Deal Code</label>
-                <input type="text" v-model="editLead['Deal Code']" class="form-input" />
-              </div>
+                  <!-- ══ SPECIAL: Loss Reason (select + Otros free text) ══ -->
+                  <div v-else-if="field.tipo_input === 'loss_reason'" class="form-group" style="grid-column: 1 / -1;">
+                    <label>{{ field.campo_label }}</label>
+                    <select v-if="getFieldOptions(field).length" v-model="editLead[field.campo_key]" class="form-select">
+                      <option value="">— Seleccionar —</option>
+                      <option v-for="s in getFieldOptions(field)" :key="s" :value="s">{{ s }}</option>
+                    </select>
+                    <textarea v-else v-model="editLead[field.campo_key]" class="notes-textarea" rows="2"
+                      placeholder="Razón de pérdida de la venta..."></textarea>
+                    <input v-if="editLead[field.campo_key] === 'Otros'" type="text"
+                      v-model="editLead['Razón Pérdida Otra']" class="form-input" style="margin-top: 0.4rem;"
+                      placeholder="Especifique la razón..." />
+                  </div>
 
-              <div class="form-divider" style="grid-column: 1 / -1; margin-top: 1rem;"></div>
+                  <!-- ══ SPECIAL: Pricing Display (read-only global) ══ -->
+                  <div v-else-if="field.tipo_input === 'pricing_display'" class="form-group" style="grid-column: 1 / -1;">
+                    <div v-if="calculoMontoAproximado > 0" style="background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.2); border-radius: 8px; padding: 0.6rem 0.8rem; display: flex; align-items: center; justify-content: space-between;">
+                      <div>
+                        <span style="font-size: 0.75rem; color: var(--text-muted);">{{ field.campo_label }}</span>
+                        <span style="display: block; font-size: 0.75rem; color: var(--text-muted);">{{ pricingConfig.tipoCliente || '—' }}</span>
+                      </div>
+                      <span style="font-size: 1.1rem; font-weight: 700; color: var(--accent-success, #10b981);">
+                        ${{ calculoMontoAproximado.toLocaleString() }}
+                      </span>
+                    </div>
+                  </div>
 
-              <!-- ═══════════════════════════════════════════════════════════ -->
-              <!-- SECTION 6: Notas AE                                       -->
-              <!-- ═══════════════════════════════════════════════════════════ -->
-              <h4 style="grid-column: 1 / -1; color: var(--accent-primary); margin-bottom: 0.5rem; text-align: center;">
-                📝 Notas del AE</h4>
+                  <!-- ══ SPECIAL: Products Table ══ -->
+                  <template v-else-if="field.tipo_input === 'products_table'">
+                    <div style="grid-column: 1 / -1; background: rgba(139,92,246,0.06); border: 1px solid rgba(139,92,246,0.15); border-radius: 10px; padding: 1rem;">
+                      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
+                        <h4 style="color: var(--accent-primary); margin: 0;">{{ field.campo_label }}</h4>
+                        <button type="button" class="btn-sm btn-primary" @click="addProductLine"
+                          style="font-size: 0.75rem; padding: 0.25rem 0.6rem;">+ Agregar</button>
+                      </div>
+                      <div v-if="dealClassification || editLead['Tipo de Transacción']" style="margin-bottom: 0.5rem;">
+                        <span style="font-size: 0.7rem; padding: 3px 8px; border-radius: 4px;"
+                          :style="{ background: (dealClassification || editLead['Tipo de Transacción']) === 'Cross-Selling' ? 'rgba(59,130,246,0.15)' : (dealClassification || editLead['Tipo de Transacción']) === 'Up-Selling' ? 'rgba(234,179,8,0.15)' : 'rgba(16,185,129,0.15)', color: (dealClassification || editLead['Tipo de Transacción']) === 'Cross-Selling' ? '#2563eb' : (dealClassification || editLead['Tipo de Transacción']) === 'Up-Selling' ? '#b45309' : '#059669' }">
+                          {{ dealClassification || editLead['Tipo de Transacción'] }}
+                        </span>
+                      </div>
+                      <div v-if="dealProductLines.length === 0" style="text-align: center; padding: 1rem; color: var(--text-muted); font-size: 0.8rem;">
+                        Sin productos agregados.
+                      </div>
+                      <table v-else style="width: 100%; border-collapse: collapse; font-size: 0.8rem;">
+                        <thead><tr style="border-bottom: 1px solid var(--border-color);"><th style="text-align: left; padding: 0.3rem;">Producto</th><th style="text-align: center; padding: 0.3rem; width: 60px;">Cant.</th><th style="text-align: right; padding: 0.3rem; width: 100px;">P. Unit.</th><th style="text-align: center; padding: 0.3rem; width: 60px;">Desc %</th><th style="text-align: right; padding: 0.3rem; width: 90px;">Subtotal</th><th style="width: 30px;"></th></tr></thead>
+                        <tbody>
+                          <tr v-for="(line, idx) in dealProductLines" :key="idx" style="border-bottom: 1px solid var(--border-color, rgba(255,255,255,0.05));">
+                            <td style="padding: 0.3rem;"><input type="text" v-model="line.nombre_producto" class="form-input" style="font-size: 0.8rem; padding: 0.25rem 0.4rem;" placeholder="Nombre" /></td>
+                            <td style="padding: 0.3rem;"><input type="number" v-model.number="line.cantidad" class="form-input" style="font-size: 0.8rem; padding: 0.25rem 0.3rem; text-align: center;" min="1" /></td>
+                            <td style="padding: 0.3rem;"><input type="number" v-model.number="line.precio_unitario" class="form-input" style="font-size: 0.8rem; padding: 0.25rem 0.3rem; text-align: right;" step="0.01" placeholder="$0" /></td>
+                            <td style="padding: 0.3rem;"><input type="number" v-model.number="line.descuento_pct" class="form-input" style="font-size: 0.8rem; padding: 0.25rem 0.3rem; text-align: center;" min="0" max="100" /></td>
+                            <td style="padding: 0.3rem; text-align: right; font-weight: 600; color: var(--accent-success);">${{ productLineSubtotal(line).toLocaleString() }}</td>
+                            <td style="padding: 0.3rem;"><button type="button" class="btn-icon" @click="removeProductLine(idx)" style="color: var(--accent-danger, #ef4444);"><span class="material-symbols-outlined" style="font-size: 1rem;">delete</span></button></td>
+                          </tr>
+                        </tbody>
+                        <tfoot><tr style="border-top: 2px solid var(--border-color);"><td colspan="4" style="padding: 0.4rem; text-align: right; font-weight: 600;">Total:</td><td style="padding: 0.4rem; text-align: right; font-weight: 700; font-size: 0.9rem; color: var(--accent-success);">${{ productLinesTotal().toLocaleString() }}</td><td></td></tr></tfoot>
+                      </table>
+                      <div v-if="dealProductLines.length > 0" style="text-align: right; margin-top: 0.5rem;">
+                        <button type="button" class="btn-sm btn-success" @click="saveDealProducts" :disabled="savingProducts" style="font-size: 0.75rem; padding: 0.3rem 0.8rem;">
+                          {{ savingProducts ? 'Guardando...' : 'Guardar Productos' }}
+                        </button>
+                      </div>
+                    </div>
+                  </template>
 
-              <!-- SDR Notes (Read-Only for context) -->
-              <div class="form-group" style="grid-column: 1 / -1;" v-if="editLead['Notas']">
-                <label style="color: var(--text-secondary);">Notas del SDR (Solo Lectura)</label>
-                <div
-                  style="background: var(--bg-elevated, rgba(255,255,255,0.03)); border: 1px solid var(--border-color); border-radius: 0.5rem; padding: 0.75rem 1rem; font-size: 0.85rem; color: var(--text-secondary); white-space: pre-wrap; max-height: 120px; overflow-y: auto;">
-                  {{ editLead['Notas'] }}</div>
-              </div>
+                  <!-- ══ SPECIAL: Notes Readonly ══ -->
+                  <div v-else-if="field.tipo_input === 'notes_readonly'" class="form-group" style="grid-column: 1 / -1;" >
+                    <template v-if="editLead[field.campo_key]">
+                      <label style="color: var(--text-secondary);">{{ field.campo_label }}</label>
+                      <div style="background: var(--bg-elevated, rgba(255,255,255,0.03)); border: 1px solid var(--border-color); border-radius: 0.5rem; padding: 0.75rem 1rem; font-size: 0.85rem; color: var(--text-secondary); white-space: pre-wrap; max-height: 120px; overflow-y: auto;">
+                        {{ editLead[field.campo_key] }}</div>
+                    </template>
+                  </div>
 
-              <!-- AE Notes (Editable) -->
-              <div class="form-group" style="grid-column: 1 / -1;">
-                <label>Notas Vendedor AE</label>
-                <textarea v-model="editLead['Notas Vendedor']" class="notes-textarea" rows="3"
-                  placeholder="Notas exclusivas del Account Executive..."></textarea>
-              </div>
+                  <!-- ══ GENERIC: Select or Text (catalog fallback) ══ -->
+                  <div v-else-if="field.tipo_input === 'select_or_text'" class="form-group" :style="field.ancho === 'full' ? 'grid-column: 1 / -1' : ''">
+                    <label>{{ field.campo_label }}</label>
+                    <select v-if="getFieldOptions(field).length" v-model="editLead[field.campo_key]" class="form-select">
+                      <option value="">— Seleccionar —</option>
+                      <option v-for="s in getFieldOptions(field)" :key="s" :value="s">{{ s }}</option>
+                    </select>
+                    <input v-else type="text" v-model="editLead[field.campo_key]" class="form-input" />
+                  </div>
 
+                  <!-- ══ GENERIC: Select Yes/No ══ -->
+                  <div v-else-if="field.tipo_input === 'select_yn'" class="form-group" :style="field.ancho === 'full' ? 'grid-column: 1 / -1' : ''">
+                    <label>{{ field.campo_label }}</label>
+                    <select v-model="editLead[field.campo_key]" class="form-select">
+                      <option value="">—</option>
+                      <option>Si</option>
+                      <option>No</option>
+                    </select>
+                  </div>
 
+                  <!-- ══ GENERIC: Select from catalog ══ -->
+                  <div v-else-if="field.tipo_input === 'select'" class="form-group" :style="field.ancho === 'full' ? 'grid-column: 1 / -1' : ''">
+                    <label>{{ field.campo_label }}</label>
+                    <select v-model="editLead[field.campo_key]" class="form-select">
+                      <option value="">— Seleccionar —</option>
+                      <option v-for="opt in getFieldOptions(field)" :key="opt" :value="opt">{{ opt }}</option>
+                    </select>
+                  </div>
+
+                  <!-- ══ GENERIC: Textarea ══ -->
+                  <div v-else-if="field.tipo_input === 'textarea'" class="form-group" :style="field.ancho === 'full' ? 'grid-column: 1 / -1' : ''">
+                    <label>{{ field.campo_label }}</label>
+                    <textarea v-model="editLead[field.campo_key]" class="notes-textarea" rows="3"
+                      :placeholder="field.campo_label + '...'" style="resize: vertical;"></textarea>
+                  </div>
+
+                  <!-- ══ GENERIC: Number ══ -->
+                  <div v-else-if="field.tipo_input === 'number'" class="form-group" :style="field.ancho === 'full' ? 'grid-column: 1 / -1' : ''">
+                    <label>{{ field.campo_label }}</label>
+                    <input type="number" step="0.01" v-model="editLead[field.campo_key]" class="form-input" placeholder="$0.00" />
+                  </div>
+
+                  <!-- ══ GENERIC: Date ══ -->
+                  <div v-else-if="field.tipo_input === 'date'" class="form-group" :style="field.ancho === 'full' ? 'grid-column: 1 / -1' : ''">
+                    <label>{{ field.campo_label }}</label>
+                    <input type="date" v-model="editLead[field.campo_key]" class="form-input" />
+                  </div>
+
+                  <!-- ══ GENERIC: Time ══ -->
+                  <div v-else-if="field.tipo_input === 'time'" class="form-group" :style="field.ancho === 'full' ? 'grid-column: 1 / -1' : ''">
+                    <label>{{ field.campo_label }}</label>
+                    <input type="time" v-model="editLead[field.campo_key]" class="form-input" />
+                  </div>
+
+                  <!-- ══ GENERIC: Hidden ══ -->
+                  <input v-else-if="field.tipo_input === 'hidden'" type="hidden" v-model="editLead[field.campo_key]" />
+
+                  <!-- ══ GENERIC: Text (default) ══ -->
+                  <div v-else class="form-group" :style="field.ancho === 'full' ? 'grid-column: 1 / -1' : ''">
+                    <label>{{ field.campo_label }}</label>
+                    <input type="text" v-model="editLead[field.campo_key]" class="form-input" />
+                  </div>
+
+                </template>
+              </template>
 
             </div>
           </div>
@@ -2466,6 +2842,7 @@
                 <thead>
                   <tr style="border-bottom: 2px solid var(--border-color, #333);">
                     <th style="text-align:left; padding: 0.5rem;">Toque #</th>
+                    <th style="text-align:left; padding: 0.5rem;">Canal</th>
                     <th style="text-align:left; padding: 0.5rem;">Fecha / Hora</th>
                     <th style="text-align:left; padding: 0.5rem;">Rol</th>
                   </tr>
@@ -2474,6 +2851,7 @@
                   <tr v-for="(entry, i) in selectedLead._toquesList" :key="'tq'+i"
                     style="border-bottom: 1px solid var(--border-color, #222);">
                     <td style="padding: 0.4rem 0.5rem; font-weight:600;">{{ entry.toque }}</td>
+                    <td style="padding: 0.4rem 0.5rem; color: var(--accent-info, #3b82f6);">{{ entry.canal || '—' }}</td>
                     <td style="padding: 0.4rem 0.5rem; color: var(--text-secondary);">{{ formatDate(entry.fecha) }}</td>
                     <td style="padding: 0.4rem 0.5rem;">{{ entry.rol || 'SDR' }}</td>
                   </tr>
@@ -2633,6 +3011,84 @@
           <!-- TAB: Notas -->
           <div v-if="modalTab === 'Notas'" class="tab-content">
 
+            <!-- Phase v3.2: Gestionar Plantillas button + inline panel -->
+            <div v-if="!isCreating" style="display:flex; justify-content:flex-end; margin-bottom:0.75rem;">
+              <button class="btn-sm" style="font-size:0.75rem; opacity:0.85; display:inline-flex; align-items:center; gap:0.3rem;"
+                @click="showPlantillasInFicha = !showPlantillasInFicha">
+                <span class="material-symbols-outlined" style="font-size:0.95rem;">edit_note</span>
+                {{ showPlantillasInFicha ? 'Cerrar Plantillas' : 'Gestionar Plantillas' }}
+              </button>
+            </div>
+
+            <!-- Inline Plantillas Manager Panel -->
+            <div v-if="showPlantillasInFicha && !isCreating"
+              style="background:var(--bg-elevated); border:1px solid var(--border-color); border-radius:0.5rem; padding:1rem; margin-bottom:1rem; max-height:400px; overflow-y:auto;">
+              <!-- Tipo tabs -->
+              <div style="display:flex; gap:0; margin-bottom:0.75rem;">
+                <button class="btn-sm" :class="fichaPlantillasTipo === 'nota' ? 'btn-primary' : 'btn-secondary'"
+                  @click="fichaPlantillasTipo = 'nota'" style="border-radius:0.4rem 0 0 0.4rem; font-size:0.8rem;">Notas</button>
+                <button class="btn-sm" :class="fichaPlantillasTipo === 'email' ? 'btn-primary' : 'btn-secondary'"
+                  @click="fichaPlantillasTipo = 'email'" style="border-radius:0 0.4rem 0.4rem 0; font-size:0.8rem;">Emails</button>
+                <button class="btn-sm btn-success" style="margin-left:auto; font-size:0.75rem;"
+                  @click="openPlantillaForm(null, fichaPlantillasTipo)">+ Nueva</button>
+              </div>
+
+              <!-- Create/Edit form (reused) -->
+              <div v-if="showPlantillaForm"
+                style="border:1px solid var(--border-color); border-radius:0.4rem; padding:0.75rem; margin-bottom:0.75rem;">
+                <input v-model="plantillaForm.nombre" type="text" class="form-input" placeholder="Nombre de la plantilla"
+                  style="font-size:0.85rem; margin-bottom:0.5rem;">
+                <div style="display:flex; gap:0.75rem; align-items:center; margin-bottom:0.5rem;">
+                  <label style="font-size:0.8rem; display:flex; align-items:center; gap:0.3rem; cursor:pointer;">
+                    <input type="radio" v-model="plantillaForm.tipo" value="nota"> Nota
+                  </label>
+                  <label style="font-size:0.8rem; display:flex; align-items:center; gap:0.3rem; cursor:pointer;">
+                    <input type="radio" v-model="plantillaForm.tipo" value="email"> Email
+                  </label>
+                  <label style="font-size:0.8rem; display:flex; align-items:center; gap:0.3rem; cursor:pointer; margin-left:auto;">
+                    <input type="checkbox" v-model="plantillaForm.compartida"> Compartir
+                  </label>
+                </div>
+                <textarea v-model="plantillaForm.contenido" class="notes-textarea" rows="4"
+                  :placeholder="plantillaForm.tipo === 'email' ? 'HTML del correo. Variables: {nombre}, {apellido}, {empresa}, {producto}, {telefono}' : 'Texto de la plantilla. Variables: {nombre}, {apellido}, {empresa}, {producto}, {telefono}'"
+                  style="font-size:0.8rem; min-height:80px;"></textarea>
+                <div style="display:flex; gap:0.4rem; margin-top:0.5rem;">
+                  <button class="btn-sm btn-success" style="font-size:0.75rem;" @click="savePlantillaForm">{{ plantillaForm.editId ? 'Actualizar' : 'Crear' }}</button>
+                  <button class="btn-sm btn-secondary" style="font-size:0.75rem;" @click="showPlantillaForm = false">Cancelar</button>
+                </div>
+              </div>
+
+              <!-- Filtered template list -->
+              <div v-for="p in userPlantillas.mine.filter(t => (t.tipo || 'nota') === fichaPlantillasTipo)" :key="'fp'+p.id"
+                style="display:flex; justify-content:space-between; align-items:flex-start; padding:0.5rem; border-bottom:1px solid var(--border-color); font-size:0.8rem;">
+                <div style="flex:1; min-width:0;">
+                  <div style="font-weight:600;">{{ p.nombre }}
+                    <span v-if="p.compartida" style="font-size:0.65rem; color:var(--accent-info); margin-left:0.3rem;">Compartida</span>
+                  </div>
+                  <div style="color:var(--text-secondary); font-size:0.75rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ p.contenido.substring(0, 80) }}{{ p.contenido.length > 80 ? '...' : '' }}</div>
+                </div>
+                <div style="display:flex; gap:0.25rem; flex-shrink:0; margin-left:0.5rem;">
+                  <button class="btn-sm" style="font-size:0.7rem; padding:0.2rem 0.5rem;" @click="openPlantillaForm(p)">Editar</button>
+                  <button class="btn-sm" style="font-size:0.7rem; padding:0.2rem 0.5rem; color:var(--accent-danger);" @click="deletePlantillaItem(p.id)">X</button>
+                </div>
+              </div>
+              <p v-if="!userPlantillas.mine.filter(t => (t.tipo || 'nota') === fichaPlantillasTipo).length"
+                style="color:var(--text-muted); font-size:0.8rem; text-align:center; padding:0.5rem;">
+                No tienes plantillas de {{ fichaPlantillasTipo === 'email' ? 'correo' : 'notas' }} aún.
+              </p>
+
+              <!-- Shared templates for current tipo -->
+              <template v-if="userPlantillas.shared.filter(t => (t.tipo || 'nota') === fichaPlantillasTipo).length">
+                <h5 style="font-size:0.8rem; color:var(--text-secondary); margin:0.75rem 0 0.4rem;">Compartidas</h5>
+                <div v-for="p in userPlantillas.shared.filter(t => (t.tipo || 'nota') === fichaPlantillasTipo)" :key="'fsh'+p.id"
+                  style="padding:0.4rem 0.5rem; border-bottom:1px solid var(--border-color); font-size:0.8rem;">
+                  <span style="font-weight:600;">{{ p.nombre }}</span>
+                  <span style="font-size:0.7rem; color:var(--text-muted);"> por {{ (p.owner || '').split('@')[0] }}</span>
+                  <div style="color:var(--text-secondary); font-size:0.75rem;">{{ p.contenido.substring(0, 60) }}{{ p.contenido.length > 60 ? '...' : '' }}</div>
+                </div>
+              </template>
+            </div>
+
             <!-- SDR Notes (Read-Only context for AEs) -->
             <div v-if="(userRole === 'AE' || userRole === 'ADMIN' || userRole === 'GERENTE') && editLead['Notas']"
               style="margin-bottom: 1.5rem;">
@@ -2649,6 +3105,28 @@
             <!-- SDR: edits their own notes -->
             <template v-if="userRole === 'SDR'">
               <h4 style="color: var(--accent-primary); margin-bottom: 0.5rem;">📝 Notas del SDR</h4>
+              <!-- Per-user note templates (tipo = nota) -->
+              <div v-if="allPlantillasForDropdown.length" style="margin-bottom: 0.4rem;">
+                <select class="form-select" style="font-size: 0.8rem; padding: 0.3rem 0.5rem;"
+                  @change="insertNoteTemplate($event.target.value, 'Notas'); $event.target.value = ''">
+                  <option value="">Insertar plantilla...</option>
+                  <optgroup v-if="userPlantillas.mine.filter(p => !p.tipo || p.tipo === 'nota').length" label="Mis Plantillas">
+                    <option v-for="t in userPlantillas.mine.filter(p => !p.tipo || p.tipo === 'nota')" :key="'m'+t.id" :value="t.contenido">{{ t.nombre }}</option>
+                  </optgroup>
+                  <optgroup v-if="userPlantillas.shared.filter(p => !p.tipo || p.tipo === 'nota').length" label="Compartidas">
+                    <option v-for="t in userPlantillas.shared.filter(p => !p.tipo || p.tipo === 'nota')" :key="'s'+t.id" :value="t.contenido">{{ t.nombre }} ({{ (t.owner || '').split('@')[0] }})</option>
+                  </optgroup>
+                </select>
+              </div>
+              <!-- Fallback: legacy catalog templates -->
+              <div v-else-if="catalogs['Plantillas de Notas'] && catalogs['Plantillas de Notas'].length"
+                style="margin-bottom: 0.4rem;">
+                <select class="form-select" style="font-size: 0.8rem; padding: 0.3rem 0.5rem;"
+                  @change="insertNoteTemplate($event.target.value, 'Notas'); $event.target.value = ''">
+                  <option value="">Insertar plantilla...</option>
+                  <option v-for="t in catalogs['Plantillas de Notas']" :key="t" :value="t">{{ t.substring(0, 60) }}{{ t.length > 60 ? '...' : '' }}</option>
+                </select>
+              </div>
               <textarea v-model="editLead['Notas']" class="notes-textarea"
                 placeholder="Escribe notas sobre este lead..."></textarea>
             </template>
@@ -2656,6 +3134,19 @@
             <!-- AE/Admin/Gerente: edits their own notes (Notas Vendedor) -->
             <template v-if="userRole === 'AE' || userRole === 'ADMIN' || userRole === 'GERENTE'">
               <h4 style="color: var(--accent-primary); margin-bottom: 0.5rem;">📝 Notas del AE</h4>
+              <!-- Per-user note templates (tipo = nota) -->
+              <div v-if="allPlantillasForDropdown.length" style="margin-bottom: 0.4rem;">
+                <select class="form-select" style="font-size: 0.8rem; padding: 0.3rem 0.5rem;"
+                  @change="insertNoteTemplate($event.target.value, 'Notas Vendedor'); $event.target.value = ''">
+                  <option value="">Insertar plantilla...</option>
+                  <optgroup v-if="userPlantillas.mine.filter(p => !p.tipo || p.tipo === 'nota').length" label="Mis Plantillas">
+                    <option v-for="t in userPlantillas.mine.filter(p => !p.tipo || p.tipo === 'nota')" :key="'m'+t.id" :value="t.contenido">{{ t.nombre }}</option>
+                  </optgroup>
+                  <optgroup v-if="userPlantillas.shared.filter(p => !p.tipo || p.tipo === 'nota').length" label="Compartidas">
+                    <option v-for="t in userPlantillas.shared.filter(p => !p.tipo || p.tipo === 'nota')" :key="'s'+t.id" :value="t.contenido">{{ t.nombre }} ({{ (t.owner || '').split('@')[0] }})</option>
+                  </optgroup>
+                </select>
+              </div>
               <textarea v-model="editLead['Notas Vendedor']" class="notes-textarea"
                 placeholder="Escribe notas exclusivas del Account Executive..."></textarea>
             </template>
@@ -2755,7 +3246,40 @@
             </div>
           </div>
 
-          <!-- Section 3: Notes for AE ("Bandeja de Plata") -->
+          <!-- Section 3: Pricing Estimate (PRICE-01 + PRICE-03) -->
+          <div v-if="handoffMontoEstimado" style="margin-bottom: 1.5rem;">
+            <h4 style="color: var(--accent-success, #10b981); margin-bottom: 0.75rem;">
+              <span class="material-symbols-outlined" style="font-size:1rem; vertical-align:middle;">payments</span>
+              Monto Estimado Anual
+            </h4>
+            <div style="background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.25); border-radius: 10px; padding: 1rem;">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+                <span style="font-size: 0.8rem; color: var(--text-secondary);">Tipo de Cliente</span>
+                <span style="font-size: 0.85rem; font-weight: 600;">{{ handoffMontoEstimado.tipo }}</span>
+              </div>
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
+                <span style="font-size: 0.8rem; color: var(--text-secondary);">Desglose</span>
+                <span style="font-size: 0.8rem; color: var(--text-muted);">{{ handoffMontoEstimado.formula }}</span>
+              </div>
+              <div style="text-align: center; padding-top: 0.5rem; border-top: 1px solid rgba(16,185,129,0.15);">
+                <span style="font-size: 1.5rem; font-weight: 700; color: var(--accent-success, #10b981);">
+                  ${{ handoffMontoEstimado.monto.toLocaleString() }}
+                </span>
+                <span style="display: block; font-size: 0.7rem; color: var(--text-muted); margin-top: 0.2rem;">Monto estimado anual</span>
+              </div>
+            </div>
+          </div>
+          <div v-else style="margin-bottom: 1.5rem;">
+            <h4 style="color: var(--text-muted); margin-bottom: 0.5rem;">
+              <span class="material-symbols-outlined" style="font-size:1rem; vertical-align:middle;">payments</span>
+              Monto Estimado Anual
+            </h4>
+            <p style="font-size: 0.8rem; color: var(--text-muted);">
+              No disponible — configure "Tipo de Cliente" y "Ticket Promedio" en Configuración &gt; Pricing.
+            </p>
+          </div>
+
+          <!-- Section 4: Notes for AE ("Bandeja de Plata") -->
           <div>
             <h4 style="color: var(--accent-info, #3b82f6); margin-bottom: 0.5rem;">
               <span class="material-symbols-outlined" style="font-size:1rem; vertical-align:middle;">edit_note</span>
@@ -2765,7 +3289,7 @@
               placeholder="Contexto adicional, observaciones, detalles relevantes para el AE..."></textarea>
           </div>
 
-          <!-- Section 4: AE Assignment (conditional on routing mode) -->
+          <!-- Section 5: AE Assignment (conditional on routing mode) -->
           <div style="margin-top: 1rem;">
             <h4 style="color: var(--accent-primary); margin-bottom: 0.5rem;">
               <span class="material-symbols-outlined" style="font-size:1rem; vertical-align:middle;">person_add</span>
@@ -2776,7 +3300,7 @@
               <label>Seleccionar AE *</label>
               <select v-model="handoffData.aeEmail" class="form-select" required>
                 <option value="">— Seleccionar Account Executive —</option>
-                <option v-for="ae in aeList" :key="ae.email" :value="ae.email">{{ ae.nombre || ae.email }}</option>
+                <option v-for="ae in activeAEs" :key="ae.email" :value="ae.email">{{ ae.nombre || ae.email }}</option>
               </select>
             </div>
             <!-- Mode: AUTO → Show info badge -->
@@ -2974,6 +3498,71 @@
               placeholder="Ej: Reagenda - Juan Pérez" />
           </div>
 
+          <!-- Plantillas para Calendario (nota-type templates for description) -->
+          <div class="form-group">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.3rem;">
+              <label style="font-weight:600; margin:0; font-size:0.85rem;">
+                <span class="material-symbols-outlined" style="font-size:1rem; vertical-align:middle; color:var(--text-secondary);">description</span>
+                Plantilla (opcional)
+              </label>
+              <button class="btn-sm" style="font-size:0.65rem; opacity:0.85; display:inline-flex; align-items:center; gap:0.2rem;"
+                @click="showCalPlantillaPanel = !showCalPlantillaPanel">
+                <span class="material-symbols-outlined" style="font-size:0.8rem;">edit_note</span>
+                {{ showCalPlantillaPanel ? 'Cerrar' : 'Gestionar' }}
+              </button>
+            </div>
+            <!-- Quick select -->
+            <select v-if="allPlantillasForDropdown.length" class="form-select" style="font-size:0.8rem;"
+              @change="quickCalForm.asunto = quickCalForm.asunto || $event.target.value.substring(0, 50); $event.target.value = ''">
+              <option value="">Insertar en asunto...</option>
+              <optgroup v-if="userPlantillas.mine.filter(p => !p.tipo || p.tipo === 'nota').length" label="Mis Plantillas">
+                <option v-for="t in userPlantillas.mine.filter(p => !p.tipo || p.tipo === 'nota')" :key="'cm'+t.id" :value="t.contenido">{{ t.nombre }}</option>
+              </optgroup>
+              <optgroup v-if="userPlantillas.shared.filter(p => !p.tipo || p.tipo === 'nota').length" label="Compartidas">
+                <option v-for="t in userPlantillas.shared.filter(p => !p.tipo || p.tipo === 'nota')" :key="'cs'+t.id" :value="t.contenido">{{ t.nombre }}</option>
+              </optgroup>
+            </select>
+
+            <!-- Inline CRUD panel -->
+            <div v-if="showCalPlantillaPanel"
+              style="background:var(--bg-elevated); border:1px solid var(--border-color); border-radius:0.4rem; padding:0.6rem; margin-top:0.4rem; max-height:220px; overflow-y:auto;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.4rem;">
+                <span style="font-weight:600; font-size:0.8rem;">Plantillas de Notas</span>
+                <button class="btn-sm btn-success" style="font-size:0.65rem;" @click="openPlantillaForm(null, 'nota')">+ Nueva</button>
+              </div>
+              <div v-if="showPlantillaForm && plantillaForm.tipo === 'nota'"
+                style="border:1px solid var(--border-color); border-radius:0.3rem; padding:0.5rem; margin-bottom:0.4rem; background:var(--bg-primary);">
+                <input v-model="plantillaForm.nombre" type="text" class="form-input" placeholder="Nombre"
+                  style="font-size:0.75rem; margin-bottom:0.3rem;">
+                <textarea v-model="plantillaForm.contenido" class="notes-textarea" rows="2"
+                  placeholder="Contenido. Variables: {nombre}, {empresa}..."
+                  style="font-size:0.75rem; min-height:50px; margin-bottom:0.3rem;"></textarea>
+                <div style="display:flex; align-items:center; gap:0.4rem; margin-bottom:0.3rem;">
+                  <label style="font-size:0.7rem; display:flex; align-items:center; gap:0.2rem; cursor:pointer;">
+                    <input type="checkbox" v-model="plantillaForm.compartida"> Compartir
+                  </label>
+                </div>
+                <div style="display:flex; gap:0.25rem;">
+                  <button class="btn-sm btn-success" style="font-size:0.65rem;" @click="savePlantillaForm">{{ plantillaForm.editId ? 'Actualizar' : 'Crear' }}</button>
+                  <button class="btn-sm btn-secondary" style="font-size:0.65rem;" @click="showPlantillaForm = false">Cancelar</button>
+                </div>
+              </div>
+              <div v-for="p in userPlantillas.mine.filter(t => !t.tipo || t.tipo === 'nota')" :key="'calp'+p.id"
+                style="display:flex; justify-content:space-between; align-items:center; padding:0.3rem 0; border-bottom:1px solid var(--border-color); font-size:0.75rem;">
+                <div style="flex:1; min-width:0;">
+                  <span style="font-weight:600;">{{ p.nombre }}</span>
+                  <span v-if="p.compartida" style="font-size:0.6rem; color:var(--accent-info); margin-left:0.2rem;">Compartida</span>
+                </div>
+                <div style="display:flex; gap:0.2rem; flex-shrink:0;">
+                  <button class="btn-sm" style="font-size:0.6rem; padding:0.1rem 0.3rem;" @click="openPlantillaForm(p)">Editar</button>
+                  <button class="btn-sm" style="font-size:0.6rem; padding:0.1rem 0.3rem; color:var(--accent-danger);" @click="deletePlantillaItem(p.id)">X</button>
+                </div>
+              </div>
+              <p v-if="!userPlantillas.mine.filter(t => !t.tipo || t.tipo === 'nota').length"
+                style="color:var(--text-muted); font-size:0.7rem; text-align:center; padding:0.3rem;">Sin plantillas</p>
+            </div>
+          </div>
+
           <!-- Fecha y Hora -->
           <div style="display:grid; grid-template-columns: 1fr 1fr; gap:0.8rem;">
             <div class="form-group">
@@ -3077,6 +3666,83 @@
             <div class="form-group">
               <label>Asunto</label>
               <input type="text" v-model="emailForm.subject" class="form-input" placeholder="Asunto del correo..." />
+            </div>
+            <!-- Phase v3.2+: Email Template Selector + CRUD panel -->
+            <div class="form-group">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.3rem;">
+                <label style="margin:0;">Plantilla de Correo</label>
+                <button class="btn-sm" style="font-size:0.7rem; opacity:0.85; display:inline-flex; align-items:center; gap:0.2rem;"
+                  @click="showEmailPlantillaPanel = !showEmailPlantillaPanel">
+                  <span class="material-symbols-outlined" style="font-size:0.85rem;">edit_note</span>
+                  {{ showEmailPlantillaPanel ? 'Cerrar' : 'Gestionar' }}
+                </button>
+              </div>
+              <!-- Quick select dropdown -->
+              <select class="form-select" style="font-size:0.85rem;"
+                @change="insertEmailTemplate($event.target.value); $event.target.value = ''">
+                <option value="">Seleccionar plantilla de correo...</option>
+                <optgroup v-if="userPlantillas.mine.filter(p => p.tipo === 'email').length" label="Mis Plantillas">
+                  <option v-for="t in userPlantillas.mine.filter(p => p.tipo === 'email')" :key="'em'+t.id" :value="t.contenido">{{ t.nombre }}</option>
+                </optgroup>
+                <optgroup v-if="userPlantillas.shared.filter(p => p.tipo === 'email').length" label="Compartidas">
+                  <option v-for="t in userPlantillas.shared.filter(p => p.tipo === 'email')" :key="'es'+t.id" :value="t.contenido">{{ t.nombre }} ({{ (t.owner || '').split('@')[0] }})</option>
+                </optgroup>
+              </select>
+
+              <!-- Inline CRUD panel for email templates -->
+              <div v-if="showEmailPlantillaPanel"
+                style="background:var(--bg-elevated); border:1px solid var(--border-color); border-radius:0.5rem; padding:0.75rem; margin-top:0.5rem; max-height:300px; overflow-y:auto;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+                  <span style="font-weight:600; font-size:0.85rem;">Plantillas de Email</span>
+                  <button class="btn-sm btn-success" style="font-size:0.7rem;" @click="openPlantillaForm(null, 'email')">+ Nueva</button>
+                </div>
+                <!-- Create/Edit form -->
+                <div v-if="showPlantillaForm && plantillaForm.tipo === 'email'"
+                  style="border:1px solid var(--border-color); border-radius:0.4rem; padding:0.6rem; margin-bottom:0.5rem; background:var(--bg-primary);">
+                  <input v-model="plantillaForm.nombre" type="text" class="form-input" placeholder="Nombre de la plantilla"
+                    style="font-size:0.8rem; margin-bottom:0.4rem;">
+                  <textarea v-model="plantillaForm.contenido" class="notes-textarea" rows="4"
+                    placeholder="HTML del correo. Variables: {nombre}, {apellido}, {empresa}, {producto}, {telefono}"
+                    style="font-size:0.8rem; min-height:70px; margin-bottom:0.4rem;"></textarea>
+                  <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.4rem;">
+                    <label style="font-size:0.75rem; display:flex; align-items:center; gap:0.3rem; cursor:pointer;">
+                      <input type="checkbox" v-model="plantillaForm.compartida"> Compartir
+                    </label>
+                  </div>
+                  <div style="display:flex; gap:0.3rem;">
+                    <button class="btn-sm btn-success" style="font-size:0.7rem;" @click="savePlantillaForm">{{ plantillaForm.editId ? 'Actualizar' : 'Crear' }}</button>
+                    <button class="btn-sm btn-secondary" style="font-size:0.7rem;" @click="showPlantillaForm = false">Cancelar</button>
+                  </div>
+                </div>
+                <!-- List -->
+                <div v-for="p in userPlantillas.mine.filter(t => t.tipo === 'email')" :key="'ecp'+p.id"
+                  style="display:flex; justify-content:space-between; align-items:center; padding:0.4rem 0; border-bottom:1px solid var(--border-color); font-size:0.8rem;">
+                  <div style="flex:1; min-width:0; cursor:pointer;" @click="insertEmailTemplate(p.contenido)">
+                    <div style="font-weight:600;">{{ p.nombre }}
+                      <span v-if="p.compartida" style="font-size:0.6rem; color:var(--accent-info);">Compartida</span>
+                    </div>
+                    <div style="color:var(--text-secondary); font-size:0.7rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ p.contenido.substring(0, 60) }}...</div>
+                  </div>
+                  <div style="display:flex; gap:0.2rem; flex-shrink:0; margin-left:0.4rem;">
+                    <button class="btn-sm" style="font-size:0.65rem; padding:0.15rem 0.4rem;" @click="openPlantillaForm(p)">Editar</button>
+                    <button class="btn-sm" style="font-size:0.65rem; padding:0.15rem 0.4rem; color:var(--accent-danger);" @click="deletePlantillaItem(p.id)">X</button>
+                  </div>
+                </div>
+                <p v-if="!userPlantillas.mine.filter(t => t.tipo === 'email').length"
+                  style="color:var(--text-muted); font-size:0.75rem; text-align:center; padding:0.4rem;">
+                  No tienes plantillas de email aún.
+                </p>
+                <!-- Shared -->
+                <template v-if="userPlantillas.shared.filter(t => t.tipo === 'email').length">
+                  <div style="font-size:0.75rem; color:var(--text-secondary); font-weight:600; margin-top:0.5rem; margin-bottom:0.3rem;">Compartidas</div>
+                  <div v-for="p in userPlantillas.shared.filter(t => t.tipo === 'email')" :key="'ecs'+p.id"
+                    style="padding:0.3rem 0; border-bottom:1px solid var(--border-color); font-size:0.75rem; cursor:pointer;"
+                    @click="insertEmailTemplate(p.contenido)">
+                    <span style="font-weight:600;">{{ p.nombre }}</span>
+                    <span style="color:var(--text-muted);"> ({{ (p.owner || '').split('@')[0] }})</span>
+                  </div>
+                </template>
+              </div>
             </div>
             <!-- Rich Text Body (Quill Editor) -->
             <div class="form-group">

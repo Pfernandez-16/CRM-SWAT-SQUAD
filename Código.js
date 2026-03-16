@@ -16,9 +16,20 @@ var T_DEALS = 'fact_deals';
 var T_INTERACCIONES = 'fact_interacciones';
 var T_CALIFICACION = 'fact_calificacion';
 var T_TOQUES = 'fact_toques';
+var T_DEAL_PRODUCTOS = 'fact_deal_productos';
 var T_CATALOGS = 'cat_opciones';
 var T_LOG = 'log_transacciones';
 var T_USERS = 'config_users';
+var T_PLANTILLAS = 'config_plantillas_notas';
+
+// Phase 3B: System columns excluded from frontend editing
+var SYSTEM_COLS = {
+  '_row':1, 'id_lead':1, 'id_deal':1, 'id_contacto':1, 'id_campana':1,
+  'id_vendedor_sdr':1, 'id_vendedor_ae':1, 'id_producto':1, 'id_calificacion':1,
+  'id_interaccion':1, 'id_toque':1, 'id_lead_original':1, 'id_registro_toque':1,
+  'id_entidad':1, 'tipo_entidad':1, 'fecha_ingreso':1, 'fecha_creacion':1,
+  'rol_vendedor':1, 'id_plantilla':1, 'id_deal_producto':1
+};
 
 // Mapeo de categorías cat_opciones → claves del frontend
 var CATEGORY_MAP = {
@@ -307,6 +318,32 @@ function getLeads() {
     // --- Build Leads ---
     var rawLeads = readTable_(T_LEADS);
     var leads = [];
+    // Phase 8: Read global pricing config once (outside the loop)
+    var pricingCfg = getPricingConfig();
+
+    // Phase 3B: Pre-compute sets of already-mapped DB columns to avoid duplicates in passthrough
+    var _mappedLeadFactCols = {};
+    for (var _mk in LEAD_FIELD_MAP) {
+      var _mv = LEAD_FIELD_MAP[_mk];
+      if (_mv.indexOf('_DIM_CONTACTO_') === 0) { _mappedLeadFactCols[_mv.replace('_DIM_CONTACTO_', '')] = '_c_'; }
+      else if (_mv.indexOf('_FACT_CALIFICACION_') === 0) { _mappedLeadFactCols[_mv.replace('_FACT_CALIFICACION_', '')] = '_q_'; }
+      else { _mappedLeadFactCols[_mv] = 'fact'; }
+    }
+    var _mappedDealFactCols = {};
+    for (var _dk in DEAL_FIELD_MAP) {
+      var _dv = DEAL_FIELD_MAP[_dk];
+      if (_dv.indexOf('_DIM_CONTACTO_') === 0) { _mappedDealFactCols[_dv.replace('_DIM_CONTACTO_', '')] = '_c_'; }
+      else if (_dv.indexOf('_FACT_CALIFICACION_') === 0) { _mappedDealFactCols[_dv.replace('_FACT_CALIFICACION_', '')] = '_q_'; }
+      else { _mappedDealFactCols[_dv] = 'fact'; }
+    }
+    var _tipo = String(pricingCfg.tipoCliente || '').trim();
+    var _ticket = parseFloat(pricingCfg.ticketPromedio) || 0;
+    var _licencias = parseFloat(pricingCfg.licenciasPromedio) || 0;
+    var _globalMonto = 0;
+    if (_tipo === 'Fichas Mensuales (FEE)') _globalMonto = _ticket * 12;
+    else if (_tipo === 'Proyectos') _globalMonto = _ticket;
+    else if (_tipo === 'SaaS') _globalMonto = _ticket * _licencias * 12;
+
     for (var i = 0; i < rawLeads.length; i++) {
       var fl = rawLeads[i];
       var contacto = contactosIdx[String(fl.id_contacto)] || {};
@@ -364,14 +401,17 @@ function getLeads() {
         // Contact-level fields (IP, Link, fbclid)
         'Ip': contacto.ip || '',
         'Link': contacto.link || '',
-        'fbclid': contacto.fbclid || ''
+        'fbclid': contacto.fbclid || '',
+        // Phase 21: Duplicate FK link
+        'Lead Original': fl.id_lead_original || '',
+        _leadOriginalId: fl.id_lead_original || ''
       };
 
-      // Pricing fields (SDR)
-      obj['Tipo de Cliente'] = fl.tipo_cliente_pricing || '';
-      obj['Ticket Promedio'] = fl.ticket_promedio || '';
-      obj['Licencias Promedio'] = fl.licencias_promedio || '';
-      obj['Monto Aproximado'] = fl.monto_aproximado || '';
+      // Pricing fields — from global config (Phase 8: Pricing Global)
+      obj['Tipo de Cliente'] = pricingCfg.tipoCliente || '';
+      obj['Ticket Promedio'] = pricingCfg.ticketPromedio || '';
+      obj['Licencias Promedio'] = pricingCfg.licenciasPromedio || '';
+      obj['Monto Aproximado'] = _globalMonto;
 
       // Add tracking fields
       obj['Toques de Contactación'] = String(fl.numero_toques || 0);
@@ -386,8 +426,12 @@ function getLeads() {
       obj['¿Necesitas tocar base con alguién para decidir la compra?'] = calif.necesita_decision_tercero || '';
       obj['¿Tienes presupuesto asignado para este proyecto, en este año?'] = calif.tiene_presupuesto || '';
       obj['¿Cuánto?'] = calif.monto_presupuesto || '';
+      obj['Modo Presupuesto'] = calif.modo_presupuesto || 'Exacto';
+      obj['Presupuesto Rango Alto'] = calif.presupuesto_rango_alto || '';
       obj['¿han sido parte de alguna asociación de la industria?'] = calif.asociacion_industria || '';
       obj['Pricing Tier'] = calif.pricing_tier || '';
+      // PARAM-01: Custom question responses (JSON)
+      try { obj['_respuestasCustom'] = JSON.parse(calif.respuestas_custom || '{}'); } catch(e) { obj['_respuestasCustom'] = {}; }
       // Phase 1.6: Missing BANT fields
       obj['¿Cual es su región?'] = calif.region || '';
       obj['¿Que tipo de membresía es?'] = calif.tipo_membresia || '';
@@ -420,7 +464,7 @@ function getLeads() {
       var toquesArr = leadToquesIdx[String(fl.id_lead)] || [];
       toquesArr.sort(function (a, b) { return Number(a.numero_toque || 0) - Number(b.numero_toque || 0); });
       obj._toquesList = toquesArr.map(function (t) {
-        return { toque: t.numero_toque, fecha: t.fecha_toque, vendedor: t.id_vendedor, rol: t.rol_vendedor };
+        return { toque: t.numero_toque, fecha: t.fecha_toque, vendedor: t.id_vendedor, rol: t.rol_vendedor, canal: t.canal || '' };
       });
 
       // Phase 1.11: Derive Timestamp from the last fact_toques entry (single source of truth)
@@ -433,6 +477,27 @@ function getLeads() {
       }
       obj['time stamp'] = ultimaFechaToque;
       obj['Timestamp'] = ultimaFechaToque;
+
+      // Phase 3B: Passthrough unmapped columns from all joined tables
+      for (var _fk in fl) {
+        if (_fk === '_row' || SYSTEM_COLS[_fk] || _mappedLeadFactCols[_fk]) continue;
+        if (obj[_fk] === undefined) obj[_fk] = fl[_fk] !== undefined ? fl[_fk] : '';
+      }
+      for (var _ck in contacto) {
+        if (_ck === '_row' || SYSTEM_COLS[_ck] || _mappedLeadFactCols[_ck] === '_c_') continue;
+        var _cpk = '_c_' + _ck;
+        if (obj[_cpk] === undefined && obj[_ck] === undefined) obj[_cpk] = contacto[_ck] !== undefined ? contacto[_ck] : '';
+      }
+      for (var _qk in calif) {
+        if (_qk === '_row' || SYSTEM_COLS[_qk] || _mappedLeadFactCols[_qk] === '_q_') continue;
+        var _qpk = '_q_' + _qk;
+        if (obj[_qpk] === undefined && obj[_qk] === undefined) obj[_qpk] = calif[_qk] !== undefined ? calif[_qk] : '';
+      }
+      for (var _campk in campana) {
+        if (_campk === '_row' || SYSTEM_COLS[_campk]) continue;
+        var _camppk = '_camp_' + _campk;
+        if (obj[_camppk] === undefined && obj[_campk] === undefined) obj[_camppk] = campana[_campk] !== undefined ? campana[_campk] : '';
+      }
 
       leads.push(obj);
     }
@@ -469,6 +534,7 @@ function getLeads() {
         _colX_Calidad: '',
         _colY_Toques: '',
         _colAQ_Vendedor: dv.nombre || '',
+        _aeEmail: dv.email || '',
         _colAS_Notas: fd.notas_vendedor || '',
         // Direct fields
         'ID': fd.id_deal,
@@ -495,6 +561,9 @@ function getLeads() {
         'Fuente de origen': fd.fuente_origen || '',
         'Tipo de Transacción': fd.tipo_transaccion || '',
         'Monto de Cotización': fd.monto_cotizacion || '',
+        'Fecha de Cotización': formatHtmlDate(fd.fecha_cotizacion),
+        'Notas de Cotización': fd.notas_cotizacion || '',
+        'Razón Pérdida Otra': fd.razon_perdida_otra || '',
         'Vendedor Asignado para Seguimiento': fd.id_vendedor_ae || '',
         // AE-exclusive fields
         'Toque': fd.toque_ae || '',
@@ -537,11 +606,11 @@ function getLeads() {
       dealObj['Timestamp'] = sdrLead.fecha_ultimo_contacto || '';
       dealObj['Servicio'] = sdrLead.servicio_interes || '';
 
-      // SDR Pricing fields (read-only for AE)
-      dealObj['Tipo de Cliente'] = sdrLead.tipo_cliente_pricing || '';
-      dealObj['Ticket Promedio'] = sdrLead.ticket_promedio || '';
-      dealObj['Licencias Promedio'] = sdrLead.licencias_promedio || '';
-      dealObj['Monto Aproximado'] = sdrLead.monto_aproximado || '';
+      // Pricing fields — from global config (Phase 8: reuses pricingCfg from leads section)
+      dealObj['Tipo de Cliente'] = pricingCfg.tipoCliente || '';
+      dealObj['Ticket Promedio'] = pricingCfg.ticketPromedio || '';
+      dealObj['Licencias Promedio'] = pricingCfg.licenciasPromedio || '';
+      dealObj['Monto Aproximado'] = _globalMonto;
 
       // SDR UTM / Campaign data (from dim_campanas via Lead FK)
       dealObj['source'] = sdrCampana.source || '';
@@ -568,11 +637,14 @@ function getLeads() {
       dealObj['¿Necesitas tocar base con alguién para decidir la compra?'] = dealCalif.necesita_decision_tercero || '';
       dealObj['¿Tienes presupuesto asignado para este proyecto, en este año?'] = dealCalif.tiene_presupuesto || '';
       dealObj['¿Cuánto?'] = dealCalif.monto_presupuesto || '';
+      dealObj['Modo Presupuesto'] = dealCalif.modo_presupuesto || 'Exacto';
+      dealObj['Presupuesto Rango Alto'] = dealCalif.presupuesto_rango_alto || '';
       dealObj['¿han sido parte de alguna asociación de la industria?'] = dealCalif.asociacion_industria || '';
       // BANT Pricing fields from fact_calificacion (SSOT — NOT from dim_productos)
       dealObj['¿Cual es su región?'] = dealCalif.region || '';
       dealObj['¿Que tipo de membresía es?'] = dealCalif.tipo_membresia || '';
       dealObj['Pricing Tier'] = dealCalif.pricing_tier || '';
+      try { dealObj['_respuestasCustom'] = JSON.parse(dealCalif.respuestas_custom || '{}'); } catch(e) { dealObj['_respuestasCustom'] = {}; }
 
       // Build deal history from fact_interacciones
       var dealHistory = [];
@@ -608,10 +680,10 @@ function getLeads() {
 
       // ── Combine SDR toques (via id_lead FK) + AE toques (via id_deal) ──
       var sdrToques = (leadToquesIdx[String(fd.id_lead)] || []).map(function (t) {
-        return { toque: t.numero_toque, fecha: t.fecha_toque, vendedor: t.id_vendedor, rol: t.rol_vendedor || 'SDR' };
+        return { toque: t.numero_toque, fecha: t.fecha_toque, vendedor: t.id_vendedor, rol: t.rol_vendedor || 'SDR', canal: t.canal || '' };
       });
       var aeToques = (dealToquesIdx[String(fd.id_deal)] || []).map(function (t) {
-        return { toque: t.numero_toque, fecha: t.fecha_toque, vendedor: t.id_vendedor, rol: t.rol_vendedor || 'AE' };
+        return { toque: t.numero_toque, fecha: t.fecha_toque, vendedor: t.id_vendedor, rol: t.rol_vendedor || 'AE', canal: t.canal || '' };
       });
       var combinedToques = sdrToques.concat(aeToques);
       combinedToques.sort(function (a, b) { return new Date(a.fecha || 0) - new Date(b.fecha || 0); });
@@ -642,6 +714,30 @@ function getLeads() {
         dealObj['Fecha de primer contacto AE'] = primerToqueAE.fecha;
       }
 
+      // Phase v3.2: Auto-derive ¿Ventas Contactó Cliente? from AE toques existence
+      var hasAnyAeToque = false;
+      for (var at = 0; at < combinedToques.length; at++) {
+        if (combinedToques[at].rol === 'AE') { hasAnyAeToque = true; break; }
+      }
+      dealObj['¿Ventas Contactó Cliente?'] = hasAnyAeToque ? 'Si' : 'No';
+
+      // Phase 3B: Passthrough unmapped columns from all joined tables (deals)
+      for (var _dfk in fd) {
+        if (_dfk === '_row' || SYSTEM_COLS[_dfk] || _mappedDealFactCols[_dfk]) continue;
+        if (dealObj[_dfk] === undefined) dealObj[_dfk] = fd[_dfk] !== undefined ? fd[_dfk] : '';
+      }
+      for (var _dck in dc) {
+        if (_dck === '_row' || SYSTEM_COLS[_dck] || _mappedDealFactCols[_dck] === '_c_') continue;
+        var _dcpk = '_c_' + _dck;
+        if (dealObj[_dcpk] === undefined && dealObj[_dck] === undefined) dealObj[_dcpk] = dc[_dck] !== undefined ? dc[_dck] : '';
+      }
+      var dealCalif = calificacionIdx[String(fd.id_lead)] || {};
+      for (var _dqk in dealCalif) {
+        if (_dqk === '_row' || SYSTEM_COLS[_dqk] || _mappedDealFactCols[_dqk] === '_q_') continue;
+        var _dqpk = '_q_' + _dqk;
+        if (dealObj[_dqpk] === undefined && dealObj[_dqk] === undefined) dealObj[_dqpk] = dealCalif[_dqk] !== undefined ? dealCalif[_dqk] : '';
+      }
+
       deals.push(dealObj);
     }
 
@@ -667,6 +763,81 @@ function getLeads() {
     Logger.log('getLeads ERROR: ' + err.message);
     return JSON.stringify({ leads: [], deals: [], error: err.message });
   }
+}
+
+// ============ API: SCHEMA DISCOVERY (Phase 3B) ============
+
+/**
+ * Returns column headers from each entity table plus a reverse FIELD_MAP
+ * so the frontend knows which table owns each column.
+ * Cached for 5 minutes.
+ * @return {Object} { tables: {tableName: [col1,col2,...]}, fieldMap: {frontendKey: {table, dbCol}} }
+ */
+function getSchema(forceRefresh) {
+  var cache = CacheService.getScriptCache();
+  if (!forceRefresh) {
+    var cached = cache.get('schema_v1');
+    if (cached) {
+      try { return JSON.parse(cached); } catch (e) { }
+    }
+  }
+
+  var ss = SpreadsheetApp.openById(SHEET_ID);
+  var tableMap = {
+    fact_leads: T_LEADS,
+    fact_deals: T_DEALS,
+    dim_contactos: T_CONTACTOS,
+    fact_calificacion: T_CALIFICACION,
+    dim_campanas: T_CAMPANAS
+  };
+
+  var schema = {};    // { tableName: [{name, format}] }
+  var colFormats = {}; // { tableName: {colName: formatString} }
+  for (var alias in tableMap) {
+    var sheet = ss.getSheetByName(tableMap[alias]);
+    if (!sheet || sheet.getLastColumn() === 0) { schema[alias] = []; colFormats[alias] = {}; continue; }
+    var lastCol = sheet.getLastColumn();
+    var headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+    // Read number formats from row 2 (first data row) to detect column types
+    var formats = [];
+    if (sheet.getLastRow() >= 2) {
+      formats = sheet.getRange(2, 1, 1, lastCol).getNumberFormats()[0];
+    }
+    var cols = [];
+    var fmts = {};
+    for (var i = 0; i < headers.length; i++) {
+      var h = String(headers[i] || '').trim().toLowerCase();
+      if (!h) continue;
+      cols.push(h);
+      if (formats[i]) fmts[h] = formats[i];
+    }
+    schema[alias] = cols;
+    colFormats[alias] = fmts;
+  }
+
+  // Build reverse FIELD_MAP: { frontendKey: { table, dbCol } }
+  var reverseMap = {};
+  function mapFields(fieldMap, defaultTable) {
+    for (var fk in fieldMap) {
+      if (reverseMap[fk]) continue;
+      var v = fieldMap[fk];
+      if (v.indexOf('_DIM_CONTACTO_') === 0) {
+        reverseMap[fk] = { table: 'dim_contactos', dbCol: v.replace('_DIM_CONTACTO_', '') };
+      } else if (v.indexOf('_FACT_CALIFICACION_') === 0) {
+        reverseMap[fk] = { table: 'fact_calificacion', dbCol: v.replace('_FACT_CALIFICACION_', '') };
+      } else {
+        reverseMap[fk] = { table: defaultTable, dbCol: v };
+      }
+    }
+  }
+  mapFields(LEAD_FIELD_MAP, 'fact_leads');
+  mapFields(DEAL_FIELD_MAP, 'fact_deals');
+
+  var result = { tables: schema, fieldMap: reverseMap, formats: colFormats };
+  try {
+    cache.put('schema_v1', JSON.stringify(result), 30);
+  } catch (e) { }
+  return result;
 }
 
 // ============ API: CATALOGS (vertical → grouped) ============
@@ -775,6 +946,127 @@ function getPricingData() {
     });
   }
   return result;
+}
+
+// ============ API: DEAL PRODUCTS (Phase 10 — DEAL-03) ============
+
+function getDealProducts(idDeal) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName(T_DEAL_PRODUCTOS);
+    if (!sheet) return [];
+    var rows = readTable_(T_DEAL_PRODUCTOS);
+    var result = [];
+    for (var i = 0; i < rows.length; i++) {
+      if (String(rows[i].id_deal) === String(idDeal)) {
+        result.push({
+          _row: rows[i]._row,
+          id_linea: rows[i].id_linea || '',
+          id_deal: rows[i].id_deal || '',
+          nombre_producto: rows[i].nombre_producto || '',
+          cantidad: Number(rows[i].cantidad) || 1,
+          precio_unitario: Number(rows[i].precio_unitario) || 0,
+          descuento_pct: Number(rows[i].descuento_pct) || 0,
+          subtotal: Number(rows[i].subtotal) || 0
+        });
+      }
+    }
+    return result;
+  } catch (e) {
+    Logger.log('getDealProducts ERROR: ' + e.message);
+    return [];
+  }
+}
+
+function saveDealProducts(idDeal, lineas) {
+  var lock = LockService.getScriptLock();
+  if (!lock.tryLock(10000)) return { status: 'error', message: 'Lock timeout' };
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName(T_DEAL_PRODUCTOS);
+    if (!sheet) {
+      // Auto-create the table with headers
+      sheet = ss.insertSheet(T_DEAL_PRODUCTOS);
+      sheet.getRange(1, 1, 1, 7).setValues([['id_linea', 'id_deal', 'nombre_producto', 'cantidad', 'precio_unitario', 'descuento_pct', 'subtotal']]);
+    }
+    // Delete existing lines for this deal
+    var data = sheet.getDataRange().getValues();
+    var colMap = {};
+    for (var c = 0; c < data[0].length; c++) colMap[String(data[0][c]).trim()] = c;
+    var idDealCol = colMap['id_deal'];
+    // Collect rows to delete (from bottom up)
+    var rowsToDelete = [];
+    for (var r = data.length - 1; r >= 1; r--) {
+      if (String(data[r][idDealCol]) === String(idDeal)) {
+        rowsToDelete.push(r + 1); // 1-indexed
+      }
+    }
+    for (var d = 0; d < rowsToDelete.length; d++) {
+      sheet.deleteRow(rowsToDelete[d]);
+    }
+    // Insert new lines
+    var nextId = getNextId_(sheet, 'id_linea');
+    for (var li = 0; li < lineas.length; li++) {
+      var l = lineas[li];
+      var qty = Number(l.cantidad) || 1;
+      var price = Number(l.precio_unitario) || 0;
+      var disc = Number(l.descuento_pct) || 0;
+      var subtotal = qty * price * (1 - disc / 100);
+      sheet.appendRow([nextId + li, idDeal, l.nombre_producto || '', qty, price, disc, Math.round(subtotal * 100) / 100]);
+    }
+    // DEAL-04: Auto-classify deal type
+    var clasificacion = classifyDealType_(idDeal, lineas);
+    if (clasificacion) {
+      var dealSheet = ss.getSheetByName(T_DEALS);
+      var dealColMap = getColumnMap_(dealSheet);
+      var dealRows = readTable_(T_DEALS);
+      for (var dr = 0; dr < dealRows.length; dr++) {
+        if (String(dealRows[dr].id_deal) === String(idDeal)) {
+          if (dealColMap['tipo_transaccion']) {
+            dealSheet.getRange(dealRows[dr]._row, dealColMap['tipo_transaccion']).setValue(clasificacion);
+          }
+          break;
+        }
+      }
+    }
+    return { status: 'success', message: lineas.length + ' producto(s) guardados', clasificacion: clasificacion || '' };
+  } catch (e) {
+    Logger.log('saveDealProducts ERROR: ' + e.message);
+    return { status: 'error', message: e.message };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// DEAL-04: Classify deal as cross-selling, up-selling, or venta directa
+function classifyDealType_(idDeal, lineas) {
+  try {
+    // Get the original SDR product of interest from the lead
+    var dealRows = readTable_(T_DEALS);
+    var deal = null;
+    for (var i = 0; i < dealRows.length; i++) {
+      if (String(dealRows[i].id_deal) === String(idDeal)) { deal = dealRows[i]; break; }
+    }
+    if (!deal || !deal.id_lead) return '';
+    var leadRows = readTable_(T_LEADS);
+    var lead = null;
+    for (var j = 0; j < leadRows.length; j++) {
+      if (String(leadRows[j].id_lead) === String(deal.id_lead)) { lead = leadRows[j]; break; }
+    }
+    if (!lead) return '';
+    var productoSDR = String(lead.producto_interes || lead.servicio || '').trim().toLowerCase();
+    if (!productoSDR) return '';
+    var productosAE = lineas.map(function(l) { return String(l.nombre_producto || '').trim().toLowerCase(); });
+    if (productosAE.length === 0) return '';
+    var hayMatch = productosAE.some(function(p) { return p === productoSDR; });
+    var hayOtros = productosAE.some(function(p) { return p !== productoSDR && p !== ''; });
+    if (hayMatch && hayOtros) return 'Cross-Selling';
+    if (!hayMatch && hayOtros) return 'Up-Selling';
+    return 'Venta Directa';
+  } catch (e) {
+    Logger.log('classifyDealType_ ERROR: ' + e.message);
+    return '';
+  }
 }
 
 // ============ API: USER ============
@@ -972,6 +1264,8 @@ var LEAD_FIELD_MAP = {
   '¿Necesitas tocar base con alguién para decidir la compra?': '_FACT_CALIFICACION_necesita_decision_tercero',
   '¿Tienes presupuesto asignado para este proyecto, en este año?': '_FACT_CALIFICACION_tiene_presupuesto',
   '¿Cuánto?': '_FACT_CALIFICACION_monto_presupuesto',
+  'Modo Presupuesto': '_FACT_CALIFICACION_modo_presupuesto',
+  'Presupuesto Rango Alto': '_FACT_CALIFICACION_presupuesto_rango_alto',
   '¿han sido parte de alguna asociación de la industria?': '_FACT_CALIFICACION_asociacion_industria',
   'Pricing Tier': '_FACT_CALIFICACION_pricing_tier',
   // Phase 1.6: Missing BANT fields
@@ -988,7 +1282,9 @@ var LEAD_FIELD_MAP = {
   // Contact & Campaign external bindings (contact fields are editable; campaign fields are read-only in UI)
   'Ip': '_DIM_CONTACTO_ip',
   'Link': '_DIM_CONTACTO_link',
-  'fbclid': '_DIM_CONTACTO_fbclid'
+  'fbclid': '_DIM_CONTACTO_fbclid',
+  // Phase 21: Duplicate FK link
+  'Lead Original': 'id_lead_original'
 };
 
 var DEAL_FIELD_MAP = {
@@ -1001,7 +1297,8 @@ var DEAL_FIELD_MAP = {
   '¿Es recompra?': 'es_recompra', '¿Es cliente activo?': 'es_cliente_activo',
   'Producto de Cierre': 'producto_cierre', 'Fuente de origen': 'fuente_origen',
   'Tipo de Transacción': 'tipo_transaccion',
-  'Monto de Cotización': 'monto_cotizacion',
+  'Monto de Cotización': 'monto_cotizacion', 'Fecha de Cotización': 'fecha_cotizacion', 'Notas de Cotización': 'notas_cotizacion',
+  'Razón Pérdida Otra': 'razon_perdida_otra',
   '1 Year Mem': 'precio_1_year', '2 Year Mem': 'precio_2_year',
   // Contact fields route to dim_contactos
   'Nombre': '_DIM_CONTACTO_nombre', 'Apellido': '_DIM_CONTACTO_apellido',
@@ -1015,6 +1312,8 @@ var DEAL_FIELD_MAP = {
   '¿Necesitas tocar base con alguién para decidir la compra?': '_FACT_CALIFICACION_necesita_decision_tercero',
   '¿Tienes presupuesto asignado para este proyecto, en este año?': '_FACT_CALIFICACION_tiene_presupuesto',
   '¿Cuánto?': '_FACT_CALIFICACION_monto_presupuesto',
+  'Modo Presupuesto': '_FACT_CALIFICACION_modo_presupuesto',
+  'Presupuesto Rango Alto': '_FACT_CALIFICACION_presupuesto_rango_alto',
   '¿han sido parte de alguna asociación de la industria?': '_FACT_CALIFICACION_asociacion_industria',
   'Pricing Tier': '_FACT_CALIFICACION_pricing_tier',
   '¿Cual es su región?': '_FACT_CALIFICACION_region',
@@ -1025,7 +1324,8 @@ var DEAL_FIELD_MAP = {
   'Toque': 'toque_ae',
   'Numero de toque': 'numero_toque_ae',
   'Fecha de primer contacto AE': 'fecha_primer_contacto_ae',
-  '¿Ventas Contactó Cliente?': 'ventas_contacto_cliente',
+  // Phase v3.2: ventas_contacto_cliente is now auto-derived from AE toques — removed from writable map
+  // '¿Ventas Contactó Cliente?': 'ventas_contacto_cliente',
   'Fecha de Reagenda': 'fecha_reagenda',
   'Hora de Reagenda': 'hora_reagenda',
   'Index': 'index_ae',
@@ -1160,8 +1460,16 @@ function updateLeadField(rowNumber, colIdentifier, newValue, isDeal) {
           result.triggers = processLeadTriggers_(ss, sheet, rowNumber, fieldName, newValue, colMap, entityId);
         }
       }
+    } else if (fieldName.indexOf('_c_') === 0) {
+      // Phase 3B: Dynamic routing to dim_contactos via prefix
+      contactUpdates[fieldName.substring(3)] = { field: fieldName, value: newValue };
+    } else if (fieldName.indexOf('_q_') === 0) {
+      // Phase 3B: Dynamic routing to fact_calificacion via prefix
+      calificacionUpdates[fieldName.substring(3)] = { field: fieldName, value: newValue };
+    } else if (fieldName.indexOf('_camp_') === 0) {
+      // Phase 3B: dim_campanas is read-only — skip silently
     } else {
-      // Try direct column match
+      // Try direct column match on fact table
       var directCol = colMap[fieldName];
       if (directCol) {
         var oldVal2 = sheet.getRange(rowNumber, directCol).getValue();
@@ -1358,16 +1666,57 @@ function updateLeadMultiple(rowNumber, updates, isDeal) {
  * Registers a toque (touch) in fact_toques sheet.
  * Called atomically from frontend when SDR/AE changes toque dropdown.
  */
-function registrarToque(idEntidad, tipoEntidad, idVendedor, rolVendedor, numeroToque) {
+function registrarToque(idEntidad, tipoEntidad, idVendedor, rolVendedor, numeroToque, canal) {
   var lock = LockService.getScriptLock();
   try {
     lock.waitLock(10000);
     var ss = SpreadsheetApp.openById(SHEET_ID);
     var sheet = ss.getSheetByName(T_TOQUES);
     if (!sheet) throw new Error('Hoja fact_toques no encontrada');
+
+    // TOQUE-02: Monotonic increment — reject if new toque <= current max
+    var colMap = getColumnMap_(sheet);
+    var entidadCol = colMap['entidad_id'];
+    var toqueCol = colMap['numero_toque'];
+    if (entidadCol && toqueCol) {
+      var data = sheet.getDataRange().getValues();
+      var maxToque = 0;
+      for (var r = 1; r < data.length; r++) {
+        if (String(data[r][entidadCol - 1]) === String(idEntidad)) {
+          var t = Number(data[r][toqueCol - 1]) || 0;
+          if (t > maxToque) maxToque = t;
+        }
+      }
+      if (Number(numeroToque) <= maxToque) {
+        return { success: false, error: 'No se puede registrar toque #' + numeroToque + '. El toque actual es #' + maxToque + '. Solo se permite avanzar.' };
+      }
+    }
+
     var nextId = getNextId_(sheet, 'id_registro_toque');
     var fechaToque = new Date().toISOString();
-    sheet.appendRow([nextId, idEntidad, tipoEntidad, idVendedor, rolVendedor, numeroToque, fechaToque]);
+    sheet.appendRow([nextId, idEntidad, tipoEntidad, idVendedor, rolVendedor, numeroToque, fechaToque, canal || '']);
+
+    // Phase v3.2: Cache-write ventas_contacto_cliente when AE records first toque
+    if (String(rolVendedor).toUpperCase() === 'AE') {
+      try {
+        var dealsSheet = ss.getSheetByName(T_DEALS);
+        if (dealsSheet) {
+          var dColMap = getColumnMap_(dealsSheet);
+          var dData = dealsSheet.getDataRange().getValues();
+          var idCol = dColMap['id_deal'];
+          var vcCol = dColMap['ventas_contacto_cliente'];
+          if (idCol && vcCol) {
+            for (var dr = 1; dr < dData.length; dr++) {
+              if (String(dData[dr][idCol - 1]) === String(idEntidad)) {
+                dealsSheet.getRange(dr + 1, vcCol).setValue('Si');
+                break;
+              }
+            }
+          }
+        }
+      } catch (cacheErr) { Logger.log('ventas_contacto cache-write: ' + cacheErr.message); }
+    }
+
     return { success: true, id: nextId, fecha: fechaToque };
   } catch (err) {
     return { success: false, error: err.message };
@@ -1531,6 +1880,76 @@ function createDealFromLead(rowNumber) {
   }
 }
 
+// ============ PARAM-01: Save Custom Question Responses ============
+function saveCustomResponses(idLead, responses) {
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var calSheet = ss.getSheetByName(T_CALIFICACION);
+    if (!calSheet) return { status: 'error', message: 'Hoja no encontrada' };
+    var colMap = getColumnMap_(calSheet);
+    var respCol = colMap['respuestas_custom'];
+    if (!respCol) return { status: 'error', message: 'Columna respuestas_custom no encontrada' };
+    var data = calSheet.getDataRange().getValues();
+    var idCol = colMap['id_lead'] || 2;
+    var found = false;
+    for (var i = 1; i < data.length; i++) {
+      if (String(data[i][idCol - 1]) === String(idLead)) {
+        calSheet.getRange(i + 1, respCol).setValue(JSON.stringify(responses));
+        found = true;
+      }
+    }
+    if (!found) return { status: 'error', message: 'Lead no encontrado en fact_calificacion' };
+    return { status: 'success' };
+  } catch (e) {
+    return { status: 'error', message: e.message };
+  }
+}
+
+// ============ DUP-01: Duplicate Lead Detection ============
+function checkDuplicateLeads(email, telefono) {
+  try {
+    // Phase 21 FIX: Read from dim_contactos (where email/phone live) and join to fact_leads
+    var contactos = readTable_(T_CONTACTOS);
+    var leads = readTable_(T_LEADS);
+    // Build contacto→lead index (one contacto can have multiple leads, take the first active)
+    var contactoLeadIdx = {};
+    for (var li = 0; li < leads.length; li++) {
+      var ld = leads[li];
+      var cid = String(ld.id_contacto || '');
+      if (cid && !contactoLeadIdx[cid]) contactoLeadIdx[cid] = ld;
+    }
+
+    var matches = [];
+    var emailNorm = String(email || '').trim().toLowerCase();
+    var telNorm = String(telefono || '').replace(/\D/g, '');
+    for (var i = 0; i < contactos.length; i++) {
+      var c = contactos[i];
+      var rEmail = String(c.email || '').trim().toLowerCase();
+      var rTel1 = String(c.telefono_1 || '').replace(/\D/g, '');
+      var rTel2 = String(c.telefono_2 || '').replace(/\D/g, '');
+      var matchType = '';
+      if (emailNorm && rEmail && emailNorm === rEmail) matchType = 'Email';
+      else if (telNorm && telNorm.length >= 7 && (telNorm === rTel1 || telNorm === rTel2)) matchType = 'Teléfono';
+      if (matchType) {
+        var linkedLead = contactoLeadIdx[String(c.id_contacto || '')];
+        matches.push({
+          id: linkedLead ? linkedLead.id_lead : '',
+          nombre: ((c.nombre || '') + ' ' + (c.apellido || '')).trim(),
+          email: c.email || '',
+          telefono: c.telefono_1 || '',
+          status: linkedLead ? (linkedLead.status || '') : '',
+          matchType: matchType
+        });
+        if (matches.length >= 3) break;
+      }
+    }
+    return { found: matches.length > 0, matches: matches };
+  } catch (e) {
+    Logger.log('checkDuplicateLeads ERROR: ' + e.message);
+    return { found: false };
+  }
+}
+
 function createNewLeadOrDeal(payload, type) {
   try {
     var isDeal = (type === 'deal');
@@ -1589,17 +2008,28 @@ function createNewLeadOrDeal(payload, type) {
       var lSet = function (n, v) { var c = leadColMap[n]; if (c) lRow[c - 1] = v; };
       lSet('id_lead', newLeadId);
       lSet('id_contacto', newContactId);
-      lSet('status', payload['Status'] || 'Nuevo');
+      // Phase 21: If duplicate info provided, set status and FK link
+      if (payload['_isDuplicate'] && payload['_idLeadOriginal']) {
+        lSet('status', 'Duplicado');
+        lSet('id_lead_original', payload['_idLeadOriginal']);
+      } else {
+        lSet('status', payload['Status'] || 'Nuevo');
+      }
       lSet('calidad_contacto', payload['Calidad de Contacto'] || '');
       lSet('servicio_interes', payload['Servicio'] || '');
       lSet('fecha_ingreso', new Date());
       lSet('notas', payload['Notas'] || '');
       lSet('tipo_seguimiento', payload['Tipo de Seguimiento'] || '');
       lSet('status_seguimiento', payload['Status del Seguimiento'] || '');
+      // Phase 8: Write global pricing config to new lead
+      var newLeadPricingCfg = getPricingConfig();
+      lSet('tipo_cliente_pricing', newLeadPricingCfg.tipoCliente || '');
+      lSet('ticket_promedio', newLeadPricingCfg.ticketPromedio || 0);
+      lSet('licencias_promedio', newLeadPricingCfg.licenciasPromedio || 0);
       var insertRow = getFirstEmptyRow_(leadsSheet, 'id_lead');
       leadsSheet.getRange(insertRow, 1, 1, lRow.length).setValues([lRow]);
       logChange_('Lead', newLeadId, Session.getActiveUser().getEmail() || 'System', 'CREACIÓN MANUAL', '', 'Nuevo lead');
-      return { status: 'success', data: { id: newLeadId } };
+      return { status: 'success', data: { id: newLeadId, isDuplicate: !!payload['_isDuplicate'], originalId: payload['_idLeadOriginal'] || '' } };
     }
   } catch (err) {
     Logger.log('createNewLeadOrDeal ERROR: ' + err.message);
@@ -2469,6 +2899,178 @@ function processHandoff(payload) {
   }
 }
 
+// ============ PRICING: Configuración Global ============
+
+/**
+ * Obtiene la configuración global de pricing del cliente.
+ * @return {Object} { tipoCliente, ticketPromedio, licenciasPromedio }
+ */
+function getPricingConfig() {
+  var props = PropertiesService.getScriptProperties();
+  var raw = props.getProperty('APP_PRICING_CONFIG');
+  if (raw) {
+    try { return JSON.parse(raw); } catch (e) { }
+  }
+  return { tipoCliente: '', ticketPromedio: 0, licenciasPromedio: 0 };
+}
+
+/**
+ * Guarda la configuración global de pricing. Solo ADMIN/GERENTE.
+ * @param {Object} config - { tipoCliente, ticketPromedio, licenciasPromedio }
+ * @return {Object} { status, message }
+ */
+function savePricingConfig(config) {
+  try {
+    var email = Session.getActiveUser().getEmail();
+    var users = readTable_(T_USERS);
+    var userRol = '';
+    for (var i = 0; i < users.length; i++) {
+      if (String(users[i].email || '').toLowerCase() === String(email || '').toLowerCase()) {
+        userRol = String(users[i].rol || '').toUpperCase();
+        break;
+      }
+    }
+    if (userRol !== 'ADMIN' && userRol !== 'GERENTE') {
+      return { status: 'error', message: 'Solo ADMIN o GERENTE pueden cambiar la configuración de pricing' };
+    }
+    var payload = {
+      tipoCliente: String(config.tipoCliente || ''),
+      ticketPromedio: parseFloat(config.ticketPromedio) || 0,
+      licenciasPromedio: parseFloat(config.licenciasPromedio) || 0
+    };
+    PropertiesService.getScriptProperties().setProperty('APP_PRICING_CONFIG', JSON.stringify(payload));
+    return { status: 'success', message: 'Configuración de pricing guardada' };
+  } catch (err) {
+    Logger.log('savePricingConfig ERROR: ' + err.message);
+    return { status: 'error', message: err.message };
+  }
+}
+
+// ============ FIELD LAYOUT: Configuración de Campos Parametrizables ============
+
+var T_FIELD_LAYOUT = 'config_field_layout';
+
+/**
+ * Obtiene la configuración de campos para un tipo de ficha.
+ * @param {string} tipoFicha - 'lead' o 'deal'
+ * @return {Array} Array de objetos de configuración de campo, ordenados por seccion+campo.
+ */
+function getFieldLayout(tipoFicha) {
+  try {
+    var rows = readTable_(T_FIELD_LAYOUT);
+    var filtered = [];
+    for (var i = 0; i < rows.length; i++) {
+      if (String(rows[i].tipo_ficha || '').toLowerCase() === String(tipoFicha || '').toLowerCase()) {
+        filtered.push({
+          id_field: rows[i].id_field,
+          tipo_ficha: rows[i].tipo_ficha,
+          campo_key: rows[i].campo_key || '',
+          campo_label: rows[i].campo_label || '',
+          tipo_input: rows[i].tipo_input || 'text',
+          seccion: rows[i].seccion || '',
+          seccion_icono: rows[i].seccion_icono || '',
+          orden_seccion: parseInt(rows[i].orden_seccion) || 0,
+          orden_campo: parseInt(rows[i].orden_campo) || 0,
+          visible: rows[i].visible !== false && rows[i].visible !== 'FALSE' && rows[i].visible !== 'false' && rows[i].visible !== 0,
+          ancho: rows[i].ancho || 'half',
+          requerido: rows[i].requerido === true || rows[i].requerido === 'TRUE' || rows[i].requerido === 'true',
+          solo_lectura: rows[i].solo_lectura === true || rows[i].solo_lectura === 'TRUE' || rows[i].solo_lectura === 'true',
+          opciones_catalog: rows[i].opciones_catalog || '',
+          rol_visible: rows[i].rol_visible || 'ALL'
+        });
+      }
+    }
+    filtered.sort(function (a, b) {
+      if (a.orden_seccion !== b.orden_seccion) return a.orden_seccion - b.orden_seccion;
+      return a.orden_campo - b.orden_campo;
+    });
+    return filtered;
+  } catch (err) {
+    Logger.log('getFieldLayout ERROR: ' + err.message);
+    return [];
+  }
+}
+
+/**
+ * Guarda la configuración completa de campos para un tipo de ficha. Solo ADMIN.
+ * Deletes all existing rows for that tipo_ficha, then inserts the new config.
+ * @param {string} tipoFicha - 'lead' o 'deal'
+ * @param {Array} fields - Array de objetos de configuración de campo.
+ * @return {Object} { status, message }
+ */
+function saveFieldLayout(tipoFicha, fields) {
+  try {
+    var email = Session.getActiveUser().getEmail();
+    var users = readTable_(T_USERS);
+    var userRol = '';
+    for (var i = 0; i < users.length; i++) {
+      if (String(users[i].email || '').toLowerCase() === String(email || '').toLowerCase()) {
+        userRol = String(users[i].rol || '').toUpperCase();
+        break;
+      }
+    }
+    if (userRol !== 'ADMIN') {
+      return { status: 'error', message: 'Solo ADMIN puede modificar la configuración de campos' };
+    }
+
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var sheet = ss.getSheetByName(T_FIELD_LAYOUT);
+    if (!sheet) return { status: 'error', message: 'Hoja config_field_layout no encontrada' };
+
+    var colMap = getColumnMap_(sheet);
+    var lastRow = sheet.getLastRow();
+
+    // Delete existing rows for this tipo_ficha (iterate backwards)
+    if (lastRow > 1) {
+      var tipoCol = colMap['tipo_ficha'];
+      if (tipoCol) {
+        var allVals = sheet.getRange(2, tipoCol, lastRow - 1, 1).getValues();
+        for (var d = allVals.length - 1; d >= 0; d--) {
+          if (String(allVals[d][0]).toLowerCase() === String(tipoFicha).toLowerCase()) {
+            sheet.deleteRow(d + 2);
+          }
+        }
+      }
+    }
+
+    // Insert new rows
+    var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    var nextId = getNextId_(sheet, 'id_field');
+
+    for (var f = 0; f < fields.length; f++) {
+      var field = fields[f];
+      var row = new Array(headers.length).fill('');
+      var set = function (name, val) {
+        var c = colMap[name];
+        if (c) row[c - 1] = val;
+      };
+      set('id_field', nextId + f);
+      set('tipo_ficha', tipoFicha);
+      set('campo_key', field.campo_key || '');
+      set('campo_label', field.campo_label || '');
+      set('tipo_input', field.tipo_input || 'text');
+      set('seccion', field.seccion || '');
+      set('seccion_icono', field.seccion_icono || '');
+      set('orden_seccion', field.orden_seccion || 0);
+      set('orden_campo', field.orden_campo || f);
+      set('visible', field.visible !== false ? 'TRUE' : 'FALSE');
+      set('ancho', field.ancho || 'half');
+      set('requerido', field.requerido ? 'TRUE' : 'FALSE');
+      set('solo_lectura', field.solo_lectura ? 'TRUE' : 'FALSE');
+      set('opciones_catalog', field.opciones_catalog || '');
+      set('rol_visible', field.rol_visible || 'ALL');
+      sheet.appendRow(row);
+    }
+
+    // Phase 3B: Invalidate schema cache so frontend picks up changes
+    try { CacheService.getScriptCache().remove('schema_v1'); } catch (e) { }
+    return { status: 'success', message: 'Configuración de campos guardada (' + fields.length + ' campos)' };
+  } catch (err) {
+    Logger.log('saveFieldLayout ERROR: ' + err.message);
+    return { status: 'error', message: err.message };
+  }
+}
+
 // ============ ROUTING: Configuración y Round Robin ============
 
 /**
@@ -2590,5 +3192,200 @@ function assignNextUserRR(roleKeyword, lastSavedEmailKey) {
     return { status: 'error', message: err.message };
   } finally {
     lock.releaseLock();
+  }
+}
+
+// ============ Phase 21: Duplicate Detection ============
+
+/**
+ * Auto-detect duplicate by email/phone in dim_contactos.
+ * Returns { isDuplicate, originalId } for use by createNewLeadOrDeal.
+ */
+function autoDetectDuplicate(email, telefono) {
+  try {
+    var result = checkDuplicateLeads(email, telefono);
+    if (result.found && result.matches && result.matches.length > 0) {
+      // Return the first match's lead ID as the original
+      var originalId = result.matches[0].id;
+      return { isDuplicate: true, originalId: originalId || '' };
+    }
+    return { isDuplicate: false, originalId: '' };
+  } catch (e) {
+    Logger.log('autoDetectDuplicate ERROR: ' + e.message);
+    return { isDuplicate: false, originalId: '' };
+  }
+}
+
+/**
+ * Get all leads that are duplicates of a given lead (where id_lead_original = idLead).
+ */
+function getLeadDuplicates(idLead) {
+  try {
+    var leads = readTable_(T_LEADS);
+    var contactos = readTable_(T_CONTACTOS);
+    var contactosIdx = indexBy_(contactos, 'id_contacto');
+    var duplicates = [];
+    for (var i = 0; i < leads.length; i++) {
+      var ld = leads[i];
+      if (String(ld.id_lead_original || '') === String(idLead)) {
+        var contact = contactosIdx[String(ld.id_contacto || '')] || {};
+        duplicates.push({
+          id_lead: ld.id_lead,
+          nombre: ((contact.nombre || '') + ' ' + (contact.apellido || '')).trim(),
+          email: contact.email || '',
+          status: ld.status || '',
+          fecha_ingreso: ld.fecha_ingreso || '',
+          servicio: ld.servicio_interes || ''
+        });
+      }
+    }
+    return duplicates;
+  } catch (e) {
+    Logger.log('getLeadDuplicates ERROR: ' + e.message);
+    return [];
+  }
+}
+
+// ============ Phase 23: Plantillas Per-User CRUD ============
+
+/**
+ * Get templates for a user: their own + shared by others.
+ */
+function getPlantillas(email, tipo) {
+  try {
+    var rows = readTable_(T_PLANTILLAS);
+    var mine = [];
+    var shared = [];
+    var emailNorm = String(email || '').trim().toLowerCase();
+    // Build vendedor lookup for id_vendedor matching
+    var vendedores = readTable_(T_VENDEDORES);
+    var myVendedorId = '';
+    for (var v = 0; v < vendedores.length; v++) {
+      if (String(vendedores[v].email || '').trim().toLowerCase() === emailNorm) {
+        myVendedorId = String(vendedores[v].id_vendedor || '');
+        break;
+      }
+    }
+
+    for (var i = 0; i < rows.length; i++) {
+      var r = rows[i];
+      // Filter by tipo if specified (treat empty/missing tipo as 'nota')
+      var rowTipo = String(r.tipo || 'nota').trim().toLowerCase();
+      if (tipo && rowTipo !== String(tipo).toLowerCase()) continue;
+
+      var isOwner = false;
+      var rowVendedorId = String(r.id_vendedor || '');
+      var rowEmail = String(r.email_usuario || '').trim().toLowerCase();
+      if (myVendedorId && rowVendedorId && rowVendedorId === myVendedorId) isOwner = true;
+      else if (rowEmail === emailNorm) isOwner = true;
+
+      if (isOwner) {
+        mine.push({
+          id: r.id_plantilla,
+          nombre: r.nombre || '',
+          contenido: r.contenido || '',
+          tipo: rowTipo,
+          compartida: String(r.compartida || '').toLowerCase() === 'true',
+          fecha: r.fecha_creacion || '',
+          _row: r._row
+        });
+      } else if (String(r.compartida || '').toLowerCase() === 'true') {
+        shared.push({
+          id: r.id_plantilla,
+          nombre: r.nombre || '',
+          contenido: r.contenido || '',
+          tipo: rowTipo,
+          owner: r.email_usuario || '',
+          fecha: r.fecha_creacion || '',
+          _row: r._row
+        });
+      }
+    }
+    return { mine: mine, shared: shared };
+  } catch (e) {
+    Logger.log('getPlantillas ERROR: ' + e.message);
+    return { mine: [], shared: [] };
+  }
+}
+
+/**
+ * Create or update a plantilla. If idPlantilla is provided, updates; otherwise creates.
+ */
+function savePlantilla(email, nombre, contenido, compartida, idPlantilla, tipo, idVendedor) {
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var sheet = ss.getSheetByName(T_PLANTILLAS);
+    if (!sheet) return { status: 'error', message: 'Hoja config_plantillas_notas no encontrada' };
+    var colMap = getColumnMap_(sheet);
+    var tipoNorm = String(tipo || 'nota').toLowerCase();
+
+    if (idPlantilla) {
+      // Update existing
+      var rows = readTable_(T_PLANTILLAS);
+      for (var i = 0; i < rows.length; i++) {
+        if (String(rows[i].id_plantilla) === String(idPlantilla)) {
+          // Verify ownership: id_vendedor first, fallback email
+          var ownerMatch = false;
+          if (idVendedor && String(rows[i].id_vendedor || '') === String(idVendedor)) ownerMatch = true;
+          else if (String(rows[i].email_usuario || '').trim().toLowerCase() === String(email || '').trim().toLowerCase()) ownerMatch = true;
+          if (!ownerMatch) return { status: 'error', message: 'No tienes permiso para editar esta plantilla' };
+
+          var row = rows[i]._row;
+          if (colMap['nombre']) sheet.getRange(row, colMap['nombre']).setValue(nombre);
+          if (colMap['contenido']) sheet.getRange(row, colMap['contenido']).setValue(contenido);
+          if (colMap['compartida']) sheet.getRange(row, colMap['compartida']).setValue(compartida ? 'TRUE' : 'FALSE');
+          if (colMap['tipo']) sheet.getRange(row, colMap['tipo']).setValue(tipoNorm);
+          return { status: 'success', id: idPlantilla };
+        }
+      }
+      return { status: 'error', message: 'Plantilla no encontrada' };
+    } else {
+      // Create new
+      var newId = getNextId_(sheet, 'id_plantilla');
+      var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+      var newRow = new Array(headers.length).fill('');
+      var set = function (n, v) { var c = colMap[n]; if (c) newRow[c - 1] = v; };
+      set('id_plantilla', newId);
+      set('id_vendedor', idVendedor || '');
+      set('email_usuario', email);
+      set('nombre', nombre);
+      set('contenido', contenido);
+      set('tipo', tipoNorm);
+      set('compartida', compartida ? 'TRUE' : 'FALSE');
+      set('fecha_creacion', new Date().toISOString());
+      sheet.appendRow(newRow);
+      return { status: 'success', id: newId };
+    }
+  } catch (e) {
+    Logger.log('savePlantilla ERROR: ' + e.message);
+    return { status: 'error', message: e.message };
+  }
+}
+
+/**
+ * Delete a plantilla (only if user is the owner).
+ */
+function deletePlantilla(email, idPlantilla, idVendedor) {
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var sheet = ss.getSheetByName(T_PLANTILLAS);
+    if (!sheet) return { status: 'error', message: 'Hoja no encontrada' };
+    var rows = readTable_(T_PLANTILLAS);
+    for (var i = 0; i < rows.length; i++) {
+      if (String(rows[i].id_plantilla) === String(idPlantilla)) {
+        // Verify ownership: id_vendedor first, fallback email
+        var ownerMatch = false;
+        if (idVendedor && String(rows[i].id_vendedor || '') === String(idVendedor)) ownerMatch = true;
+        else if (String(rows[i].email_usuario || '').trim().toLowerCase() === String(email || '').trim().toLowerCase()) ownerMatch = true;
+        if (!ownerMatch) return { status: 'error', message: 'No tienes permiso para eliminar esta plantilla' };
+
+        sheet.deleteRow(rows[i]._row);
+        return { status: 'success' };
+      }
+    }
+    return { status: 'error', message: 'Plantilla no encontrada' };
+  } catch (e) {
+    Logger.log('deletePlantilla ERROR: ' + e.message);
+    return { status: 'error', message: e.message };
   }
 }

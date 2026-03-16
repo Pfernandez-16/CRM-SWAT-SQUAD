@@ -20,31 +20,73 @@ Requirements for pre-delivery milestone. Each maps to roadmap phases.
 
 ### Handoff & Routing
 
-- [ ] **ROUTE-01**: Modo SDR_CHOICE funcional: SDR selecciona AE manualmente desde dropdown en handoff modal, processHandoff usa ese email para crear el deal
-- [ ] **ROUTE-02**: Modo AUTO funcional: Round Robin asigna AE automáticamente al confirmar handoff, dropdown de AE se oculta
-- [ ] **ROUTE-03**: Modo MANAGER_REVIEW funcional: Handoff crea deal sin AE asignado, queda pendiente hasta que gerente apruebe y asigne
-- [ ] **ROUTE-04**: Configuración de routing editable desde panel Admin — gerente/admin puede seleccionar modo activo (SDR_CHOICE/AUTO/MANAGER_REVIEW)
+- [x] **ROUTE-01**: Modo SDR_CHOICE funcional: SDR selecciona AE manualmente desde dropdown en handoff modal, processHandoff usa ese email para crear el deal
+- [x] **ROUTE-02**: Modo AUTO funcional: Round Robin asigna AE automáticamente al confirmar handoff, dropdown de AE se oculta
+- [x] **ROUTE-03**: Modo MANAGER_REVIEW funcional: Handoff crea deal sin AE asignado, queda pendiente hasta que gerente apruebe y asigne
+- [x] **ROUTE-04**: Configuración de routing editable desde panel Admin — gerente/admin puede seleccionar modo activo (SDR_CHOICE/AUTO/MANAGER_REVIEW)
 
 ### Pricing & Valuación
 
-- [ ] **PRICE-01**: Monto estimado auto-calculado y visible al paso a ventas (Tipo 1: ticket promedio × factor según tipo de cliente — Fichas×12, Proyectos×1, SaaS×licencias×12)
-- [ ] **PRICE-02**: Monto cotizado editable por AE en ficha de deal (Tipo 2) — campo independiente del monto estimado
-- [ ] **PRICE-03**: Pricing calculator integrado en handoff modal (muestra monto estimado antes de confirmar) y en deal detail modal (permite ver/editar pricing)
+- [x] **PRICE-01**: Monto estimado auto-calculado y visible al paso a ventas (Tipo 1: ticket promedio × factor según tipo de cliente — Fichas×12, Proyectos×1, SaaS×licencias×12)
+- [x] **PRICE-02**: Monto cotizado editable por AE en ficha de deal (Tipo 2) — campo independiente del monto estimado
+- [x] **PRICE-03**: Pricing calculator integrado en handoff modal (muestra monto estimado antes de confirmar) y en deal detail modal (permite ver/editar pricing)
 
 ### Deal Fichas
 
-- [ ] **DEAL-01**: Ficha de deal separada en sección Cotización (monto cotizado + fecha de cotización) y sección Cierre (monto cierre + monto apartado + fecha de cierre) — visualmente distintas en el modal
-- [ ] **DEAL-02**: Timestamps automáticos: fecha_cotizacion se graba al llenar monto cotizado, fecha_cierre se graba al cambiar status a Vendido
-- [ ] **DEAL-03**: Soporte multi-producto por deal — tabla de productos con nombre, cantidad, precio unitario, descuento % por línea
-- [ ] **DEAL-04**: Clasificación automática cross-selling/up-selling/venta directa — compara producto de interés del SDR con producto(s) de cierre del AE
+- [x] **DEAL-01**: Ficha de deal separada en sección Cotización (monto cotizado + fecha de cotización) y sección Cierre (monto cierre + monto apartado + fecha de cierre) — visualmente distintas en el modal
+- [x] **DEAL-02**: Timestamps automáticos: fecha_cotizacion se graba al llenar monto cotizado, fecha_cierre se graba al cambiar status a Vendido
+- [x] **DEAL-03**: Soporte multi-producto por deal — tabla de productos con nombre, cantidad, precio unitario, descuento % por línea
+- [x] **DEAL-04**: Clasificación automática cross-selling/up-selling/venta directa — compara producto de interés del SDR con producto(s) de cierre del AE
 
 ### QA & Limpieza
 
-- [ ] **QA-01**: CHECKLIST_REUNION_CLIENTE.md actualizado reflejando que toda la sección 9 (Reportería) está completa
-- [ ] **QA-02**: Código muerto eliminado de App.html — funciones duplicadas, variables no referenciadas, imports sin usar
-- [ ] **QA-03**: Verificación end-to-end del flujo completo: crear lead → toques → calificar BANT → handoff → deal creado con AE → cotizar → negociar → cerrar
+- [x] **QA-01**: CHECKLIST_REUNION_CLIENTE.md actualizado reflejando que toda la sección 9 (Reportería) está completa
+- [x] **QA-02**: Código muerto eliminado de App.html — funciones duplicadas, variables no referenciadas, imports sin usar
+- [x] **QA-03**: Verificación end-to-end del flujo completo: crear lead → toques → calificar BANT → handoff → deal creado con AE → cotizar → negociar → cerrar
 
-## v3 Requirements (Deferred)
+## v3.0 Requirements (Checkpoint 2 + 3)
+
+### Quick Wins UI/UX
+
+- [x] **QW-01**: Ocultar campo "Index" del formulario de negociación
+- [x] **QW-02**: Dropdown razones de pérdida con opción "Otros" + campo texto libre condicional
+- [x] **QW-03**: Renombrar "Propuesta enviada" → "Cotización" en catálogo Status de Venta (manual)
+- [x] **QW-04**: Campo "Notas de Cotización" en sección Cotización del deal
+
+### Toques & Seguimiento
+
+- [x] **TOQUE-01**: Registrar canal/medio (Llamada, WhatsApp, Email) por cada toque en fact_toques
+- [x] **TOQUE-02**: Impedir registrar toque hacia atrás — solo incrementar (monotonic)
+
+### Detección de Duplicados
+
+- [x] **DUP-01**: Alerta al crear lead si email o teléfono ya existe en fact_leads (sin fusión automática)
+
+### Reporte AE
+
+- [x] **AERPT-01**: Vista de reporte dedicada para Account Executives con métricas de deal pipeline
+
+### Presupuesto Dual
+
+- [x] **BUDGET-01**: Campo presupuesto con modo exacto ($) o modo rango (De $X a $Y)
+
+### Plantillas de Notas
+
+- [x] **TMPL-01**: Templates pre-escritas para SDR seleccionables desde dropdown, con variables auto-reemplazadas
+
+### Historial de Cambios
+
+- [x] **AUDIT-01**: Cada modificación a lead/deal registra quién, qué campo, valor anterior, valor nuevo, cuándo (ya existía — 27 call sites de logChange_ + tab Historial en modal)
+
+### Preguntas Parametrizables
+
+- [x] **PARAM-01**: Admin configura preguntas adicionales al BANT por cliente desde panel de configuración
+
+### QA v3.0
+
+- [x] **QA3-01**: Verificación E2E de todos los flujos v3.0 + deploy final
+
+## v4 Requirements (Deferred)
 
 ### Autenticación
 
@@ -56,10 +98,10 @@ Requirements for pre-delivery milestone. Each maps to roadmap phases.
 - **IMPORT-01**: Importar base de datos desde CSV/Excel con mapeo de campos
 - **IMPORT-02**: Distribución 70/30 configurable de leads entrantes (SDR vs AE directo)
 
-### Calendario Completo
+### Landing Page
 
-- **CAL-01**: Calendario interactivo con calls, seguimientos y tareas por rol
-- **CAL-02**: Edición directa desde el calendario con drag & drop
+- **LAND-01**: Formulario landing page parametrizable conectado a Google Sheets
+- **LAND-02**: Correo con dominio del cliente (limitación GAS)
 
 ## Out of Scope
 
@@ -81,26 +123,40 @@ Requirements for pre-delivery milestone. Each maps to roadmap phases.
 | BUG-02 | Phase 7 | Complete |
 | BUG-03 | Phase 7 | Complete |
 | BUG-04 | Phase 7 | Complete |
-| ROUTE-01 | Phase 8 | Pending |
-| ROUTE-02 | Phase 8 | Pending |
-| ROUTE-03 | Phase 8 | Pending |
-| ROUTE-04 | Phase 8 | Pending |
-| PRICE-01 | Phase 9 | Pending |
-| PRICE-02 | Phase 9 | Pending |
-| PRICE-03 | Phase 9 | Pending |
-| DEAL-01 | Phase 10 | Pending |
-| DEAL-02 | Phase 10 | Pending |
-| DEAL-03 | Phase 10 | Pending |
-| DEAL-04 | Phase 10 | Pending |
-| QA-01 | Phase 11 | Pending |
-| QA-02 | Phase 11 | Pending |
-| QA-03 | Phase 11 | Pending |
+| ROUTE-01 | Phase 8 | Complete |
+| ROUTE-02 | Phase 8 | Complete |
+| ROUTE-03 | Phase 8 | Complete |
+| ROUTE-04 | Phase 8 | Complete |
+| PRICE-01 | Phase 9 | Complete |
+| PRICE-02 | Phase 9 | Complete |
+| PRICE-03 | Phase 9 | Complete |
+| DEAL-01 | Phase 10 | Complete |
+| DEAL-02 | Phase 10 | Complete |
+| DEAL-03 | Phase 10 | Complete |
+| DEAL-04 | Phase 10 | Complete |
+| QA-01 | Phase 11 | Complete |
+| QA-02 | Phase 11 | Complete |
+| QA-03 | Phase 11 | Complete |
+
+| QW-01 | Phase 12 | Complete |
+| QW-02 | Phase 12 | Complete |
+| QW-03 | Phase 12 | Complete |
+| QW-04 | Phase 12 | Complete |
+| TOQUE-01 | Phase 13 | Complete |
+| TOQUE-02 | Phase 13 | Complete |
+| DUP-01 | Phase 14 | Complete |
+| AERPT-01 | Phase 15 | Complete |
+| BUDGET-01 | Phase 16 | Complete |
+| TMPL-01 | Phase 17 | Complete |
+| AUDIT-01 | Phase 18 | Complete |
+| PARAM-01 | Phase 19 | Complete |
+| QA3-01 | Phase 20 | Complete |
 
 **Coverage:**
-- v2.0 requirements: 18 total
-- Mapped to phases: 18 (100%)
+- v2.0 requirements: 18 total — 18 complete (100%)
+- v3.0 requirements: 13 total — 13 complete (100%)
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-14*
-*Last updated: 2026-03-14 — traceability populated after roadmap v2.0 creation*
+*Last updated: 2026-03-14 — v3.0 requirements added from Checkpoint 2+3*

@@ -15,6 +15,14 @@ read_excel.py
 __pycache__/
 *.pyc
 
+# Dependencies
+node_modules/
+
+# Temp / verify
+_clasp_verify/
+get-shit-done-temp/
+temp_script.js
+
 # OS
 .DS_Store
 Thumbs.db
