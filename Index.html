@@ -322,7 +322,8 @@
                     </tr>
                   </thead>
                   <tbody>
-                    <tr v-for="deal in paginatedDeals" :key="deal._row" @click="openLeadDetail(deal)" class="lead-row">
+                    <tr v-for="deal in paginatedDeals" :key="deal._row" @click="openLeadDetail(deal)" class="lead-row"
+                      :style="deal['¿Es recompra?'] === 'Si' ? 'border-left: 3px solid #a78bfa; background: rgba(139, 92, 246, 0.04);' : ''">
                       <td class="col-id">{{ deal._id }}</td>
                       <td class="col-name">{{ deal._name }}</td>
                       <td>{{ deal._empresa }}</td>
@@ -364,7 +365,8 @@
                   </div>
                   <div class="kanban-cards" :data-status="status">
                     <div v-for="deal in getFilteredLeadsByStatus(status)" :key="deal._row + '-' + (deal._source || '')"
-                      class="kanban-card" :data-row="deal._row" :data-source="deal._source || 'deal'"
+                      class="kanban-card" :class="{ 'recompra-card': deal['¿Es recompra?'] === 'Si' }"
+                      :data-row="deal._row" :data-source="deal._source || 'deal'"
                       @click="openLeadDetail(deal)">
                       <div class="card-header">
                         <span class="card-id">#{{ deal._id }}</span>
@@ -568,260 +570,114 @@
 
                   <!-- Incontactables Table -->
                   <div v-else-if="section.id === 'incontactables'" class="report-table-wrapper">
+                    <div style="display:flex; gap:0; margin-bottom:1rem;">
+                      <button class="btn-sm" :class="semaforoSegment === 'total' ? 'btn-primary' : ''"
+                        @click="semaforoSegment = 'total'" style="border-radius:6px 0 0 6px; font-size:0.75rem;">Total</button>
+                      <button class="btn-sm" :class="semaforoSegment === 'manufacturers' ? 'btn-primary' : ''"
+                        @click="semaforoSegment = 'manufacturers'" style="border-radius:0; font-size:0.75rem;">Manufacturers</button>
+                      <button class="btn-sm" :class="semaforoSegment === 'individuals' ? 'btn-primary' : ''"
+                        @click="semaforoSegment = 'individuals'" style="border-radius:0 6px 6px 0; font-size:0.75rem;">Individuals</button>
+                    </div>
                     <table class="report-table">
                       <thead>
                         <tr>
-                          <th rowspan="2" style="min-width:160px;">Metrica</th>
-                          <th colspan="3" class="col-group-header">Total</th>
-                          <th colspan="3" class="col-group-header">Manufacturers</th>
-                          <th colspan="3" class="col-group-header">Individuals</th>
-                        </tr>
-                        <tr>
-                          <th>Cant</th>
-                          <th>%</th>
-                          <th data-tooltip="Cambio porcentual vs periodo anterior">Delta%</th>
-                          <th>Cant</th>
-                          <th>%</th>
-                          <th data-tooltip="Cambio porcentual vs periodo anterior">Delta%</th>
-                          <th>Cant</th>
-                          <th>%</th>
-                          <th data-tooltip="Cambio porcentual vs periodo anterior">Delta%</th>
+                          <th style="min-width:200px;">Métrica</th>
+                          <th style="text-align:right;">Cantidad</th>
+                          <th style="min-width:180px;">Distribución</th>
+                          <th style="text-align:center;">Delta%</th>
                         </tr>
                       </thead>
                       <tbody>
-                        <tr v-for="row in incontactablesRows" :key="row.label">
-                          <td class="col-metric">{{ row.label }}</td>
-                          <!-- Total segment -->
-                          <template v-if="row.type === 'amount'">
-                            <td class="col-count">{{ formatAmount(getSegmentValue(row.metric, 'total').amount) }}</td>
-                            <td class="col-percentage"><span class="percentage-value">--</span></td>
-                          </template>
-                          <template v-else>
-                            <td class="col-count">{{ getSegmentValue(row.metric, 'total').count }}</td>
-                            <td class="col-percentage">
-                              <div class="percentage-cell">
-                                <div class="percentage-bar"
-                                  :style="{ width: getSegmentValue(row.metric, 'total').pct + '%', background: 'var(--accent-primary)' }">
+                        <template v-for="row in incontactablesRows" :key="row.label">
+                          <tr :style="row.type === 'amount' ? 'background:rgba(16,185,129,0.06);' : ''">
+                            <td class="col-metric" style="font-weight:600;">{{ row.label }}</td>
+                            <td style="text-align:right; font-weight:700; font-size:1rem;">
+                              <template v-if="row.type === 'amount'">{{ formatAmount(getSegmentValue(row.metric, semaforoSegment).amount) }}</template>
+                              <template v-else>{{ getSegmentValue(row.metric, semaforoSegment).count }}</template>
+                            </td>
+                            <td>
+                              <template v-if="row.type !== 'amount'">
+                                <div class="percentage-cell">
+                                  <div class="percentage-bar"
+                                    :style="{ width: getSegmentValue(row.metric, semaforoSegment).pct + '%', background: 'var(--accent-primary)' }">
+                                  </div>
+                                  <span class="percentage-value">{{ getSegmentValue(row.metric, semaforoSegment).pct }}%</span>
                                 </div>
-                                <span class="percentage-value">{{ getSegmentValue(row.metric, 'total').pct }}%</span>
-                              </div>
+                              </template>
+                              <span v-else class="percentage-value" style="opacity:0.3;">—</span>
                             </td>
-                          </template>
-                          <td class="col-delta">
-                            <span v-if="Number(getSegmentValue(row.metric, 'total').delta) > 0"
-                              :class="['delta-positive', Math.abs(Number(getSegmentValue(row.metric, 'total').delta)) >= 20 ? 'delta-alert' : '']">
-                              <span class="material-symbols-outlined">arrow_upward</span>
-                              +{{ getSegmentValue(row.metric, 'total').delta }}%
-                            </span>
-                            <span v-else-if="Number(getSegmentValue(row.metric, 'total').delta) < 0"
-                              :class="['delta-negative', Math.abs(Number(getSegmentValue(row.metric, 'total').delta)) >= 20 ? 'delta-alert' : '']">
-                              <span class="material-symbols-outlined">arrow_downward</span>
-                              {{ getSegmentValue(row.metric, 'total').delta }}%
-                            </span>
-                            <span v-else class="delta-neutral">
-                              <span class="material-symbols-outlined">remove</span>
-                              0%
-                            </span>
-                          </td>
-                          <!-- Manufacturers segment -->
-                          <template v-if="row.type === 'amount'">
-                            <td class="col-count">{{ formatAmount(getSegmentValue(row.metric, 'manufacturers').amount)
-                              }}</td>
-                            <td class="col-percentage"><span class="percentage-value">--</span></td>
-                          </template>
-                          <template v-else>
-                            <td class="col-count">{{ getSegmentValue(row.metric, 'manufacturers').count }}</td>
-                            <td class="col-percentage">
-                              <div class="percentage-cell">
-                                <div class="percentage-bar"
-                                  :style="{ width: getSegmentValue(row.metric, 'manufacturers').pct + '%', background: 'var(--accent-info)' }">
-                                </div>
-                                <span class="percentage-value">{{ getSegmentValue(row.metric, 'manufacturers').pct
-                                  }}%</span>
-                              </div>
+                            <td class="col-delta" style="text-align:center;">
+                              <span v-if="Number(getSegmentValue(row.metric, semaforoSegment).delta) > 0"
+                                :class="['delta-positive', Math.abs(Number(getSegmentValue(row.metric, semaforoSegment).delta)) >= 20 ? 'delta-alert' : '']">
+                                <span class="material-symbols-outlined">arrow_upward</span>
+                                +{{ getSegmentValue(row.metric, semaforoSegment).delta }}%
+                              </span>
+                              <span v-else-if="Number(getSegmentValue(row.metric, semaforoSegment).delta) < 0"
+                                :class="['delta-negative', Math.abs(Number(getSegmentValue(row.metric, semaforoSegment).delta)) >= 20 ? 'delta-alert' : '']">
+                                <span class="material-symbols-outlined">arrow_downward</span>
+                                {{ getSegmentValue(row.metric, semaforoSegment).delta }}%
+                              </span>
+                              <span v-else class="delta-neutral">0%</span>
                             </td>
-                          </template>
-                          <td class="col-delta">
-                            <span v-if="Number(getSegmentValue(row.metric, 'manufacturers').delta) > 0"
-                              :class="['delta-positive', Math.abs(Number(getSegmentValue(row.metric, 'manufacturers').delta)) >= 20 ? 'delta-alert' : '']">
-                              <span class="material-symbols-outlined">arrow_upward</span>
-                              +{{ getSegmentValue(row.metric, 'manufacturers').delta }}%
-                            </span>
-                            <span v-else-if="Number(getSegmentValue(row.metric, 'manufacturers').delta) < 0"
-                              :class="['delta-negative', Math.abs(Number(getSegmentValue(row.metric, 'manufacturers').delta)) >= 20 ? 'delta-alert' : '']">
-                              <span class="material-symbols-outlined">arrow_downward</span>
-                              {{ getSegmentValue(row.metric, 'manufacturers').delta }}%
-                            </span>
-                            <span v-else class="delta-neutral">
-                              <span class="material-symbols-outlined">remove</span>
-                              0%
-                            </span>
-                          </td>
-                          <!-- Individuals segment -->
-                          <template v-if="row.type === 'amount'">
-                            <td class="col-count">{{ formatAmount(getSegmentValue(row.metric, 'individuals').amount) }}
-                            </td>
-                            <td class="col-percentage"><span class="percentage-value">--</span></td>
-                          </template>
-                          <template v-else>
-                            <td class="col-count">{{ getSegmentValue(row.metric, 'individuals').count }}</td>
-                            <td class="col-percentage">
-                              <div class="percentage-cell">
-                                <div class="percentage-bar"
-                                  :style="{ width: getSegmentValue(row.metric, 'individuals').pct + '%', background: 'var(--accent-warning)' }">
-                                </div>
-                                <span class="percentage-value">{{ getSegmentValue(row.metric, 'individuals').pct
-                                  }}%</span>
-                              </div>
-                            </td>
-                          </template>
-                          <td class="col-delta">
-                            <span v-if="Number(getSegmentValue(row.metric, 'individuals').delta) > 0"
-                              :class="['delta-positive', Math.abs(Number(getSegmentValue(row.metric, 'individuals').delta)) >= 20 ? 'delta-alert' : '']">
-                              <span class="material-symbols-outlined">arrow_upward</span>
-                              +{{ getSegmentValue(row.metric, 'individuals').delta }}%
-                            </span>
-                            <span v-else-if="Number(getSegmentValue(row.metric, 'individuals').delta) < 0"
-                              :class="['delta-negative', Math.abs(Number(getSegmentValue(row.metric, 'individuals').delta)) >= 20 ? 'delta-alert' : '']">
-                              <span class="material-symbols-outlined">arrow_downward</span>
-                              {{ getSegmentValue(row.metric, 'individuals').delta }}%
-                            </span>
-                            <span v-else class="delta-neutral">
-                              <span class="material-symbols-outlined">remove</span>
-                              0%
-                            </span>
-                          </td>
-                        </tr>
+                          </tr>
+                        </template>
                       </tbody>
                     </table>
                   </div>
 
                   <!-- Cross Selling Table -->
                   <div v-else-if="section.id === 'crossSelling'" class="report-table-wrapper">
+                    <div style="display:flex; gap:0; margin-bottom:1rem;">
+                      <button class="btn-sm" :class="semaforoSegment === 'total' ? 'btn-primary' : ''"
+                        @click="semaforoSegment = 'total'" style="border-radius:6px 0 0 6px; font-size:0.75rem;">Total</button>
+                      <button class="btn-sm" :class="semaforoSegment === 'manufacturers' ? 'btn-primary' : ''"
+                        @click="semaforoSegment = 'manufacturers'" style="border-radius:0; font-size:0.75rem;">Manufacturers</button>
+                      <button class="btn-sm" :class="semaforoSegment === 'individuals' ? 'btn-primary' : ''"
+                        @click="semaforoSegment = 'individuals'" style="border-radius:0 6px 6px 0; font-size:0.75rem;">Individuals</button>
+                    </div>
                     <table class="report-table">
                       <thead>
                         <tr>
-                          <th rowspan="2" style="min-width:160px;">Metrica</th>
-                          <th colspan="3" class="col-group-header">Total</th>
-                          <th colspan="3" class="col-group-header">Manufacturers</th>
-                          <th colspan="3" class="col-group-header">Individuals</th>
-                        </tr>
-                        <tr>
-                          <th>Cant</th>
-                          <th>%</th>
-                          <th data-tooltip="Cambio porcentual vs periodo anterior">Delta%</th>
-                          <th>Cant</th>
-                          <th>%</th>
-                          <th data-tooltip="Cambio porcentual vs periodo anterior">Delta%</th>
-                          <th>Cant</th>
-                          <th>%</th>
-                          <th data-tooltip="Cambio porcentual vs periodo anterior">Delta%</th>
+                          <th style="min-width:200px;">Métrica</th>
+                          <th style="text-align:right;">Cantidad</th>
+                          <th style="min-width:180px;">Distribución</th>
+                          <th style="text-align:center;">Delta%</th>
                         </tr>
                       </thead>
                       <tbody>
-                        <tr v-for="row in crossSellingRows" :key="row.label">
-                          <td class="col-metric">{{ row.label }}</td>
-                          <!-- Total segment -->
-                          <template v-if="row.type === 'amount'">
-                            <td class="col-count">{{ formatAmount(getSegmentValue(row.metric, 'total').amount) }}</td>
-                            <td class="col-percentage"><span class="percentage-value">--</span></td>
-                          </template>
-                          <template v-else>
-                            <td class="col-count">{{ getSegmentValue(row.metric, 'total').count }}</td>
-                            <td class="col-percentage">
-                              <div class="percentage-cell">
-                                <div class="percentage-bar"
-                                  :style="{ width: getSegmentValue(row.metric, 'total').pct + '%', background: 'var(--accent-primary)' }">
+                        <template v-for="row in crossSellingRows" :key="row.label">
+                          <tr :style="row.type === 'amount' ? 'background:rgba(16,185,129,0.06);' : ''">
+                            <td class="col-metric" style="font-weight:600;">{{ row.label }}</td>
+                            <td style="text-align:right; font-weight:700; font-size:1rem;">
+                              <template v-if="row.type === 'amount'">{{ formatAmount(getSegmentValue(row.metric, semaforoSegment).amount) }}</template>
+                              <template v-else>{{ getSegmentValue(row.metric, semaforoSegment).count }}</template>
+                            </td>
+                            <td>
+                              <template v-if="row.type !== 'amount'">
+                                <div class="percentage-cell">
+                                  <div class="percentage-bar"
+                                    :style="{ width: getSegmentValue(row.metric, semaforoSegment).pct + '%', background: 'var(--accent-primary)' }">
+                                  </div>
+                                  <span class="percentage-value">{{ getSegmentValue(row.metric, semaforoSegment).pct }}%</span>
                                 </div>
-                                <span class="percentage-value">{{ getSegmentValue(row.metric, 'total').pct }}%</span>
-                              </div>
+                              </template>
+                              <span v-else class="percentage-value" style="opacity:0.3;">—</span>
                             </td>
-                          </template>
-                          <td class="col-delta">
-                            <span v-if="Number(getSegmentValue(row.metric, 'total').delta) > 0"
-                              :class="['delta-positive', Math.abs(Number(getSegmentValue(row.metric, 'total').delta)) >= 20 ? 'delta-alert' : '']">
-                              <span class="material-symbols-outlined">arrow_upward</span>
-                              +{{ getSegmentValue(row.metric, 'total').delta }}%
-                            </span>
-                            <span v-else-if="Number(getSegmentValue(row.metric, 'total').delta) < 0"
-                              :class="['delta-negative', Math.abs(Number(getSegmentValue(row.metric, 'total').delta)) >= 20 ? 'delta-alert' : '']">
-                              <span class="material-symbols-outlined">arrow_downward</span>
-                              {{ getSegmentValue(row.metric, 'total').delta }}%
-                            </span>
-                            <span v-else class="delta-neutral">
-                              <span class="material-symbols-outlined">remove</span>
-                              0%
-                            </span>
-                          </td>
-                          <!-- Manufacturers segment -->
-                          <template v-if="row.type === 'amount'">
-                            <td class="col-count">{{ formatAmount(getSegmentValue(row.metric, 'manufacturers').amount)
-                              }}</td>
-                            <td class="col-percentage"><span class="percentage-value">--</span></td>
-                          </template>
-                          <template v-else>
-                            <td class="col-count">{{ getSegmentValue(row.metric, 'manufacturers').count }}</td>
-                            <td class="col-percentage">
-                              <div class="percentage-cell">
-                                <div class="percentage-bar"
-                                  :style="{ width: getSegmentValue(row.metric, 'manufacturers').pct + '%', background: 'var(--accent-info)' }">
-                                </div>
-                                <span class="percentage-value">{{ getSegmentValue(row.metric, 'manufacturers').pct
-                                  }}%</span>
-                              </div>
+                            <td class="col-delta" style="text-align:center;">
+                              <span v-if="Number(getSegmentValue(row.metric, semaforoSegment).delta) > 0"
+                                :class="['delta-positive', Math.abs(Number(getSegmentValue(row.metric, semaforoSegment).delta)) >= 20 ? 'delta-alert' : '']">
+                                <span class="material-symbols-outlined">arrow_upward</span>
+                                +{{ getSegmentValue(row.metric, semaforoSegment).delta }}%
+                              </span>
+                              <span v-else-if="Number(getSegmentValue(row.metric, semaforoSegment).delta) < 0"
+                                :class="['delta-negative', Math.abs(Number(getSegmentValue(row.metric, semaforoSegment).delta)) >= 20 ? 'delta-alert' : '']">
+                                <span class="material-symbols-outlined">arrow_downward</span>
+                                {{ getSegmentValue(row.metric, semaforoSegment).delta }}%
+                              </span>
+                              <span v-else class="delta-neutral">0%</span>
                             </td>
-                          </template>
-                          <td class="col-delta">
-                            <span v-if="Number(getSegmentValue(row.metric, 'manufacturers').delta) > 0"
-                              :class="['delta-positive', Math.abs(Number(getSegmentValue(row.metric, 'manufacturers').delta)) >= 20 ? 'delta-alert' : '']">
-                              <span class="material-symbols-outlined">arrow_upward</span>
-                              +{{ getSegmentValue(row.metric, 'manufacturers').delta }}%
-                            </span>
-                            <span v-else-if="Number(getSegmentValue(row.metric, 'manufacturers').delta) < 0"
-                              :class="['delta-negative', Math.abs(Number(getSegmentValue(row.metric, 'manufacturers').delta)) >= 20 ? 'delta-alert' : '']">
-                              <span class="material-symbols-outlined">arrow_downward</span>
-                              {{ getSegmentValue(row.metric, 'manufacturers').delta }}%
-                            </span>
-                            <span v-else class="delta-neutral">
-                              <span class="material-symbols-outlined">remove</span>
-                              0%
-                            </span>
-                          </td>
-                          <!-- Individuals segment -->
-                          <template v-if="row.type === 'amount'">
-                            <td class="col-count">{{ formatAmount(getSegmentValue(row.metric, 'individuals').amount) }}
-                            </td>
-                            <td class="col-percentage"><span class="percentage-value">--</span></td>
-                          </template>
-                          <template v-else>
-                            <td class="col-count">{{ getSegmentValue(row.metric, 'individuals').count }}</td>
-                            <td class="col-percentage">
-                              <div class="percentage-cell">
-                                <div class="percentage-bar"
-                                  :style="{ width: getSegmentValue(row.metric, 'individuals').pct + '%', background: 'var(--accent-warning)' }">
-                                </div>
-                                <span class="percentage-value">{{ getSegmentValue(row.metric, 'individuals').pct
-                                  }}%</span>
-                              </div>
-                            </td>
-                          </template>
-                          <td class="col-delta">
-                            <span v-if="Number(getSegmentValue(row.metric, 'individuals').delta) > 0"
-                              :class="['delta-positive', Math.abs(Number(getSegmentValue(row.metric, 'individuals').delta)) >= 20 ? 'delta-alert' : '']">
-                              <span class="material-symbols-outlined">arrow_upward</span>
-                              +{{ getSegmentValue(row.metric, 'individuals').delta }}%
-                            </span>
-                            <span v-else-if="Number(getSegmentValue(row.metric, 'individuals').delta) < 0"
-                              :class="['delta-negative', Math.abs(Number(getSegmentValue(row.metric, 'individuals').delta)) >= 20 ? 'delta-alert' : '']">
-                              <span class="material-symbols-outlined">arrow_downward</span>
-                              {{ getSegmentValue(row.metric, 'individuals').delta }}%
-                            </span>
-                            <span v-else class="delta-neutral">
-                              <span class="material-symbols-outlined">remove</span>
-                              0%
-                            </span>
-                          </td>
-                        </tr>
+                          </tr>
+                        </template>
                       </tbody>
                     </table>
                   </div>
@@ -976,352 +832,175 @@
 
                   <!-- Sin Respuesta 6to Toque Table -->
                   <div v-else-if="section.id === 'sinRespuesta'" class="report-table-wrapper">
+                    <div style="display:flex; gap:0; margin-bottom:1rem;">
+                      <button class="btn-sm" :class="semaforoSegment === 'total' ? 'btn-primary' : ''"
+                        @click="semaforoSegment = 'total'" style="border-radius:6px 0 0 6px; font-size:0.75rem;">Total</button>
+                      <button class="btn-sm" :class="semaforoSegment === 'manufacturers' ? 'btn-primary' : ''"
+                        @click="semaforoSegment = 'manufacturers'" style="border-radius:0; font-size:0.75rem;">Manufacturers</button>
+                      <button class="btn-sm" :class="semaforoSegment === 'individuals' ? 'btn-primary' : ''"
+                        @click="semaforoSegment = 'individuals'" style="border-radius:0 6px 6px 0; font-size:0.75rem;">Individuals</button>
+                    </div>
                     <table class="report-table">
                       <thead>
                         <tr>
-                          <th rowspan="2" style="min-width:160px;">Metrica</th>
-                          <th colspan="3" class="col-group-header">Total</th>
-                          <th colspan="3" class="col-group-header">Manufacturers</th>
-                          <th colspan="3" class="col-group-header">Individuals</th>
-                        </tr>
-                        <tr>
-                          <th>Cant</th>
-                          <th>%</th>
-                          <th data-tooltip="Cambio porcentual vs periodo anterior">Delta%</th>
-                          <th>Cant</th>
-                          <th>%</th>
-                          <th data-tooltip="Cambio porcentual vs periodo anterior">Delta%</th>
-                          <th>Cant</th>
-                          <th>%</th>
-                          <th data-tooltip="Cambio porcentual vs periodo anterior">Delta%</th>
+                          <th style="min-width:200px;">Métrica</th>
+                          <th style="text-align:right;">Cantidad</th>
+                          <th style="min-width:180px;">Distribución</th>
+                          <th style="text-align:center;">Delta%</th>
                         </tr>
                       </thead>
                       <tbody>
-                        <tr v-for="row in sinRespuestaRows" :key="row.label">
-                          <td class="col-metric">{{ row.label }}</td>
-                          <!-- Total segment -->
-                          <td class="col-count">{{ getSegmentValue(row.metric, 'total').count }}</td>
-                          <td class="col-percentage">
-                            <div class="percentage-cell">
-                              <div class="percentage-bar"
-                                :style="{ width: getSegmentValue(row.metric, 'total').pct + '%', background: 'var(--accent-primary)' }">
+                        <template v-for="row in sinRespuestaRows" :key="row.label">
+                          <tr>
+                            <td class="col-metric" style="font-weight:600;">{{ row.label }}</td>
+                            <td style="text-align:right; font-weight:700; font-size:1rem;">
+                              {{ getSegmentValue(row.metric, semaforoSegment).count }}
+                            </td>
+                            <td>
+                              <div class="percentage-cell">
+                                <div class="percentage-bar"
+                                  :style="{ width: getSegmentValue(row.metric, semaforoSegment).pct + '%', background: 'var(--accent-primary)' }">
+                                </div>
+                                <span class="percentage-value">{{ getSegmentValue(row.metric, semaforoSegment).pct }}%</span>
                               </div>
-                              <span class="percentage-value">{{ getSegmentValue(row.metric, 'total').pct }}%</span>
-                            </div>
-                          </td>
-                          <td class="col-delta">
-                            <span v-if="Number(getSegmentValue(row.metric, 'total').delta) > 0"
-                              :class="['delta-positive', Math.abs(Number(getSegmentValue(row.metric, 'total').delta)) >= 20 ? 'delta-alert' : '']">
-                              <span class="material-symbols-outlined">arrow_upward</span>
-                              +{{ getSegmentValue(row.metric, 'total').delta }}%
-                            </span>
-                            <span v-else-if="Number(getSegmentValue(row.metric, 'total').delta) < 0"
-                              :class="['delta-negative', Math.abs(Number(getSegmentValue(row.metric, 'total').delta)) >= 20 ? 'delta-alert' : '']">
-                              <span class="material-symbols-outlined">arrow_downward</span>
-                              {{ getSegmentValue(row.metric, 'total').delta }}%
-                            </span>
-                            <span v-else class="delta-neutral">
-                              <span class="material-symbols-outlined">remove</span>
-                              0%
-                            </span>
-                          </td>
-                          <!-- Manufacturers segment -->
-                          <td class="col-count">{{ getSegmentValue(row.metric, 'manufacturers').count }}</td>
-                          <td class="col-percentage">
-                            <div class="percentage-cell">
-                              <div class="percentage-bar"
-                                :style="{ width: getSegmentValue(row.metric, 'manufacturers').pct + '%', background: 'var(--accent-info)' }">
-                              </div>
-                              <span class="percentage-value">{{ getSegmentValue(row.metric, 'manufacturers').pct
-                                }}%</span>
-                            </div>
-                          </td>
-                          <td class="col-delta">
-                            <span v-if="Number(getSegmentValue(row.metric, 'manufacturers').delta) > 0"
-                              :class="['delta-positive', Math.abs(Number(getSegmentValue(row.metric, 'manufacturers').delta)) >= 20 ? 'delta-alert' : '']">
-                              <span class="material-symbols-outlined">arrow_upward</span>
-                              +{{ getSegmentValue(row.metric, 'manufacturers').delta }}%
-                            </span>
-                            <span v-else-if="Number(getSegmentValue(row.metric, 'manufacturers').delta) < 0"
-                              :class="['delta-negative', Math.abs(Number(getSegmentValue(row.metric, 'manufacturers').delta)) >= 20 ? 'delta-alert' : '']">
-                              <span class="material-symbols-outlined">arrow_downward</span>
-                              {{ getSegmentValue(row.metric, 'manufacturers').delta }}%
-                            </span>
-                            <span v-else class="delta-neutral">
-                              <span class="material-symbols-outlined">remove</span>
-                              0%
-                            </span>
-                          </td>
-                          <!-- Individuals segment -->
-                          <td class="col-count">{{ getSegmentValue(row.metric, 'individuals').count }}</td>
-                          <td class="col-percentage">
-                            <div class="percentage-cell">
-                              <div class="percentage-bar"
-                                :style="{ width: getSegmentValue(row.metric, 'individuals').pct + '%', background: 'var(--accent-warning)' }">
-                              </div>
-                              <span class="percentage-value">{{ getSegmentValue(row.metric, 'individuals').pct
-                                }}%</span>
-                            </div>
-                          </td>
-                          <td class="col-delta">
-                            <span v-if="Number(getSegmentValue(row.metric, 'individuals').delta) > 0"
-                              :class="['delta-positive', Math.abs(Number(getSegmentValue(row.metric, 'individuals').delta)) >= 20 ? 'delta-alert' : '']">
-                              <span class="material-symbols-outlined">arrow_upward</span>
-                              +{{ getSegmentValue(row.metric, 'individuals').delta }}%
-                            </span>
-                            <span v-else-if="Number(getSegmentValue(row.metric, 'individuals').delta) < 0"
-                              :class="['delta-negative', Math.abs(Number(getSegmentValue(row.metric, 'individuals').delta)) >= 20 ? 'delta-alert' : '']">
-                              <span class="material-symbols-outlined">arrow_downward</span>
-                              {{ getSegmentValue(row.metric, 'individuals').delta }}%
-                            </span>
-                            <span v-else class="delta-neutral">
-                              <span class="material-symbols-outlined">remove</span>
-                              0%
-                            </span>
-                          </td>
-                        </tr>
+                            </td>
+                            <td class="col-delta" style="text-align:center;">
+                              <span v-if="Number(getSegmentValue(row.metric, semaforoSegment).delta) > 0"
+                                :class="['delta-positive', Math.abs(Number(getSegmentValue(row.metric, semaforoSegment).delta)) >= 20 ? 'delta-alert' : '']">
+                                <span class="material-symbols-outlined">arrow_upward</span>
+                                +{{ getSegmentValue(row.metric, semaforoSegment).delta }}%
+                              </span>
+                              <span v-else-if="Number(getSegmentValue(row.metric, semaforoSegment).delta) < 0"
+                                :class="['delta-negative', Math.abs(Number(getSegmentValue(row.metric, semaforoSegment).delta)) >= 20 ? 'delta-alert' : '']">
+                                <span class="material-symbols-outlined">arrow_downward</span>
+                                {{ getSegmentValue(row.metric, semaforoSegment).delta }}%
+                              </span>
+                              <span v-else class="delta-neutral">0%</span>
+                            </td>
+                          </tr>
+                        </template>
                       </tbody>
                     </table>
                   </div>
 
                   <!-- Razones No Paso a Ventas Table -->
                   <div v-else-if="section.id === 'noPasoVentas'" class="report-table-wrapper">
+                    <div style="display:flex; gap:0; margin-bottom:1rem;">
+                      <button class="btn-sm" :class="semaforoSegment === 'total' ? 'btn-primary' : ''"
+                        @click="semaforoSegment = 'total'" style="border-radius:6px 0 0 6px; font-size:0.75rem;">Total</button>
+                      <button class="btn-sm" :class="semaforoSegment === 'manufacturers' ? 'btn-primary' : ''"
+                        @click="semaforoSegment = 'manufacturers'" style="border-radius:0; font-size:0.75rem;">Manufacturers</button>
+                      <button class="btn-sm" :class="semaforoSegment === 'individuals' ? 'btn-primary' : ''"
+                        @click="semaforoSegment = 'individuals'" style="border-radius:0 6px 6px 0; font-size:0.75rem;">Individuals</button>
+                    </div>
                     <table class="report-table">
                       <thead>
                         <tr>
-                          <th rowspan="2" style="min-width:160px;">Razón</th>
-                          <th rowspan="2" data-tooltip="Participación base 100 sobre total descartados">Mix%</th>
-                          <th colspan="3" class="col-group-header">Total</th>
-                          <th colspan="3" class="col-group-header">Manufacturers</th>
-                          <th colspan="3" class="col-group-header">Individuals</th>
-                        </tr>
-                        <tr>
-                          <th>Cant</th>
-                          <th>%</th>
-                          <th data-tooltip="Cambio porcentual vs periodo anterior">Delta%</th>
-                          <th>Cant</th>
-                          <th>%</th>
-                          <th data-tooltip="Cambio porcentual vs periodo anterior">Delta%</th>
-                          <th>Cant</th>
-                          <th>%</th>
-                          <th data-tooltip="Cambio porcentual vs periodo anterior">Delta%</th>
+                          <th style="min-width:200px;">Razón</th>
+                          <th style="text-align:right;">Cantidad</th>
+                          <th style="min-width:140px;" data-tooltip="Participación base 100 sobre total descartados">Mix%</th>
+                          <th style="min-width:180px;">Distribución</th>
+                          <th style="text-align:center;">Delta%</th>
                         </tr>
                       </thead>
                       <tbody>
-                        <tr v-for="row in razonesNoPasoRows" :key="row.label"
-                          :style="row.isSummary ? 'font-weight:700; background:var(--bg-surface);' : ''">
-                          <td class="col-metric">{{ row.label }}</td>
-                          <!-- Mix Base 100 -->
-                          <td class="col-percentage" style="text-align:center; min-width:70px;">
-                            <div class="percentage-cell">
-                              <div class="percentage-bar"
-                                :style="{ width: Math.min(Number(row.mixPct), 100) + '%', background: 'var(--accent-danger, #ef4444)' }"></div>
-                              <span class="percentage-value" :style="row.isSummary ? 'font-weight:700;' : ''">{{
-                                row.mixPct }}%</span>
-                            </div>
-                          </td>
-                          <!-- Total segment -->
-                          <td class="col-count">{{ getSegmentValue(row.metric, 'total').count }}</td>
-                          <td class="col-percentage">
-                            <div class="percentage-cell">
-                              <div class="percentage-bar"
-                                :style="{ width: getSegmentValue(row.metric, 'total').pct + '%', background: 'var(--accent-primary)' }">
+                        <template v-for="row in razonesNoPasoRows" :key="row.label">
+                          <tr :style="row.isSummary ? 'font-weight:700; background:var(--bg-surface);' : ''">
+                            <td class="col-metric" style="font-weight:600;">{{ row.label }}</td>
+                            <td style="text-align:right; font-weight:700; font-size:1rem;">
+                              {{ getSegmentValue(row.metric, semaforoSegment).count }}
+                            </td>
+                            <td>
+                              <div class="percentage-cell">
+                                <div class="percentage-bar"
+                                  :style="{ width: Math.min(Number(row.mixPct), 100) + '%', background: 'var(--accent-danger, #ef4444)' }"></div>
+                                <span class="percentage-value" :style="row.isSummary ? 'font-weight:700;' : ''">{{ row.mixPct }}%</span>
                               </div>
-                              <span class="percentage-value">{{ getSegmentValue(row.metric, 'total').pct }}%</span>
-                            </div>
-                          </td>
-                          <td class="col-delta">
-                            <span v-if="Number(getSegmentValue(row.metric, 'total').delta) > 0"
-                              :class="['delta-positive', Math.abs(Number(getSegmentValue(row.metric, 'total').delta)) >= 20 ? 'delta-alert' : '']">
-                              <span class="material-symbols-outlined">arrow_upward</span>
-                              +{{ getSegmentValue(row.metric, 'total').delta }}%
-                            </span>
-                            <span v-else-if="Number(getSegmentValue(row.metric, 'total').delta) < 0"
-                              :class="['delta-negative', Math.abs(Number(getSegmentValue(row.metric, 'total').delta)) >= 20 ? 'delta-alert' : '']">
-                              <span class="material-symbols-outlined">arrow_downward</span>
-                              {{ getSegmentValue(row.metric, 'total').delta }}%
-                            </span>
-                            <span v-else class="delta-neutral">
-                              <span class="material-symbols-outlined">remove</span>
-                              0%
-                            </span>
-                          </td>
-                          <!-- Manufacturers segment -->
-                          <td class="col-count">{{ getSegmentValue(row.metric, 'manufacturers').count }}</td>
-                          <td class="col-percentage">
-                            <div class="percentage-cell">
-                              <div class="percentage-bar"
-                                :style="{ width: getSegmentValue(row.metric, 'manufacturers').pct + '%', background: 'var(--accent-info)' }">
+                            </td>
+                            <td>
+                              <div class="percentage-cell">
+                                <div class="percentage-bar"
+                                  :style="{ width: getSegmentValue(row.metric, semaforoSegment).pct + '%', background: 'var(--accent-primary)' }">
+                                </div>
+                                <span class="percentage-value">{{ getSegmentValue(row.metric, semaforoSegment).pct }}%</span>
                               </div>
-                              <span class="percentage-value">{{ getSegmentValue(row.metric, 'manufacturers').pct
-                                }}%</span>
-                            </div>
-                          </td>
-                          <td class="col-delta">
-                            <span v-if="Number(getSegmentValue(row.metric, 'manufacturers').delta) > 0"
-                              :class="['delta-positive', Math.abs(Number(getSegmentValue(row.metric, 'manufacturers').delta)) >= 20 ? 'delta-alert' : '']">
-                              <span class="material-symbols-outlined">arrow_upward</span>
-                              +{{ getSegmentValue(row.metric, 'manufacturers').delta }}%
-                            </span>
-                            <span v-else-if="Number(getSegmentValue(row.metric, 'manufacturers').delta) < 0"
-                              :class="['delta-negative', Math.abs(Number(getSegmentValue(row.metric, 'manufacturers').delta)) >= 20 ? 'delta-alert' : '']">
-                              <span class="material-symbols-outlined">arrow_downward</span>
-                              {{ getSegmentValue(row.metric, 'manufacturers').delta }}%
-                            </span>
-                            <span v-else class="delta-neutral">
-                              <span class="material-symbols-outlined">remove</span>
-                              0%
-                            </span>
-                          </td>
-                          <!-- Individuals segment -->
-                          <td class="col-count">{{ getSegmentValue(row.metric, 'individuals').count }}</td>
-                          <td class="col-percentage">
-                            <div class="percentage-cell">
-                              <div class="percentage-bar"
-                                :style="{ width: getSegmentValue(row.metric, 'individuals').pct + '%', background: 'var(--accent-warning)' }">
-                              </div>
-                              <span class="percentage-value">{{ getSegmentValue(row.metric, 'individuals').pct
-                                }}%</span>
-                            </div>
-                          </td>
-                          <td class="col-delta">
-                            <span v-if="Number(getSegmentValue(row.metric, 'individuals').delta) > 0"
-                              :class="['delta-positive', Math.abs(Number(getSegmentValue(row.metric, 'individuals').delta)) >= 20 ? 'delta-alert' : '']">
-                              <span class="material-symbols-outlined">arrow_upward</span>
-                              +{{ getSegmentValue(row.metric, 'individuals').delta }}%
-                            </span>
-                            <span v-else-if="Number(getSegmentValue(row.metric, 'individuals').delta) < 0"
-                              :class="['delta-negative', Math.abs(Number(getSegmentValue(row.metric, 'individuals').delta)) >= 20 ? 'delta-alert' : '']">
-                              <span class="material-symbols-outlined">arrow_downward</span>
-                              {{ getSegmentValue(row.metric, 'individuals').delta }}%
-                            </span>
-                            <span v-else class="delta-neutral">
-                              <span class="material-symbols-outlined">remove</span>
-                              0%
-                            </span>
-                          </td>
-                        </tr>
+                            </td>
+                            <td class="col-delta" style="text-align:center;">
+                              <span v-if="Number(getSegmentValue(row.metric, semaforoSegment).delta) > 0"
+                                :class="['delta-positive', Math.abs(Number(getSegmentValue(row.metric, semaforoSegment).delta)) >= 20 ? 'delta-alert' : '']">
+                                <span class="material-symbols-outlined">arrow_upward</span>
+                                +{{ getSegmentValue(row.metric, semaforoSegment).delta }}%
+                              </span>
+                              <span v-else-if="Number(getSegmentValue(row.metric, semaforoSegment).delta) < 0"
+                                :class="['delta-negative', Math.abs(Number(getSegmentValue(row.metric, semaforoSegment).delta)) >= 20 ? 'delta-alert' : '']">
+                                <span class="material-symbols-outlined">arrow_downward</span>
+                                {{ getSegmentValue(row.metric, semaforoSegment).delta }}%
+                              </span>
+                              <span v-else class="delta-neutral">0%</span>
+                            </td>
+                          </tr>
+                        </template>
                       </tbody>
                     </table>
                   </div>
 
                   <!-- Razones Perdio la Venta Table -->
                   <div v-else-if="section.id === 'perdioVenta'" class="report-table-wrapper">
+                    <div style="display:flex; gap:0; margin-bottom:1rem;">
+                      <button class="btn-sm" :class="semaforoSegment === 'total' ? 'btn-primary' : ''"
+                        @click="semaforoSegment = 'total'" style="border-radius:6px 0 0 6px; font-size:0.75rem;">Total</button>
+                      <button class="btn-sm" :class="semaforoSegment === 'manufacturers' ? 'btn-primary' : ''"
+                        @click="semaforoSegment = 'manufacturers'" style="border-radius:0; font-size:0.75rem;">Manufacturers</button>
+                      <button class="btn-sm" :class="semaforoSegment === 'individuals' ? 'btn-primary' : ''"
+                        @click="semaforoSegment = 'individuals'" style="border-radius:0 6px 6px 0; font-size:0.75rem;">Individuals</button>
+                    </div>
                     <table class="report-table">
                       <thead>
                         <tr>
-                          <th rowspan="2" style="min-width:160px;">Razón</th>
-                          <th rowspan="2" data-tooltip="Participación base 100 sobre total ventas perdidas">Mix%</th>
-                          <th colspan="3" class="col-group-header">Total</th>
-                          <th colspan="3" class="col-group-header">Manufacturers</th>
-                          <th colspan="3" class="col-group-header">Individuals</th>
-                        </tr>
-                        <tr>
-                          <th>Cant</th>
-                          <th>%</th>
-                          <th data-tooltip="Cambio porcentual vs periodo anterior">Delta%</th>
-                          <th>Cant</th>
-                          <th>%</th>
-                          <th data-tooltip="Cambio porcentual vs periodo anterior">Delta%</th>
-                          <th>Cant</th>
-                          <th>%</th>
-                          <th data-tooltip="Cambio porcentual vs periodo anterior">Delta%</th>
+                          <th style="min-width:200px;">Razón</th>
+                          <th style="text-align:right;">Cantidad</th>
+                          <th style="min-width:140px;" data-tooltip="Participación base 100 sobre total ventas perdidas">Mix%</th>
+                          <th style="min-width:180px;">Distribución</th>
+                          <th style="text-align:center;">Delta%</th>
                         </tr>
                       </thead>
                       <tbody>
-                        <tr v-for="row in razonesPerdioRows" :key="row.label"
-                          :style="row.isSummary ? 'font-weight:700; background:var(--bg-surface);' : ''">
-                          <td class="col-metric">{{ row.label }}</td>
-                          <!-- Mix Base 100 -->
-                          <td class="col-percentage" style="text-align:center; min-width:70px;">
-                            <div class="percentage-cell">
-                              <div class="percentage-bar"
-                                :style="{ width: Math.min(Number(row.mixPct), 100) + '%', background: 'var(--accent-danger, #ef4444)' }"></div>
-                              <span class="percentage-value" :style="row.isSummary ? 'font-weight:700;' : ''">{{
-                                row.mixPct }}%</span>
-                            </div>
-                          </td>
-                          <!-- Total segment -->
-                          <td class="col-count">{{ getSegmentValue(row.metric, 'total').count }}</td>
-                          <td class="col-percentage">
-                            <div class="percentage-cell">
-                              <div class="percentage-bar"
-                                :style="{ width: getSegmentValue(row.metric, 'total').pct + '%', background: 'var(--accent-primary)' }">
+                        <template v-for="row in razonesPerdioRows" :key="row.label">
+                          <tr :style="row.isSummary ? 'font-weight:700; background:var(--bg-surface);' : ''">
+                            <td class="col-metric" style="font-weight:600;">{{ row.label }}</td>
+                            <td style="text-align:right; font-weight:700; font-size:1rem;">
+                              {{ getSegmentValue(row.metric, semaforoSegment).count }}
+                            </td>
+                            <td>
+                              <div class="percentage-cell">
+                                <div class="percentage-bar"
+                                  :style="{ width: Math.min(Number(row.mixPct), 100) + '%', background: 'var(--accent-danger, #ef4444)' }"></div>
+                                <span class="percentage-value" :style="row.isSummary ? 'font-weight:700;' : ''">{{ row.mixPct }}%</span>
                               </div>
-                              <span class="percentage-value">{{ getSegmentValue(row.metric, 'total').pct }}%</span>
-                            </div>
-                          </td>
-                          <td class="col-delta">
-                            <span v-if="Number(getSegmentValue(row.metric, 'total').delta) > 0"
-                              :class="['delta-positive', Math.abs(Number(getSegmentValue(row.metric, 'total').delta)) >= 20 ? 'delta-alert' : '']">
-                              <span class="material-symbols-outlined">arrow_upward</span>
-                              +{{ getSegmentValue(row.metric, 'total').delta }}%
-                            </span>
-                            <span v-else-if="Number(getSegmentValue(row.metric, 'total').delta) < 0"
-                              :class="['delta-negative', Math.abs(Number(getSegmentValue(row.metric, 'total').delta)) >= 20 ? 'delta-alert' : '']">
-                              <span class="material-symbols-outlined">arrow_downward</span>
-                              {{ getSegmentValue(row.metric, 'total').delta }}%
-                            </span>
-                            <span v-else class="delta-neutral">
-                              <span class="material-symbols-outlined">remove</span>
-                              0%
-                            </span>
-                          </td>
-                          <!-- Manufacturers segment -->
-                          <td class="col-count">{{ getSegmentValue(row.metric, 'manufacturers').count }}</td>
-                          <td class="col-percentage">
-                            <div class="percentage-cell">
-                              <div class="percentage-bar"
-                                :style="{ width: getSegmentValue(row.metric, 'manufacturers').pct + '%', background: 'var(--accent-info)' }">
+                            </td>
+                            <td>
+                              <div class="percentage-cell">
+                                <div class="percentage-bar"
+                                  :style="{ width: getSegmentValue(row.metric, semaforoSegment).pct + '%', background: 'var(--accent-primary)' }">
+                                </div>
+                                <span class="percentage-value">{{ getSegmentValue(row.metric, semaforoSegment).pct }}%</span>
                               </div>
-                              <span class="percentage-value">{{ getSegmentValue(row.metric, 'manufacturers').pct
-                                }}%</span>
-                            </div>
-                          </td>
-                          <td class="col-delta">
-                            <span v-if="Number(getSegmentValue(row.metric, 'manufacturers').delta) > 0"
-                              :class="['delta-positive', Math.abs(Number(getSegmentValue(row.metric, 'manufacturers').delta)) >= 20 ? 'delta-alert' : '']">
-                              <span class="material-symbols-outlined">arrow_upward</span>
-                              +{{ getSegmentValue(row.metric, 'manufacturers').delta }}%
-                            </span>
-                            <span v-else-if="Number(getSegmentValue(row.metric, 'manufacturers').delta) < 0"
-                              :class="['delta-negative', Math.abs(Number(getSegmentValue(row.metric, 'manufacturers').delta)) >= 20 ? 'delta-alert' : '']">
-                              <span class="material-symbols-outlined">arrow_downward</span>
-                              {{ getSegmentValue(row.metric, 'manufacturers').delta }}%
-                            </span>
-                            <span v-else class="delta-neutral">
-                              <span class="material-symbols-outlined">remove</span>
-                              0%
-                            </span>
-                          </td>
-                          <!-- Individuals segment -->
-                          <td class="col-count">{{ getSegmentValue(row.metric, 'individuals').count }}</td>
-                          <td class="col-percentage">
-                            <div class="percentage-cell">
-                              <div class="percentage-bar"
-                                :style="{ width: getSegmentValue(row.metric, 'individuals').pct + '%', background: 'var(--accent-warning)' }">
-                              </div>
-                              <span class="percentage-value">{{ getSegmentValue(row.metric, 'individuals').pct
-                                }}%</span>
-                            </div>
-                          </td>
-                          <td class="col-delta">
-                            <span v-if="Number(getSegmentValue(row.metric, 'individuals').delta) > 0"
-                              :class="['delta-positive', Math.abs(Number(getSegmentValue(row.metric, 'individuals').delta)) >= 20 ? 'delta-alert' : '']">
-                              <span class="material-symbols-outlined">arrow_upward</span>
-                              +{{ getSegmentValue(row.metric, 'individuals').delta }}%
-                            </span>
-                            <span v-else-if="Number(getSegmentValue(row.metric, 'individuals').delta) < 0"
-                              :class="['delta-negative', Math.abs(Number(getSegmentValue(row.metric, 'individuals').delta)) >= 20 ? 'delta-alert' : '']">
-                              <span class="material-symbols-outlined">arrow_downward</span>
-                              {{ getSegmentValue(row.metric, 'individuals').delta }}%
-                            </span>
-                            <span v-else class="delta-neutral">
-                              <span class="material-symbols-outlined">remove</span>
-                              0%
-                            </span>
-                          </td>
-                        </tr>
+                            </td>
+                            <td class="col-delta" style="text-align:center;">
+                              <span v-if="Number(getSegmentValue(row.metric, semaforoSegment).delta) > 0"
+                                :class="['delta-positive', Math.abs(Number(getSegmentValue(row.metric, semaforoSegment).delta)) >= 20 ? 'delta-alert' : '']">
+                                <span class="material-symbols-outlined">arrow_upward</span>
+                                +{{ getSegmentValue(row.metric, semaforoSegment).delta }}%
+                              </span>
+                              <span v-else-if="Number(getSegmentValue(row.metric, semaforoSegment).delta) < 0"
+                                :class="['delta-negative', Math.abs(Number(getSegmentValue(row.metric, semaforoSegment).delta)) >= 20 ? 'delta-alert' : '']">
+                                <span class="material-symbols-outlined">arrow_downward</span>
+                                {{ getSegmentValue(row.metric, semaforoSegment).delta }}%
+                              </span>
+                              <span v-else class="delta-neutral">0%</span>
+                            </td>
+                          </tr>
+                        </template>
                       </tbody>
                     </table>
                   </div>
