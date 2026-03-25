@@ -3358,13 +3358,12 @@ function uploadPaymentProof(base64Data, fileName, mimeType, dealRow) {
     var col = colMap['comprobante_pago_url'];
     if (col) {
       sheet.getRange(dealRow, col).setValue(fileUrl);
+      // Log the change only if column exists and write succeeded
+      var idDealCol = colMap['id_deal'];
+      var idDeal = idDealCol ? sheet.getRange(dealRow, idDealCol).getValue() : '';
+      var userEmail = Session.getActiveUser().getEmail();
+      logChange_('deal', idDeal, userEmail, 'comprobante_pago_url', '', fileUrl);
     }
-
-    // Log the change
-    var idDealCol = colMap['id_deal'];
-    var idDeal = idDealCol ? sheet.getRange(dealRow, idDealCol).getValue() : '';
-    var userEmail = Session.getActiveUser().getEmail();
-    logChange_('deal', idDeal, userEmail, 'comprobante_pago_url', '', fileUrl);
 
     return { status: 'success', url: fileUrl, message: 'Comprobante subido correctamente' };
   } catch (err) {
