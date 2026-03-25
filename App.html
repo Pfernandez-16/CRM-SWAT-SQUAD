@@ -124,7 +124,7 @@
         ['City', 'Ciudad', 'text', 'Información de Contacto', '📇', 2],
         ['Empleados', 'Empleados', 'text', 'Información de Contacto', '📇', 2],
         ['Nivel', 'Nivel', 'text', 'Información de Contacto', '📇', 2],
-        ['Servicio', 'Servicio', 'text', 'Información de Contacto', '📇', 2],
+        // 'Servicio' field moved to Pricing Global section as product_select
         // Section 3: Información de Campaña (Solo Lectura)
         ['source', 'Source', 'text', 'Información de Campaña', '📊', 3, 'half', true],
         ['medium', 'Medium', 'text', 'Información de Campaña', '📊', 3, 'half', true],
@@ -156,7 +156,9 @@
         ['Pricing Tier', 'Pricing Tier', 'select', 'Calificación BANT', '🎯', 5, 'half', false, 'Pricing Tier'],
         ['¿Cuánto?', '¿Cuánto?', 'budget_dual', 'Calificación BANT', '🎯', 5, 'full'],
         ['_pricing_result', 'Pricing Result', 'pricing_result', 'Calificación BANT', '🎯', 5, 'full'],
-        // Section 6: Pricing Global (read-only)
+        // Section 6: Pricing Global
+        ['Servicio', 'Producto', 'product_select', 'Pricing Global', '💰', 6],
+        ['Licencias', 'Licencias (solo SaaS)', 'number', 'Pricing Global', '💰', 6],
         ['Monto Aproximado', 'Monto Aproximado (Pipeline Value)', 'pricing_display', 'Pricing Global', '💰', 6, 'full', true],
         // Section 7: Notas
         ['Notas', 'Notas', 'textarea', 'Notas del Lead', '📝', 7, 'full', false]
@@ -202,6 +204,7 @@
         ['Link de Pago', 'Link de Pago', 'select_or_text', 'Cobranza & Facturación', '💳', 7, 'half', false, 'Link de Pago'],
         ['Renovación', 'Renovación', 'select_or_text', 'Cobranza & Facturación', '💳', 7, 'half', false, 'Renovación'],
         ['Soporte de pago', 'Soporte de pago', 'select_or_text', 'Cobranza & Facturación', '💳', 7, 'half', false, 'Soporte de pago'],
+        ['Comprobante de Pago URL', 'Comprobante de Pago', 'file_upload', 'Cobranza & Facturación', '💳', 7, 'full'],
         ['Tipo de Transacción', 'Tipo de Transacción', 'text', 'Cobranza & Facturación', '💳', 7],
         ['Fuente de origen', 'Fuente de origen', 'text', 'Cobranza & Facturación', '💳', 7],
         ['Deal Code', 'Deal Code', 'text', 'Cobranza & Facturación', '💳', 7],
@@ -293,6 +296,7 @@
             const leads = ref([]);
             const deals = ref([]);
             const vendedoresList = ref([]);
+            const recentDuplicates = ref([]);
             const catalogs = ref({});
             const pricing = ref([]);
             const currentUser = ref({ email: '', nombre: '', rol: 'GUEST', sheetId: '' });
@@ -306,6 +310,13 @@
                 if (src === 'deal') return true;
                 if (src === 'cross_deal') return true;
                 return false;
+            });
+
+            // Full read-only flag: true when SDR views a Deal (ALL fields disabled, no save)
+            const isDealFullReadOnly = computed(function () {
+                var role = userRole.value;
+                var src = (selectedLead.value || {})._source;
+                return role === 'SDR' && (src === 'deal' || src === 'cross_deal');
             });
 
             // ── Phase 1.4: Role-filtered vendor lists ──
@@ -340,7 +351,7 @@
             });
 
             // ── Phase 8: Pricing Global Config ──
-            const pricingConfig = reactive({ tipoCliente: '', ticketPromedio: 0, licenciasPromedio: 0 });
+            const pricingConfig = reactive({ tipoCliente: '', productos: [] });
             const savingPricing = ref(false);
 
             // ── Phase 3B: Schema Discovery ──
@@ -353,15 +364,29 @@
             const fieldLayoutEditFields = ref([]);
             const savingFieldLayout = ref(false);
 
-            // ── Pricing: Monto Aproximado auto-calculation (from global config) ──
+            // ── Pricing: Monto Aproximado auto-calculation (multi-product) ──
             const calculoMontoAproximado = computed(function () {
                 var tipo = String(pricingConfig.tipoCliente || '').trim();
-                var ticket = parseFloat(pricingConfig.ticketPromedio) || 0;
-                var licencias = parseFloat(pricingConfig.licenciasPromedio) || 0;
-                if (!tipo || ticket === 0) return 0;
+                if (!tipo || !pricingConfig.productos || !pricingConfig.productos.length) return 0;
+                // Find selected product from lead's Servicio field
+                var productoNombre = String(editLead['Servicio'] || '').trim();
+                var producto = null;
+                for (var i = 0; i < pricingConfig.productos.length; i++) {
+                    if (pricingConfig.productos[i].nombre === productoNombre) {
+                        producto = pricingConfig.productos[i];
+                        break;
+                    }
+                }
+                if (!producto) {
+                    // Fallback: use first product if none selected
+                    producto = pricingConfig.productos[0];
+                }
+                var ticket = parseFloat(producto.ticketPromedio) || 0;
+                if (ticket === 0) return 0;
+                var licencias = parseFloat(editLead['Licencias'] || 0) || 0;
                 if (tipo === 'Fichas Mensuales (FEE)') return ticket * 12;
                 if (tipo === 'Proyectos') return ticket;
-                if (tipo === 'SaaS') return ticket * licencias * 12;
+                if (tipo === 'SaaS') return ticket * (licencias || 1) * 12;
                 return 0;
             });
             const userConnected = ref(false);
@@ -1591,6 +1616,21 @@
                     : (fieldLayoutLead.value.length > 0 ? fieldLayoutLead.value : DEFAULT_LEAD_LAYOUT);
                 var _autoFields = autoFieldsFromSchema_(schemaData.value, _baseLayout, _isDealSrc ? 'deal' : 'lead');
                 var _fullLayout = _baseLayout.concat(_autoFields);
+
+                // ── Required fields validation ──
+                var missingRequired = [];
+                _fullLayout.forEach(function (f) {
+                    if (f.requerido && f.visible && f.tipo_input !== 'hidden') {
+                        var val = String(editLead[f.campo_key] || '').trim();
+                        if (!val) missingRequired.push(f.campo_label);
+                    }
+                });
+                if (missingRequired.length > 0) {
+                    saving.value = false;
+                    showToast('Campos obligatorios vacíos: ' + missingRequired.join(', '), 'error');
+                    return;
+                }
+
                 const EDITABLE_KEYS = _fullLayout
                     .filter(function (f) { return f.visible && !f.solo_lectura && f.tipo_input !== 'hidden'; })
                     .map(function (f) { return f.campo_key; })
@@ -1803,6 +1843,20 @@
             }
 
             // Phase 23: Plantillas Per-User
+            // ── Duplicate Alerts ──
+            function loadRecentDuplicates() {
+                google.script.run
+                    .withSuccessHandler(function (res) {
+                        recentDuplicates.value = res || [];
+                    })
+                    .withFailureHandler(function () { recentDuplicates.value = []; })
+                    .getRecentDuplicates(7);
+            }
+
+            function dismissDuplicateAlert() {
+                recentDuplicates.value = [];
+            }
+
             function loadPlantillas() {
                 var email = currentUser.value.email;
                 if (!email) return;
@@ -2141,22 +2195,40 @@
                     .withSuccessHandler(function (cfg) {
                         if (cfg) {
                             pricingConfig.tipoCliente = cfg.tipoCliente || '';
-                            pricingConfig.ticketPromedio = cfg.ticketPromedio || 0;
-                            pricingConfig.licenciasPromedio = cfg.licenciasPromedio || 0;
+                            pricingConfig.productos = cfg.productos || [];
                         }
                     })
                     .withFailureHandler(function (err) { console.error('PricingConfig error:', err); })
                     .getPricingConfig();
             }
 
+            function addPricingProduct() {
+                if (pricingConfig.productos.length >= 10) {
+                    showToast('Máximo 10 productos permitidos', 'error');
+                    return;
+                }
+                pricingConfig.productos.push({ nombre: '', ticketPromedio: 0 });
+            }
+
+            function removePricingProduct(idx) {
+                pricingConfig.productos.splice(idx, 1);
+            }
+
             function savePricingConfigFn() {
+                // Validate: all products must have name and ticket
+                var invalid = pricingConfig.productos.some(function (p) {
+                    return !String(p.nombre || '').trim();
+                });
+                if (invalid) {
+                    showToast('Todos los productos deben tener un nombre', 'error');
+                    return;
+                }
                 savingPricing.value = true;
                 google.script.run
                     .withSuccessHandler(function (result) {
                         savingPricing.value = false;
                         if (result && result.status === 'success') {
                             showToast('Configuración de pricing guardada', 'success');
-                            // Refresh data so all leads reflect new pricing
                             refreshData();
                         } else {
                             showToast((result && result.message) || 'Error al guardar pricing', 'error');
@@ -2168,8 +2240,7 @@
                     })
                     .savePricingConfig({
                         tipoCliente: pricingConfig.tipoCliente,
-                        ticketPromedio: pricingConfig.ticketPromedio,
-                        licenciasPromedio: pricingConfig.licenciasPromedio
+                        productos: JSON.parse(JSON.stringify(pricingConfig.productos))
                     });
             }
 
@@ -2442,12 +2513,16 @@
                     columns.forEach(col => {
                         if (col._sortable) col._sortable.destroy();
 
+                        // SDR viewing deals = no drag-and-drop
+                        var sdrOnDeals = userRole.value === 'SDR' && currentView.value === 'negociaciones';
+
                         col._sortable = new Sortable(col, {
                             group: 'kanban',
                             animation: 300,
                             ghostClass: 'sortable-ghost',
                             chosenClass: 'sortable-chosen',
                             dragClass: 'sortable-drag',
+                            disabled: sdrOnDeals,
                             easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
                             onEnd: function (evt) {
                                 const cardEl = evt.item;
@@ -2466,6 +2541,23 @@
                                 if (lead) {
                                     const oldStatus = itemIsDeal ? lead['Status de Venta'] : lead._colW_Status;
                                     if (oldStatus === newStatus) return;
+
+                                    // ── Required fields validation on stage change ──
+                                    var _layoutForValidation = itemIsDeal
+                                        ? (fieldLayoutDeal.value.length > 0 ? fieldLayoutDeal.value : DEFAULT_DEAL_LAYOUT)
+                                        : (fieldLayoutLead.value.length > 0 ? fieldLayoutLead.value : DEFAULT_LEAD_LAYOUT);
+                                    var _missingOnDrag = [];
+                                    _layoutForValidation.forEach(function (f) {
+                                        if (f.requerido && f.visible && f.tipo_input !== 'hidden') {
+                                            var val = String(lead[f.campo_key] || '').trim();
+                                            if (!val) _missingOnDrag.push(f.campo_label);
+                                        }
+                                    });
+                                    if (_missingOnDrag.length > 0) {
+                                        showToast('No se puede mover: campos obligatorios vacíos — ' + _missingOnDrag.join(', '), 'error');
+                                        nextTick(function () { initKanbanDragDrop(); });
+                                        return;
+                                    }
 
                                     // ── HANDOFF: Intercept "Paso a Ventas" with modal instead of confirm() ──
                                     if (!itemIsDeal && newStatus.toLowerCase().trim() === 'paso a ventas') {
@@ -2550,22 +2642,33 @@
             // ── Phase 9: Pricing calculator for handoff modal ──
             const handoffMontoEstimado = computed(function () {
                 var lead = handoffLead.value;
-                if (!lead || !lead['Tipo de Cliente']) return null;
-                var tipo = String(lead['Tipo de Cliente'] || '').trim();
-                var ticket = parseFloat(lead['Ticket Promedio']) || 0;
-                var licencias = parseFloat(lead['Licencias Promedio']) || 0;
-                if (!tipo || ticket === 0) return null;
+                if (!lead) return null;
+                var tipo = String(pricingConfig.tipoCliente || '').trim();
+                if (!tipo || !pricingConfig.productos || !pricingConfig.productos.length) return null;
+                // Find product from lead's Servicio field
+                var productoNombre = String(lead['Servicio'] || '').trim();
+                var producto = null;
+                for (var i = 0; i < pricingConfig.productos.length; i++) {
+                    if (pricingConfig.productos[i].nombre === productoNombre) {
+                        producto = pricingConfig.productos[i];
+                        break;
+                    }
+                }
+                if (!producto) producto = pricingConfig.productos[0];
+                var ticket = parseFloat(producto.ticketPromedio) || 0;
+                if (ticket === 0) return null;
+                var licencias = parseFloat(lead['Licencias'] || 0) || 0;
                 var monto = 0;
                 var formula = '';
                 if (tipo === 'Fichas Mensuales (FEE)') {
                     monto = ticket * 12;
-                    formula = '$' + ticket.toLocaleString() + ' × 12 meses';
+                    formula = producto.nombre + ': $' + ticket.toLocaleString() + ' × 12 meses';
                 } else if (tipo === 'Proyectos') {
                     monto = ticket;
-                    formula = '$' + ticket.toLocaleString() + ' (proyecto único)';
+                    formula = producto.nombre + ': $' + ticket.toLocaleString() + ' (proyecto único)';
                 } else if (tipo === 'SaaS') {
-                    monto = ticket * licencias * 12;
-                    formula = '$' + ticket.toLocaleString() + ' × ' + licencias + ' licencias × 12 meses';
+                    monto = ticket * (licencias || 1) * 12;
+                    formula = producto.nombre + ': $' + ticket.toLocaleString() + ' × ' + (licencias || 1) + ' lic. × 12 meses';
                 }
                 if (monto === 0) return null;
                 return { monto: monto, formula: formula, tipo: tipo };
@@ -2689,6 +2792,47 @@
 
             function removeAttachment(idx) {
                 emailAttachments.value.splice(idx, 1);
+            }
+
+            // ── Upload Payment Proof ──
+            const uploadingPayment = ref(false);
+
+            function handlePaymentUpload(event) {
+                var file = event.target.files && event.target.files[0];
+                if (!file) return;
+                // Validate type
+                var allowed = ['image/png', 'image/jpeg', 'image/jpg', 'application/pdf'];
+                if (allowed.indexOf(file.type) === -1) {
+                    showToast('Solo se permiten archivos PNG, JPG o PDF', 'error');
+                    return;
+                }
+                // Validate size (max 10MB)
+                if (file.size > 10 * 1024 * 1024) {
+                    showToast('El archivo no puede superar 10MB', 'error');
+                    return;
+                }
+                uploadingPayment.value = true;
+                var reader = new FileReader();
+                reader.onload = function (e) {
+                    var base64 = e.target.result.split(',')[1]; // Remove data:... prefix
+                    var dealRow = selectedLead.value._row;
+                    google.script.run
+                        .withSuccessHandler(function (result) {
+                            uploadingPayment.value = false;
+                            if (result && result.status === 'success') {
+                                editLead['Comprobante de Pago URL'] = result.url;
+                                showToast('Comprobante subido correctamente', 'success');
+                            } else {
+                                showToast((result && result.message) || 'Error al subir', 'error');
+                            }
+                        })
+                        .withFailureHandler(function (err) {
+                            uploadingPayment.value = false;
+                            showToast('Error: ' + err.message, 'error');
+                        })
+                        .uploadPaymentProof(base64, file.name, file.type, dealRow);
+                };
+                reader.readAsDataURL(file);
             }
 
             function sendEmail() {
@@ -2961,6 +3105,7 @@
                 loadPricingConfig(); // Phase 8
                 loadFieldLayout(); // Phase 8
                 loadPlantillas(); // Phase 23
+                loadRecentDuplicates(); // Duplicate alerts
                 loading.value = false;
 
                 // Set up inactivity listener
@@ -2986,7 +3131,7 @@
                 sidebarCollapsed, currentView, viewMode, searchQuery, filterStatus, filterDealStatus,
                 currentPage, currentNegPage, isDark, modalTab, showLeadModal, activeCatalog,
                 activeConfigCategory, configValuesList, roundRobinQueue, savingRROrder,
-                leads, deals, vendedoresList, catalogs, pricing, currentUser, stats,
+                leads, deals, vendedoresList, catalogs, pricing, currentUser, stats, recentDuplicates,
                 selectedLead, editLead, leadHistory, editingCatalogValues,
                 isCreating, creationType,
                 userRole, userConnected, clockInTime, clockTimer, activeAEs,
@@ -2997,7 +3142,7 @@
                 showHandoffModal, handoffLead, handoffData,
                 // Email Compose
                 showEmailCompose, emailForm, sendingEmail,
-                emailAttachments, emailAttachmentSizeMB,
+                emailAttachments, emailAttachmentSizeMB, uploadingPayment, handlePaymentUpload,
                 // HMN & Users
                 hmnVariables, allUsers, newUserEmail, newUserNombre, newUserRol,
                 // Reportes
@@ -3021,7 +3166,7 @@
                 computedPricing, comparisonLabel,
                 showQuickCalendar, quickCalForm,
                 showEventDetails, selectedEventData,
-                isReadOnlySdrFields, calculoMontoAproximado,
+                isReadOnlySdrFields, isDealFullReadOnly, calculoMontoAproximado,
                 sdrList, aeList, managerList,
                 // Methods
                 getLeadsByStatus, getFilteredLeadsByStatus, getStatusColor,
@@ -3030,14 +3175,14 @@
                 openCreateLead, openCreateDeal, submitCreation,
                 handleClockIn, handleClockOut, loadActiveAEs,
                 saveCatalog, showToast, formatDate, formatNotes,
-                refreshData,
+                refreshData, dismissDuplicateAlert,
                 openQuickCalendar, saveQuickCalendar,
                 submitEventDetailsUpdate, deleteEventFromCalendar,
                 routingConfig, savingRouting, saveRoutingRules, saveRoundRobinOrder,
                 // Phase 3B: Schema Discovery
                 schemaData, refreshSchema,
                 // Phase 8: Pricing Global + Field Layout
-                pricingConfig, savingPricing, savePricingConfigFn,
+                pricingConfig, savingPricing, savePricingConfigFn, addPricingProduct, removePricingProduct,
                 fieldLayoutLead, fieldLayoutDeal, leadSections, dealSections, getFieldOptions,
                 fieldLayoutEditType, fieldLayoutEditFields, savingFieldLayout,
                 editLayoutSections, allSectionNames,

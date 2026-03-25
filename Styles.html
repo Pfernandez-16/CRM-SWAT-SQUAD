@@ -467,6 +467,49 @@
         white-space: nowrap;
     }
 
+    .duplicate-alert-banner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        padding: 0.65rem 1rem;
+        margin-bottom: 0.75rem;
+        border-radius: 10px;
+        background: rgba(245, 158, 11, 0.12);
+        border: 1px solid rgba(245, 158, 11, 0.3);
+        color: var(--text-primary);
+        font-size: 0.82rem;
+        line-height: 1.4;
+    }
+
+    .duplicate-alert-content {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.5rem;
+        color: #f59e0b;
+    }
+
+    .duplicate-alert-content div {
+        color: var(--text-primary);
+    }
+
+    .duplicate-alert-content strong {
+        color: #f59e0b;
+    }
+
+    .recompra-badge {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 0.65rem;
+        font-weight: 700;
+        letter-spacing: 0.03em;
+        background: linear-gradient(135deg, rgba(139, 92, 246, 0.25), rgba(168, 85, 247, 0.35));
+        color: #a78bfa;
+        border: 1px solid rgba(139, 92, 246, 0.3);
+        white-space: nowrap;
+    }
+
     /* ── Dashboard ── */
     .stats-grid {
         display: grid;

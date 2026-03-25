@@ -379,6 +379,7 @@ function getLeads() {
         'Status': fl.status || '',
         'Calidad de Contacto': fl.calidad_contacto || '',
         'Servicio': fl.servicio_interes || '',
+        'Licencias': fl.licencias || '',
         'Vendedor Asignado para Seguimiento': vendedor.nombre || '',
         'Vendedor asignado (SDR)': fl.id_vendedor_sdr || '',
         'Notas': fl.notas || '', 'Razón de pérdida': fl.razon_perdida || '',
@@ -580,6 +581,7 @@ function getLeads() {
         'Link de Pago': fd.link_pago || '',
         'Renovación': fd.renovacion || '',
         'Soporte de pago': fd.soporte_pago || '',
+        'Comprobante de Pago URL': fd.comprobante_pago_url || '',
         'Deal Code': fd.deal_code || '',
         // Pricing from fact_deals (1/2 Year Mem stored per deal)
         '1 Year Mem': fd.precio_1_year || '',
@@ -1244,6 +1246,7 @@ var LEAD_FIELD_MAP = {
   'Status': 'status', 'Calidad de Contacto': 'calidad_contacto',
   'Notas': 'notas', 'Tipo de Seguimiento': 'tipo_seguimiento',
   'Status del Seguimiento': 'status_seguimiento', 'Servicio': 'servicio_interes',
+  'Licencias': 'licencias',
   'Toques de Contactación': 'numero_toques',
   '¿En qué toque va?': 'numero_toques',
   // Phase 1.10: Timestamp routes to fecha_ultimo_contacto
@@ -1336,6 +1339,7 @@ var DEAL_FIELD_MAP = {
   'Link de Pago': 'link_pago',
   'Renovación': 'renovacion',
   'Soporte de pago': 'soporte_pago',
+  'Comprobante de Pago URL': 'comprobante_pago_url',
   'Deal Code': 'deal_code'
 };
 
@@ -2903,20 +2907,32 @@ function processHandoff(payload) {
 
 /**
  * Obtiene la configuración global de pricing del cliente.
- * @return {Object} { tipoCliente, ticketPromedio, licenciasPromedio }
+ * Supports multi-product format: { tipoCliente, productos: [{nombre, ticketPromedio}] }
+ * Backward compatible: if old format detected, migrates to new format.
+ * @return {Object} { tipoCliente, productos: [{nombre, ticketPromedio}] }
  */
 function getPricingConfig() {
   var props = PropertiesService.getScriptProperties();
   var raw = props.getProperty('APP_PRICING_CONFIG');
   if (raw) {
-    try { return JSON.parse(raw); } catch (e) { }
+    try {
+      var cfg = JSON.parse(raw);
+      // Backward compat: migrate old single-product format to multi-product
+      if (!cfg.productos) {
+        cfg.productos = [];
+        if (cfg.ticketPromedio) {
+          cfg.productos.push({ nombre: 'Default', ticketPromedio: parseFloat(cfg.ticketPromedio) || 0 });
+        }
+      }
+      return { tipoCliente: cfg.tipoCliente || '', productos: cfg.productos || [] };
+    } catch (e) { }
   }
-  return { tipoCliente: '', ticketPromedio: 0, licenciasPromedio: 0 };
+  return { tipoCliente: '', productos: [] };
 }
 
 /**
  * Guarda la configuración global de pricing. Solo ADMIN/GERENTE.
- * @param {Object} config - { tipoCliente, ticketPromedio, licenciasPromedio }
+ * @param {Object} config - { tipoCliente, productos: [{nombre, ticketPromedio}] }
  * @return {Object} { status, message }
  */
 function savePricingConfig(config) {
@@ -2933,13 +2949,21 @@ function savePricingConfig(config) {
     if (userRol !== 'ADMIN' && userRol !== 'GERENTE') {
       return { status: 'error', message: 'Solo ADMIN o GERENTE pueden cambiar la configuración de pricing' };
     }
+    var productos = [];
+    if (config.productos && config.productos.length) {
+      for (var p = 0; p < config.productos.length; p++) {
+        productos.push({
+          nombre: String(config.productos[p].nombre || '').trim(),
+          ticketPromedio: parseFloat(config.productos[p].ticketPromedio) || 0
+        });
+      }
+    }
     var payload = {
       tipoCliente: String(config.tipoCliente || ''),
-      ticketPromedio: parseFloat(config.ticketPromedio) || 0,
-      licenciasPromedio: parseFloat(config.licenciasPromedio) || 0
+      productos: productos.slice(0, 10) // Max 10 products
     };
     PropertiesService.getScriptProperties().setProperty('APP_PRICING_CONFIG', JSON.stringify(payload));
-    return { status: 'success', message: 'Configuración de pricing guardada' };
+    return { status: 'success', message: 'Configuración de pricing guardada (' + productos.length + ' productos)' };
   } catch (err) {
     Logger.log('savePricingConfig ERROR: ' + err.message);
     return { status: 'error', message: err.message };
@@ -3243,6 +3267,109 @@ function getLeadDuplicates(idLead) {
   } catch (e) {
     Logger.log('getLeadDuplicates ERROR: ' + e.message);
     return [];
+  }
+}
+
+// ============ Duplicate Alerts: Recent duplicates for SDR banner ============
+
+/**
+ * Returns leads with status 'Duplicado' that arrived in the last N days.
+ * Used by the frontend to show an alert banner to SDRs.
+ * @param {number} days - Number of days to look back (default 7)
+ * @return {Array} Array of { id_lead, nombre, email, fecha_ingreso, servicio }
+ */
+function getRecentDuplicates(days) {
+  try {
+    days = parseInt(days) || 7;
+    var cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - days);
+    cutoff.setHours(0, 0, 0, 0);
+
+    var leads = readTable_(T_LEADS);
+    var contactos = readTable_(T_CONTACTOS);
+    var contactosIdx = indexBy_(contactos, 'id_contacto');
+    var results = [];
+
+    for (var i = 0; i < leads.length; i++) {
+      var ld = leads[i];
+      if (String(ld.status || '').trim() !== 'Duplicado') continue;
+
+      var fechaStr = ld.fecha_ingreso || '';
+      if (!fechaStr) continue;
+      var fecha = new Date(fechaStr);
+      if (isNaN(fecha.getTime()) || fecha < cutoff) continue;
+
+      var contact = contactosIdx[String(ld.id_contacto || '')] || {};
+      results.push({
+        id_lead: ld.id_lead || '',
+        nombre: ((contact.nombre || '') + ' ' + (contact.apellido || '')).trim(),
+        email: contact.email || '',
+        fecha_ingreso: fechaStr,
+        servicio: ld.servicio_interes || ''
+      });
+    }
+    return results;
+  } catch (e) {
+    Logger.log('getRecentDuplicates ERROR: ' + e.message);
+    return [];
+  }
+}
+
+// ============ Upload Payment Proof to Google Drive ============
+
+/**
+ * Uploads a payment proof file to Google Drive and stores the link in the deal row.
+ * @param {string} base64Data - Base64-encoded file content
+ * @param {string} fileName - Original file name
+ * @param {string} mimeType - MIME type (e.g., 'image/png', 'application/pdf')
+ * @param {number} dealRow - Row number of the deal in fact_deals
+ * @return {Object} { status, url, message }
+ */
+function uploadPaymentProof(base64Data, fileName, mimeType, dealRow) {
+  try {
+    if (!base64Data || !fileName || !dealRow) {
+      return { status: 'error', message: 'Faltan datos para subir el archivo' };
+    }
+
+    // Decode base64
+    var bytes = Utilities.base64Decode(base64Data);
+    var blob = Utilities.newBlob(bytes, mimeType, fileName);
+
+    // Create or find the CRM folder
+    var folders = DriveApp.getFoldersByName('CRM_Comprobantes_Pago');
+    var folder;
+    if (folders.hasNext()) {
+      folder = folders.next();
+    } else {
+      folder = DriveApp.createFolder('CRM_Comprobantes_Pago');
+    }
+
+    // Upload file
+    var file = folder.createFile(blob);
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    var fileUrl = file.getUrl();
+
+    // Save URL in fact_deals
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var sheet = ss.getSheetByName(T_DEALS);
+    if (!sheet) return { status: 'error', message: 'fact_deals no encontrada' };
+
+    var colMap = getColumnMap_(sheet);
+    var col = colMap['comprobante_pago_url'];
+    if (col) {
+      sheet.getRange(dealRow, col).setValue(fileUrl);
+    }
+
+    // Log the change
+    var idDealCol = colMap['id_deal'];
+    var idDeal = idDealCol ? sheet.getRange(dealRow, idDealCol).getValue() : '';
+    var userEmail = Session.getActiveUser().getEmail();
+    logChange_('deal', idDeal, userEmail, 'comprobante_pago_url', '', fileUrl);
+
+    return { status: 'success', url: fileUrl, message: 'Comprobante subido correctamente' };
+  } catch (err) {
+    Logger.log('uploadPaymentProof ERROR: ' + err.message);
+    return { status: 'error', message: err.message };
   }
 }
 

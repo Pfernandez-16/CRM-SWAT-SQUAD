@@ -52,7 +52,7 @@
                  'reportes' is intentionally excluded from SDR and AE arrays — it is a management analytics view. -->
             <a v-if="
               userRole === 'ADMIN' || userRole === 'GERENTE' ||
-              (userRole === 'SDR' && ['dashboard','leads','calendar','account'].includes(item.id)) ||
+              (userRole === 'SDR' && ['dashboard','leads','negociaciones','calendar','account'].includes(item.id)) ||
               (userRole === 'AE' && ['dashboard','negociaciones','calendar','account'].includes(item.id)) ||
               userRole === 'GUEST'
             " class="nav-item" :class="{ active: currentView === item.id }" @click="currentView = item.id"
@@ -192,6 +192,22 @@
 
           <!-- PROSPECTOS (SDR) — Table + Kanban Toggle -->
           <div v-if="currentView === 'leads'" class="view leads-view">
+            <!-- Duplicate Alert Banner -->
+            <div v-if="recentDuplicates.length > 0" class="duplicate-alert-banner">
+              <div class="duplicate-alert-content">
+                <span class="material-symbols-outlined" style="font-size:1.2rem;">content_copy</span>
+                <div>
+                  <strong>{{ recentDuplicates.length }} duplicado{{ recentDuplicates.length > 1 ? 's' : '' }} esta semana:</strong>
+                  <span v-for="(dup, i) in recentDuplicates.slice(0, 5)" :key="dup.id_lead">
+                    {{ dup.nombre || dup.email || '#' + dup.id_lead }}<span v-if="i < Math.min(recentDuplicates.length, 5) - 1">, </span>
+                  </span>
+                  <span v-if="recentDuplicates.length > 5"> y {{ recentDuplicates.length - 5 }} más</span>
+                </div>
+              </div>
+              <button class="btn-icon" @click="dismissDuplicateAlert" title="Cerrar" style="opacity:0.7;">
+                <span class="material-symbols-outlined" style="font-size:1rem;">close</span>
+              </button>
+            </div>
             <!-- TABLE MODE -->
             <template v-if="viewMode === 'table'">
               <div class="leads-toolbar">
@@ -318,6 +334,8 @@
                         <span v-if="isDealPendingReview(deal)" class="status-badge"
                           style="background: rgba(234,179,8,0.2); color: #b45309; font-size: 0.7rem; margin-left: 0.3rem;">
                           ⏳ Pendiente</span>
+                        <span v-if="deal['¿Es recompra?'] === 'Si'" class="recompra-badge">
+                          Recompra</span>
                       </td>
                       <td>{{ getAeDisplayName(deal) }}</td>
                       <td>{{ deal['Monto de cierre'] ? '$' + Number(deal['Monto de cierre']).toLocaleString() : '—' }}
@@ -358,6 +376,9 @@
                       <div v-if="isDealPendingReview(deal)" style="margin: 0.25rem 0;">
                         <span style="background: rgba(234,179,8,0.2); color: #b45309; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px;">
                           ⏳ Pendiente revisión</span>
+                      </div>
+                      <div v-if="deal['¿Es recompra?'] === 'Si'" style="margin: 0.25rem 0;">
+                        <span class="recompra-badge">Recompra</span>
                       </div>
                       <div v-if="deal._colAQ_Vendedor" style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 0.2rem;">
                         AE: {{ deal._colAQ_Vendedor }}
@@ -473,143 +494,74 @@
                 <div v-show="openSections.includes(section.id)" class="section-body">
                   <!-- Embudo General Table -->
                   <div v-if="section.id === 'embudoGeneral'" class="report-table-wrapper">
-                    <!-- Embudo Funnel Chart (CHART-01) -->
+                    <!-- Segment toggle -->
+                    <div style="display:flex; gap:0; margin-bottom:1rem;">
+                      <button class="btn-sm" :class="semaforoSegment === 'total' ? 'btn-primary' : ''"
+                        @click="semaforoSegment = 'total'" style="border-radius:6px 0 0 6px; font-size:0.75rem;">Total</button>
+                      <button class="btn-sm" :class="semaforoSegment === 'manufacturers' ? 'btn-primary' : ''"
+                        @click="semaforoSegment = 'manufacturers'" style="border-radius:0; font-size:0.75rem;">Manufacturers</button>
+                      <button class="btn-sm" :class="semaforoSegment === 'individuals' ? 'btn-primary' : ''"
+                        @click="semaforoSegment = 'individuals'" style="border-radius:0 6px 6px 0; font-size:0.75rem;">Individuals</button>
+                    </div>
+                    <!-- Funnel Chart -->
                     <div style="max-width:600px; margin-bottom:1.5rem;">
                       <canvas id="embudoChart" height="220"></canvas>
                     </div>
+                    <!-- Vertical funnel table -->
                     <table class="report-table">
                       <thead>
                         <tr>
-                          <th rowspan="2" style="min-width:160px;">Metrica</th>
-                          <th rowspan="2" data-tooltip="Tasa de conversión vs etapa anterior">CVR</th>
-                          <th colspan="3" class="col-group-header">Total</th>
-                          <th colspan="3" class="col-group-header">Manufacturers</th>
-                          <th colspan="3" class="col-group-header">Individuals</th>
-                        </tr>
-                        <tr>
-                          <th>Cant</th>
-                          <th>%</th>
-                          <th data-tooltip="Cambio porcentual vs periodo anterior">Delta%</th>
-                          <th>Cant</th>
-                          <th>%</th>
-                          <th data-tooltip="Cambio porcentual vs periodo anterior">Delta%</th>
-                          <th>Cant</th>
-                          <th>%</th>
-                          <th data-tooltip="Cambio porcentual vs periodo anterior">Delta%</th>
+                          <th style="min-width:200px;">Etapa</th>
+                          <th style="text-align:right;">Cantidad</th>
+                          <th style="min-width:180px;">Conversión</th>
+                          <th style="text-align:center;">CVR</th>
+                          <th style="text-align:center;">Delta%</th>
                         </tr>
                       </thead>
                       <tbody>
-                        <tr v-for="row in embudoRows" :key="row.label">
-                          <td class="col-metric">{{ row.label }}</td>
-                          <!-- CVR Inter-Etapa -->
-                          <td class="col-percentage" style="text-align:center;">
-                            <span v-if="row.cvrInterEtapa !== null" class="percentage-value"
-                              :style="{ color: Number(row.cvrInterEtapa) >= 70 ? 'var(--accent-success, #10b981)' : Number(row.cvrInterEtapa) >= 40 ? 'var(--accent-warning, #f5a623)' : 'var(--accent-danger, #ef4444)', fontWeight: 600 }">
-                              {{ row.cvrInterEtapa }}%
-                            </span>
-                            <span v-else class="percentage-value" style="opacity:0.3;">—</span>
-                          </td>
-                          <!-- Total segment -->
-                          <template v-if="row.type === 'amount'">
-                            <td class="col-count">{{ formatAmount(getSegmentValue(row.metric, 'total').amount) }}</td>
-                            <td class="col-percentage"><span class="percentage-value">--</span></td>
-                          </template>
-                          <template v-else>
-                            <td class="col-count">{{ getSegmentValue(row.metric, 'total').count }}</td>
-                            <td class="col-percentage">
-                              <div class="percentage-cell">
-                                <div class="percentage-bar"
-                                  :style="{ width: getSegmentValue(row.metric, 'total').pct + '%', background: 'var(--accent-primary)' }">
+                        <template v-for="(row, rIdx) in embudoRows" :key="row.label">
+                          <tr :style="row.type === 'amount' ? 'background:rgba(16,185,129,0.06);' : ''">
+                            <td class="col-metric" style="font-weight:600;">
+                              <span v-if="rIdx > 0 && row.type !== 'amount'" style="color:var(--text-muted); margin-right:0.25rem;">↓</span>
+                              {{ row.label }}
+                            </td>
+                            <td style="text-align:right; font-weight:700; font-size:1rem;">
+                              <template v-if="row.type === 'amount'">{{ formatAmount(getSegmentValue(row.metric, semaforoSegment).amount) }}</template>
+                              <template v-else>{{ getSegmentValue(row.metric, semaforoSegment).count }}</template>
+                            </td>
+                            <td>
+                              <template v-if="row.type !== 'amount'">
+                                <div class="percentage-cell">
+                                  <div class="percentage-bar"
+                                    :style="{ width: getSegmentValue(row.metric, semaforoSegment).pct + '%', background: 'var(--accent-primary)' }">
+                                  </div>
+                                  <span class="percentage-value">{{ getSegmentValue(row.metric, semaforoSegment).pct }}%</span>
                                 </div>
-                                <span class="percentage-value">{{ getSegmentValue(row.metric, 'total').pct }}%</span>
-                              </div>
+                              </template>
+                              <span v-else class="percentage-value" style="opacity:0.3;">—</span>
                             </td>
-                          </template>
-                          <td class="col-delta">
-                            <span v-if="Number(getSegmentValue(row.metric, 'total').delta) > 0"
-                              :class="['delta-positive', Math.abs(Number(getSegmentValue(row.metric, 'total').delta)) >= 20 ? 'delta-alert' : '']">
-                              <span class="material-symbols-outlined">arrow_upward</span>
-                              +{{ getSegmentValue(row.metric, 'total').delta }}%
-                            </span>
-                            <span v-else-if="Number(getSegmentValue(row.metric, 'total').delta) < 0"
-                              :class="['delta-negative', Math.abs(Number(getSegmentValue(row.metric, 'total').delta)) >= 20 ? 'delta-alert' : '']">
-                              <span class="material-symbols-outlined">arrow_downward</span>
-                              {{ getSegmentValue(row.metric, 'total').delta }}%
-                            </span>
-                            <span v-else class="delta-neutral">
-                              <span class="material-symbols-outlined">remove</span>
-                              0%
-                            </span>
-                          </td>
-                          <!-- Manufacturers segment -->
-                          <template v-if="row.type === 'amount'">
-                            <td class="col-count">{{ formatAmount(getSegmentValue(row.metric, 'manufacturers').amount)
-                              }}</td>
-                            <td class="col-percentage"><span class="percentage-value">--</span></td>
-                          </template>
-                          <template v-else>
-                            <td class="col-count">{{ getSegmentValue(row.metric, 'manufacturers').count }}</td>
-                            <td class="col-percentage">
-                              <div class="percentage-cell">
-                                <div class="percentage-bar"
-                                  :style="{ width: getSegmentValue(row.metric, 'manufacturers').pct + '%', background: 'var(--accent-info)' }">
-                                </div>
-                                <span class="percentage-value">{{ getSegmentValue(row.metric, 'manufacturers').pct
-                                  }}%</span>
-                              </div>
+                            <td style="text-align:center;">
+                              <span v-if="row.cvrInterEtapa !== null" class="percentage-value"
+                                :style="{ color: Number(row.cvrInterEtapa) >= 70 ? 'var(--accent-success)' : Number(row.cvrInterEtapa) >= 40 ? 'var(--accent-warning)' : 'var(--accent-danger)', fontWeight: 700 }">
+                                {{ row.cvrInterEtapa }}%
+                              </span>
+                              <span v-else style="opacity:0.3;">—</span>
                             </td>
-                          </template>
-                          <td class="col-delta">
-                            <span v-if="Number(getSegmentValue(row.metric, 'manufacturers').delta) > 0"
-                              :class="['delta-positive', Math.abs(Number(getSegmentValue(row.metric, 'manufacturers').delta)) >= 20 ? 'delta-alert' : '']">
-                              <span class="material-symbols-outlined">arrow_upward</span>
-                              +{{ getSegmentValue(row.metric, 'manufacturers').delta }}%
-                            </span>
-                            <span v-else-if="Number(getSegmentValue(row.metric, 'manufacturers').delta) < 0"
-                              :class="['delta-negative', Math.abs(Number(getSegmentValue(row.metric, 'manufacturers').delta)) >= 20 ? 'delta-alert' : '']">
-                              <span class="material-symbols-outlined">arrow_downward</span>
-                              {{ getSegmentValue(row.metric, 'manufacturers').delta }}%
-                            </span>
-                            <span v-else class="delta-neutral">
-                              <span class="material-symbols-outlined">remove</span>
-                              0%
-                            </span>
-                          </td>
-                          <!-- Individuals segment -->
-                          <template v-if="row.type === 'amount'">
-                            <td class="col-count">{{ formatAmount(getSegmentValue(row.metric, 'individuals').amount) }}
+                            <td class="col-delta" style="text-align:center;">
+                              <span v-if="Number(getSegmentValue(row.metric, semaforoSegment).delta) > 0"
+                                :class="['delta-positive', Math.abs(Number(getSegmentValue(row.metric, semaforoSegment).delta)) >= 20 ? 'delta-alert' : '']">
+                                <span class="material-symbols-outlined">arrow_upward</span>
+                                +{{ getSegmentValue(row.metric, semaforoSegment).delta }}%
+                              </span>
+                              <span v-else-if="Number(getSegmentValue(row.metric, semaforoSegment).delta) < 0"
+                                :class="['delta-negative', Math.abs(Number(getSegmentValue(row.metric, semaforoSegment).delta)) >= 20 ? 'delta-alert' : '']">
+                                <span class="material-symbols-outlined">arrow_downward</span>
+                                {{ getSegmentValue(row.metric, semaforoSegment).delta }}%
+                              </span>
+                              <span v-else class="delta-neutral">0%</span>
                             </td>
-                            <td class="col-percentage"><span class="percentage-value">--</span></td>
-                          </template>
-                          <template v-else>
-                            <td class="col-count">{{ getSegmentValue(row.metric, 'individuals').count }}</td>
-                            <td class="col-percentage">
-                              <div class="percentage-cell">
-                                <div class="percentage-bar"
-                                  :style="{ width: getSegmentValue(row.metric, 'individuals').pct + '%', background: 'var(--accent-warning)' }">
-                                </div>
-                                <span class="percentage-value">{{ getSegmentValue(row.metric, 'individuals').pct
-                                  }}%</span>
-                              </div>
-                            </td>
-                          </template>
-                          <td class="col-delta">
-                            <span v-if="Number(getSegmentValue(row.metric, 'individuals').delta) > 0"
-                              :class="['delta-positive', Math.abs(Number(getSegmentValue(row.metric, 'individuals').delta)) >= 20 ? 'delta-alert' : '']">
-                              <span class="material-symbols-outlined">arrow_upward</span>
-                              +{{ getSegmentValue(row.metric, 'individuals').delta }}%
-                            </span>
-                            <span v-else-if="Number(getSegmentValue(row.metric, 'individuals').delta) < 0"
-                              :class="['delta-negative', Math.abs(Number(getSegmentValue(row.metric, 'individuals').delta)) >= 20 ? 'delta-alert' : '']">
-                              <span class="material-symbols-outlined">arrow_downward</span>
-                              {{ getSegmentValue(row.metric, 'individuals').delta }}%
-                            </span>
-                            <span v-else class="delta-neutral">
-                              <span class="material-symbols-outlined">remove</span>
-                              0%
-                            </span>
-                          </td>
-                        </tr>
+                          </tr>
+                        </template>
                       </tbody>
                     </table>
                   </div>
@@ -2004,29 +1956,46 @@
               <div class="config-editor-header">
                 <h3>💰 Pricing del Cliente</h3>
               </div>
-              <div class="form-grid" style="padding: 1rem;">
-                <div class="form-group">
+              <div style="padding: 1rem;">
+                <div class="form-group" style="margin-bottom: 1rem;">
                   <label>Tipo de Cliente</label>
-                  <select v-model="pricingConfig.tipoCliente" class="form-select">
+                  <select v-model="pricingConfig.tipoCliente" class="form-select" style="max-width: 300px;">
                     <option value="">— Seleccionar —</option>
-                    <option value="SaaS">SaaS</option>
-                    <option value="Fichas Mensuales (FEE)">Fichas Mensuales (FEE)</option>
-                    <option value="Proyectos">Proyectos</option>
+                    <option value="SaaS">SaaS (ticket x licencias x 12)</option>
+                    <option value="Fichas Mensuales (FEE)">Fichas Mensuales (ticket x 12)</option>
+                    <option value="Proyectos">Proyectos (ticket x 1)</option>
                   </select>
                 </div>
-                <div class="form-group">
-                  <label>Ticket Promedio</label>
-                  <input type="number" step="0.01" v-model.number="pricingConfig.ticketPromedio" class="form-input" placeholder="$0.00" />
-                </div>
-                <div class="form-group" v-if="pricingConfig.tipoCliente === 'SaaS'">
-                  <label>Licencias Promedio</label>
-                  <input type="number" v-model.number="pricingConfig.licenciasPromedio" class="form-input" placeholder="0" />
-                </div>
-                <div class="form-group">
-                  <label>Monto Aproximado (Preview)</label>
-                  <div style="padding: 0.6rem 0.8rem; background: var(--bg-elevated); border-radius: 8px; font-weight: 700; font-size: 1.1rem; color: var(--accent-success, #10b981);">
-                    ${{ Number(calculoMontoAproximado || 0).toLocaleString() }}
+
+                <!-- Products table -->
+                <div style="margin-bottom: 0.75rem;">
+                  <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.5rem;">
+                    <label style="font-weight:600; font-size:0.85rem;">Productos (hasta 10)</label>
+                    <button class="btn-sm btn-primary" @click="addPricingProduct" style="font-size:0.75rem; padding:0.25rem 0.6rem;">
+                      + Agregar Producto
+                    </button>
                   </div>
+                  <div v-if="pricingConfig.productos.length === 0" style="text-align:center; padding:1rem; color:var(--text-muted); font-size:0.8rem; border:1px dashed var(--border-color); border-radius:8px;">
+                    Sin productos configurados. Agrega al menos uno.
+                  </div>
+                  <div v-for="(prod, idx) in pricingConfig.productos" :key="idx"
+                    style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.4rem; padding:0.4rem 0.6rem; background:var(--bg-elevated); border-radius:8px; border:1px solid var(--border-color);">
+                    <span style="font-size:0.75rem; color:var(--text-muted); min-width:1.5rem;">{{ idx + 1 }}.</span>
+                    <input type="text" v-model="prod.nombre" class="form-input" placeholder="Nombre del producto (ej: Estándar, Premium...)"
+                      style="flex:2; font-size:0.82rem; padding:0.3rem 0.5rem;" />
+                    <div style="display:flex; align-items:center; gap:0.25rem; flex:1;">
+                      <span style="font-size:0.75rem; color:var(--text-muted);">$</span>
+                      <input type="number" step="0.01" v-model.number="prod.ticketPromedio" class="form-input" placeholder="0.00"
+                        style="font-size:0.82rem; padding:0.3rem 0.5rem;" />
+                      <span style="font-size:0.65rem; color:var(--text-muted); white-space:nowrap;">/mes</span>
+                    </div>
+                    <button class="btn-icon" @click="removePricingProduct(idx)" style="color:var(--accent-danger); padding:0.15rem;" title="Eliminar producto">
+                      <span class="material-symbols-outlined" style="font-size:1rem;">close</span>
+                    </button>
+                  </div>
+                </div>
+                <div style="font-size:0.7rem; color:var(--text-muted); padding:0.25rem 0; line-height:1.4;">
+                  El SDR selecciona el producto en la ficha del lead. El monto se calcula automáticamente según el tipo de cliente.
                 </div>
               </div>
               <div class="config-actions" style="padding: 0 1rem 1rem;">
@@ -2125,6 +2094,11 @@
                           <span class="material-symbols-outlined drag-handle" style="cursor:grab; color:var(--text-muted); font-size:0.85rem;">drag_indicator</span>
                           <!-- Visible toggle -->
                           <input type="checkbox" v-model="field.visible" style="width:14px; height:14px; cursor:pointer;" :title="field.visible ? 'Visible — click para ocultar' : 'Oculto — click para mostrar'" />
+                          <!-- Required toggle -->
+                          <label style="display:inline-flex; align-items:center; gap:2px; cursor:pointer; font-size:0.6rem; color:var(--accent-danger);" :title="field.requerido ? 'Obligatorio — click para quitar' : 'Opcional — click para hacer obligatorio'">
+                            <input type="checkbox" v-model="field.requerido" style="width:12px; height:12px; cursor:pointer; accent-color:var(--accent-danger);" />
+                            <span>*</span>
+                          </label>
                           <!-- Auto-generated badge -->
                           <span v-if="field._isAutoGenerated"
                             style="font-size:0.55rem; background:var(--accent-primary); color:white; padding:1px 4px; border-radius:3px; font-weight:600;">NUEVO</span>
@@ -2417,8 +2391,8 @@
 
                   <!-- ══ SPECIAL: SDR Select ══ -->
                   <div v-if="field.tipo_input === 'sdr_select'" class="form-group">
-                    <label>{{ field.campo_label }}</label>
-                    <input v-if="isReadOnlySdrFields" type="text" :value="editLead[field.campo_key]" class="form-input" disabled />
+                    <label>{{ field.campo_label }}<span v-if="field.requerido" style="color:var(--accent-danger);margin-left:2px;">*</span></label>
+                    <input v-if="isDealFullReadOnly || isReadOnlySdrFields" type="text" :value="editLead[field.campo_key]" class="form-input" disabled />
                     <select v-else v-model="editLead[field.campo_key]" class="form-select">
                       <option value="">— Seleccionar —</option>
                       <option v-for="v in sdrList" :key="v.id_vendedor" :value="v.id_vendedor">{{ v.nombre }}</option>
@@ -2427,7 +2401,7 @@
 
                   <!-- ══ SPECIAL: Date Display (formatted, read-only) ══ -->
                   <div v-else-if="field.tipo_input === 'date_display'" class="form-group">
-                    <label>{{ field.campo_label }}</label>
+                    <label>{{ field.campo_label }}<span v-if="field.requerido" style="color:var(--accent-danger);margin-left:2px;">*</span></label>
                     <input type="text" :value="formatDate(editLead[field.campo_key])" class="form-input" disabled />
                   </div>
 
@@ -2447,12 +2421,12 @@
 
                   <!-- ══ SPECIAL: Toque Counter (SDR) ══ -->
                   <div v-else-if="field.tipo_input === 'toque_counter'" class="form-group">
-                    <label>{{ field.campo_label }}</label>
+                    <label>{{ field.campo_label }}<span v-if="field.requerido" style="color:var(--accent-danger);margin-left:2px;">*</span></label>
                     <div style="display:flex; align-items:center; gap:0.5rem;">
                       <span style="font-size:1.4rem; font-weight:700; color:var(--accent-primary); min-width:2rem; text-align:center;">
                         {{ editLead[field.campo_key] || '0' }}
                       </span>
-                      <button type="button" class="btn-sm btn-primary" :disabled="isReadOnlySdrFields"
+                      <button type="button" class="btn-sm btn-primary" :disabled="isDealFullReadOnly || isReadOnlySdrFields"
                         style="padding:0.35rem 0.8rem; font-size:0.8rem; border-radius:8px;"
                         @click="onToqueChange(String(Number(editLead[field.campo_key] || 0) + 1))">
                         + Registrar Toque #{{ Number(editLead[field.campo_key] || 0) + 1 }}
@@ -2469,11 +2443,11 @@
                       <div v-for="q in catalogs['Preguntas Custom']" :key="q" class="form-group">
                         <label>{{ q }}</label>
                         <input type="text" v-model="customResponses[q]" class="form-input"
-                          :disabled="isReadOnlySdrFields" placeholder="Respuesta..." />
+                          :disabled="isDealFullReadOnly || isReadOnlySdrFields" placeholder="Respuesta..." />
                       </div>
                       <div style="grid-column: 1 / -1; text-align: right;">
                         <button type="button" class="btn-sm btn-primary" @click="saveCustomResponses"
-                          :disabled="isReadOnlySdrFields" style="font-size: 0.75rem; padding: 0.25rem 0.6rem;">
+                          :disabled="isDealFullReadOnly || isReadOnlySdrFields" style="font-size: 0.75rem; padding: 0.25rem 0.6rem;">
                           Guardar Respuestas
                         </button>
                       </div>
@@ -2482,14 +2456,14 @@
 
                   <!-- ══ SPECIAL: Budget Dual Mode ══ -->
                   <div v-else-if="field.tipo_input === 'budget_dual'" class="form-group" style="grid-column: 1 / -1;">
-                    <label>{{ field.campo_label }}</label>
+                    <label>{{ field.campo_label }}<span v-if="field.requerido" style="color:var(--accent-danger);margin-left:2px;">*</span></label>
                     <div style="display:flex; gap:0.4rem; margin-bottom:0.4rem;">
-                      <button type="button" class="btn-sm" :disabled="isReadOnlySdrFields"
+                      <button type="button" class="btn-sm" :disabled="isDealFullReadOnly || isReadOnlySdrFields"
                         :style="{ background: editLead['Modo Presupuesto'] !== 'Rango' ? 'var(--accent-primary)' : 'var(--bg-tertiary)',
                                   color: editLead['Modo Presupuesto'] !== 'Rango' ? '#fff' : 'var(--text-primary)',
                                   border:'none', borderRadius:'6px', padding:'0.3rem 0.7rem', cursor:'pointer', fontSize:'0.75rem' }"
                         @click="editLead['Modo Presupuesto'] = 'Exacto'">$ Monto exacto</button>
-                      <button type="button" class="btn-sm" :disabled="isReadOnlySdrFields"
+                      <button type="button" class="btn-sm" :disabled="isDealFullReadOnly || isReadOnlySdrFields"
                         :style="{ background: editLead['Modo Presupuesto'] === 'Rango' ? 'var(--accent-primary)' : 'var(--bg-tertiary)',
                                   color: editLead['Modo Presupuesto'] === 'Rango' ? '#fff' : 'var(--text-primary)',
                                   border:'none', borderRadius:'6px', padding:'0.3rem 0.7rem', cursor:'pointer', fontSize:'0.75rem' }"
@@ -2497,13 +2471,25 @@
                     </div>
                     <div v-if="editLead['Modo Presupuesto'] === 'Rango'" style="display:flex; gap:0.4rem; align-items:center;">
                       <input type="number" v-model="editLead['¿Cuánto?']" class="form-input" placeholder="Desde $"
-                        :disabled="isReadOnlySdrFields" style="flex:1;" />
+                        :disabled="isDealFullReadOnly || isReadOnlySdrFields" style="flex:1;" />
                       <span style="color:var(--text-muted); font-size:0.8rem;">a</span>
                       <input type="number" v-model="editLead['Presupuesto Rango Alto']" class="form-input" placeholder="Hasta $"
-                        :disabled="isReadOnlySdrFields" style="flex:1;" />
+                        :disabled="isDealFullReadOnly || isReadOnlySdrFields" style="flex:1;" />
                     </div>
                     <input v-else type="text" v-model="editLead['¿Cuánto?']" class="form-input" placeholder="$0.00"
-                      :disabled="isReadOnlySdrFields" />
+                      :disabled="isDealFullReadOnly || isReadOnlySdrFields" />
+                  </div>
+
+                  <!-- ══ SPECIAL: Product Select (from pricing config) ══ -->
+                  <div v-else-if="field.tipo_input === 'product_select'" class="form-group" :style="field.ancho === 'full' ? 'grid-column: 1 / -1' : ''">
+                    <label>{{ field.campo_label }}<span v-if="field.requerido" style="color:var(--accent-danger);margin-left:2px;">*</span></label>
+                    <select v-model="editLead[field.campo_key]" class="form-select"
+                      :disabled="isDealFullReadOnly || (field.solo_lectura && isReadOnlySdrFields)">
+                      <option value="">— Seleccionar Producto —</option>
+                      <option v-for="prod in pricingConfig.productos" :key="prod.nombre" :value="prod.nombre">
+                        {{ prod.nombre }} (${{ Number(prod.ticketPromedio).toLocaleString() }}/mes)
+                      </option>
+                    </select>
                   </div>
 
                   <!-- ══ SPECIAL: Pricing Result (1yr/2yr) ══ -->
@@ -2520,12 +2506,18 @@
                     </div>
                   </template>
 
-                  <!-- ══ SPECIAL: Pricing Display (read-only global) ══ -->
+                  <!-- ══ SPECIAL: Pricing Display (auto-calculated from product) ══ -->
                   <div v-else-if="field.tipo_input === 'pricing_display'" class="form-group" :style="field.ancho === 'full' ? 'grid-column: 1 / -1' : ''">
-                    <label>{{ field.campo_label }}</label>
+                    <label>{{ field.campo_label }}<span v-if="field.requerido" style="color:var(--accent-danger);margin-left:2px;">*</span></label>
                     <div style="background: var(--bg-elevated, rgba(255,255,255,0.05)); border: 1px solid rgba(16,185,129,0.2); border-radius: 8px; padding: 0.6rem 0.8rem; display: flex; align-items: center; justify-content: space-between;">
-                      <div>
+                      <div style="line-height: 1.3;">
                         <span style="font-size: 0.75rem; color: var(--text-muted);">{{ pricingConfig.tipoCliente || 'Sin configurar' }}</span>
+                        <span v-if="editLead['Servicio']" style="font-size: 0.65rem; color: var(--text-muted); display:block;">
+                          {{ editLead['Servicio'] }}
+                          <template v-if="pricingConfig.tipoCliente === 'SaaS'"> x {{ editLead['Licencias'] || 0 }} lic. x 12</template>
+                          <template v-else-if="pricingConfig.tipoCliente === 'Fichas Mensuales (FEE)'"> x 12</template>
+                          <template v-else-if="pricingConfig.tipoCliente === 'Proyectos'"> x 1</template>
+                        </span>
                       </div>
                       <span style="font-size: 1.1rem; font-weight: 700; color: var(--accent-success, #10b981);">
                         ${{ Number(calculoMontoAproximado || 0).toLocaleString() }}
@@ -2533,18 +2525,38 @@
                     </div>
                   </div>
 
+                  <!-- ══ SPECIAL: File Upload (Payment Proof) ══ -->
+                  <div v-else-if="field.tipo_input === 'file_upload'" class="form-group" :style="field.ancho === 'full' ? 'grid-column: 1 / -1' : ''">
+                    <label>{{ field.campo_label }}<span v-if="field.requerido" style="color:var(--accent-danger);margin-left:2px;">*</span></label>
+                    <div v-if="editLead[field.campo_key]" style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.4rem;">
+                      <a :href="editLead[field.campo_key]" target="_blank" rel="noopener"
+                        style="font-size:0.8rem; color:var(--accent-primary); text-decoration:underline; display:flex; align-items:center; gap:0.25rem;">
+                        <span class="material-symbols-outlined" style="font-size:1rem;">description</span>
+                        Ver comprobante
+                      </a>
+                    </div>
+                    <div v-if="!isDealFullReadOnly" style="display:flex; align-items:center; gap:0.5rem;">
+                      <label class="btn-sm btn-primary" style="cursor:pointer; font-size:0.75rem; padding:0.3rem 0.8rem;">
+                        <span class="material-symbols-outlined" style="font-size:0.9rem; vertical-align:middle; margin-right:0.2rem;">upload_file</span>
+                        {{ uploadingPayment ? 'Subiendo...' : (editLead[field.campo_key] ? 'Reemplazar' : 'Subir archivo') }}
+                        <input type="file" accept=".png,.jpg,.jpeg,.pdf" @change="handlePaymentUpload" style="display:none;" :disabled="uploadingPayment" />
+                      </label>
+                      <span style="font-size:0.65rem; color:var(--text-muted);">PNG, JPG o PDF (max 10MB)</span>
+                    </div>
+                  </div>
+
                   <!-- ══ SPECIAL: Notes Readonly ══ -->
                   <div v-else-if="field.tipo_input === 'notes_readonly'" class="form-group" style="grid-column: 1 / -1;" >
-                    <label>{{ field.campo_label }}</label>
+                    <label>{{ field.campo_label }}<span v-if="field.requerido" style="color:var(--accent-danger);margin-left:2px;">*</span></label>
                     <textarea v-model="editLead[field.campo_key]" class="notes-textarea" rows="3" disabled
                       :placeholder="field.campo_label + '...'"></textarea>
                   </div>
 
                   <!-- ══ GENERIC: Select Yes/No ══ -->
                   <div v-else-if="field.tipo_input === 'select_yn'" class="form-group" :style="field.ancho === 'full' ? 'grid-column: 1 / -1' : ''">
-                    <label>{{ field.campo_label }}</label>
+                    <label>{{ field.campo_label }}<span v-if="field.requerido" style="color:var(--accent-danger);margin-left:2px;">*</span></label>
                     <select v-model="editLead[field.campo_key]" class="form-select"
-                      :disabled="field.solo_lectura && isReadOnlySdrFields">
+                      :disabled="isDealFullReadOnly || (field.solo_lectura && isReadOnlySdrFields)">
                       <option value="">—</option>
                       <option>Si</option>
                       <option>No</option>
@@ -2553,9 +2565,9 @@
 
                   <!-- ══ GENERIC: Select from catalog ══ -->
                   <div v-else-if="field.tipo_input === 'select'" class="form-group" :style="field.ancho === 'full' ? 'grid-column: 1 / -1' : ''">
-                    <label>{{ field.campo_label }}</label>
+                    <label>{{ field.campo_label }}<span v-if="field.requerido" style="color:var(--accent-danger);margin-left:2px;">*</span></label>
                     <select v-model="editLead[field.campo_key]" class="form-select"
-                      :disabled="field.solo_lectura && isReadOnlySdrFields">
+                      :disabled="isDealFullReadOnly || (field.solo_lectura && isReadOnlySdrFields)">
                       <option value="">— Seleccionar —</option>
                       <option v-for="opt in getFieldOptions(field)" :key="opt" :value="opt">{{ opt }}</option>
                     </select>
@@ -2563,29 +2575,29 @@
 
                   <!-- ══ GENERIC: Textarea ══ -->
                   <div v-else-if="field.tipo_input === 'textarea'" class="form-group" :style="field.ancho === 'full' ? 'grid-column: 1 / -1' : ''">
-                    <label>{{ field.campo_label }}</label>
+                    <label>{{ field.campo_label }}<span v-if="field.requerido" style="color:var(--accent-danger);margin-left:2px;">*</span></label>
                     <textarea v-model="editLead[field.campo_key]" class="notes-textarea" rows="3"
-                      :disabled="field.solo_lectura && isReadOnlySdrFields"
+                      :disabled="isDealFullReadOnly || (field.solo_lectura && isReadOnlySdrFields)"
                       :placeholder="field.campo_label + '...'" style="resize: vertical;"></textarea>
                   </div>
 
                   <!-- ══ GENERIC: Number ══ -->
                   <div v-else-if="field.tipo_input === 'number'" class="form-group" :style="field.ancho === 'full' ? 'grid-column: 1 / -1' : ''">
-                    <label>{{ field.campo_label }}</label>
+                    <label>{{ field.campo_label }}<span v-if="field.requerido" style="color:var(--accent-danger);margin-left:2px;">*</span></label>
                     <input type="number" step="0.01" v-model="editLead[field.campo_key]" class="form-input"
-                      :disabled="field.solo_lectura && isReadOnlySdrFields" placeholder="0" />
+                      :disabled="isDealFullReadOnly || (field.solo_lectura && isReadOnlySdrFields)" placeholder="0" />
                   </div>
 
                   <!-- ══ GENERIC: Date ══ -->
                   <div v-else-if="field.tipo_input === 'date'" class="form-group" :style="field.ancho === 'full' ? 'grid-column: 1 / -1' : ''">
-                    <label>{{ field.campo_label }}</label>
+                    <label>{{ field.campo_label }}<span v-if="field.requerido" style="color:var(--accent-danger);margin-left:2px;">*</span></label>
                     <input type="date" v-model="editLead[field.campo_key]" class="form-input"
-                      :disabled="field.solo_lectura && isReadOnlySdrFields" />
+                      :disabled="isDealFullReadOnly || (field.solo_lectura && isReadOnlySdrFields)" />
                   </div>
 
                   <!-- ══ GENERIC: Badge (read-only) ══ -->
                   <div v-else-if="field.tipo_input === 'badge'" class="form-group" :style="field.ancho === 'full' ? 'grid-column: 1 / -1' : ''">
-                    <label>{{ field.campo_label }}</label>
+                    <label>{{ field.campo_label }}<span v-if="field.requerido" style="color:var(--accent-danger);margin-left:2px;">*</span></label>
                     <div class="form-input" style="opacity:0.7;" disabled>{{ editLead[field.campo_key] || '—' }}</div>
                   </div>
 
@@ -2594,9 +2606,9 @@
 
                   <!-- ══ GENERIC: Text (default) ══ -->
                   <div v-else class="form-group" :style="field.ancho === 'full' ? 'grid-column: 1 / -1' : ''">
-                    <label>{{ field.campo_label }}</label>
+                    <label>{{ field.campo_label }}<span v-if="field.requerido" style="color:var(--accent-danger);margin-left:2px;">*</span></label>
                     <input type="text" v-model="editLead[field.campo_key]" class="form-input"
-                      :disabled="field.solo_lectura || (field.solo_lectura !== false && isReadOnlySdrFields)" />
+                      :disabled="isDealFullReadOnly || field.solo_lectura || (field.solo_lectura !== false && isReadOnlySdrFields)" />
                   </div>
 
                 </template>
@@ -2619,7 +2631,7 @@
 
                   <!-- ══ SPECIAL: AE Select ══ -->
                   <div v-if="field.tipo_input === 'ae_select'" class="form-group">
-                    <label>{{ field.campo_label }}</label>
+                    <label>{{ field.campo_label }}<span v-if="field.requerido" style="color:var(--accent-danger);margin-left:2px;">*</span></label>
                     <select v-model="editLead[field.campo_key]" class="form-select">
                       <option value="">— Sin asignar —</option>
                       <option v-for="v in aeList" :key="v.id_vendedor" :value="v.id_vendedor">{{ v.nombre }}</option>
@@ -2628,7 +2640,7 @@
 
                   <!-- ══ SPECIAL: AE Toque Counter ══ -->
                   <div v-else-if="field.tipo_input === 'ae_toque_counter'" class="form-group">
-                    <label>{{ field.campo_label }}</label>
+                    <label>{{ field.campo_label }}<span v-if="field.requerido" style="color:var(--accent-danger);margin-left:2px;">*</span></label>
                     <div style="display:flex; align-items:center; gap:0.5rem;">
                       <span style="font-size:1.4rem; font-weight:700; color:var(--accent-info, #3b82f6); min-width:2rem; text-align:center;">
                         {{ editLead[field.campo_key] || '0' }}
@@ -2643,13 +2655,13 @@
 
                   <!-- ══ SPECIAL: Date Display ══ -->
                   <div v-else-if="field.tipo_input === 'date_display'" class="form-group">
-                    <label>{{ field.campo_label }}</label>
+                    <label>{{ field.campo_label }}<span v-if="field.requerido" style="color:var(--accent-danger);margin-left:2px;">*</span></label>
                     <input type="text" :value="formatDate(editLead[field.campo_key])" class="form-input" disabled />
                   </div>
 
                   <!-- ══ SPECIAL: Ventas Contactó Badge ══ -->
                   <div v-else-if="field.tipo_input === 'ventas_contacto_badge'" class="form-group">
-                    <label>{{ field.campo_label }}</label>
+                    <label>{{ field.campo_label }}<span v-if="field.requerido" style="color:var(--accent-danger);margin-left:2px;">*</span></label>
                     <div style="padding:0.5rem 0.75rem; border-radius:0.375rem; font-weight:600; font-size:0.85rem;"
                       :style="editLead[field.campo_key] === 'Si'
                         ? 'background:rgba(16,185,129,0.15); color:var(--accent-success, #10b981);'
@@ -2663,7 +2675,7 @@
 
                   <!-- ══ SPECIAL: Reagenda Date (with calendar button) ══ -->
                   <div v-else-if="field.tipo_input === 'reagenda_date'" class="form-group">
-                    <label>{{ field.campo_label }}</label>
+                    <label>{{ field.campo_label }}<span v-if="field.requerido" style="color:var(--accent-danger);margin-left:2px;">*</span></label>
                     <div style="display:flex; gap:0.3rem; align-items:center;">
                       <input type="date" v-model="editLead[field.campo_key]" class="form-input" style="flex:1;" />
                       <button type="button" class="btn-icon" title="Agendar en Calendar"
@@ -2675,7 +2687,7 @@
 
                   <!-- ══ SPECIAL: Reagenda Time (with calendar button) ══ -->
                   <div v-else-if="field.tipo_input === 'reagenda_time'" class="form-group">
-                    <label>{{ field.campo_label }}</label>
+                    <label>{{ field.campo_label }}<span v-if="field.requerido" style="color:var(--accent-danger);margin-left:2px;">*</span></label>
                     <div style="display:flex; gap:0.3rem; align-items:center;">
                       <input type="time" v-model="editLead[field.campo_key]" class="form-input" style="flex:1;" />
                       <button type="button" class="btn-icon" title="Agendar en Calendar"
@@ -2687,7 +2699,7 @@
 
                   <!-- ══ SPECIAL: Loss Reason (select + Otros free text) ══ -->
                   <div v-else-if="field.tipo_input === 'loss_reason'" class="form-group" style="grid-column: 1 / -1;">
-                    <label>{{ field.campo_label }}</label>
+                    <label>{{ field.campo_label }}<span v-if="field.requerido" style="color:var(--accent-danger);margin-left:2px;">*</span></label>
                     <select v-if="getFieldOptions(field).length" v-model="editLead[field.campo_key]" class="form-select">
                       <option value="">— Seleccionar —</option>
                       <option v-for="s in getFieldOptions(field)" :key="s" :value="s">{{ s }}</option>
@@ -2702,9 +2714,12 @@
                   <!-- ══ SPECIAL: Pricing Display (read-only global) ══ -->
                   <div v-else-if="field.tipo_input === 'pricing_display'" class="form-group" style="grid-column: 1 / -1;">
                     <div v-if="calculoMontoAproximado > 0" style="background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.2); border-radius: 8px; padding: 0.6rem 0.8rem; display: flex; align-items: center; justify-content: space-between;">
-                      <div>
+                      <div style="line-height: 1.3;">
                         <span style="font-size: 0.75rem; color: var(--text-muted);">{{ field.campo_label }}</span>
-                        <span style="display: block; font-size: 0.75rem; color: var(--text-muted);">{{ pricingConfig.tipoCliente || '—' }}</span>
+                        <span style="display: block; font-size: 0.65rem; color: var(--text-muted);">
+                          {{ pricingConfig.tipoCliente || '—' }}
+                          <template v-if="editLead['Servicio']"> — {{ editLead['Servicio'] }}</template>
+                        </span>
                       </div>
                       <span style="font-size: 1.1rem; font-weight: 700; color: var(--accent-success, #10b981);">
                         ${{ calculoMontoAproximado.toLocaleString() }}
@@ -2751,6 +2766,26 @@
                     </div>
                   </template>
 
+                  <!-- ══ SPECIAL: File Upload (Payment Proof) — Deal view ══ -->
+                  <div v-else-if="field.tipo_input === 'file_upload'" class="form-group" :style="field.ancho === 'full' ? 'grid-column: 1 / -1' : ''">
+                    <label>{{ field.campo_label }}</label>
+                    <div v-if="editLead[field.campo_key]" style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.4rem;">
+                      <a :href="editLead[field.campo_key]" target="_blank" rel="noopener"
+                        style="font-size:0.8rem; color:var(--accent-primary); text-decoration:underline; display:flex; align-items:center; gap:0.25rem;">
+                        <span class="material-symbols-outlined" style="font-size:1rem;">description</span>
+                        Ver comprobante
+                      </a>
+                    </div>
+                    <div v-if="!isDealFullReadOnly" style="display:flex; align-items:center; gap:0.5rem;">
+                      <label class="btn-sm btn-primary" style="cursor:pointer; font-size:0.75rem; padding:0.3rem 0.8rem;">
+                        <span class="material-symbols-outlined" style="font-size:0.9rem; vertical-align:middle; margin-right:0.2rem;">upload_file</span>
+                        {{ uploadingPayment ? 'Subiendo...' : (editLead[field.campo_key] ? 'Reemplazar' : 'Subir archivo') }}
+                        <input type="file" accept=".png,.jpg,.jpeg,.pdf" @change="handlePaymentUpload" style="display:none;" :disabled="uploadingPayment" />
+                      </label>
+                      <span style="font-size:0.65rem; color:var(--text-muted);">PNG, JPG o PDF (max 10MB)</span>
+                    </div>
+                  </div>
+
                   <!-- ══ SPECIAL: Notes Readonly ══ -->
                   <div v-else-if="field.tipo_input === 'notes_readonly'" class="form-group" style="grid-column: 1 / -1;" >
                     <template v-if="editLead[field.campo_key]">
@@ -2762,7 +2797,7 @@
 
                   <!-- ══ GENERIC: Select or Text (catalog fallback) ══ -->
                   <div v-else-if="field.tipo_input === 'select_or_text'" class="form-group" :style="field.ancho === 'full' ? 'grid-column: 1 / -1' : ''">
-                    <label>{{ field.campo_label }}</label>
+                    <label>{{ field.campo_label }}<span v-if="field.requerido" style="color:var(--accent-danger);margin-left:2px;">*</span></label>
                     <select v-if="getFieldOptions(field).length" v-model="editLead[field.campo_key]" class="form-select">
                       <option value="">— Seleccionar —</option>
                       <option v-for="s in getFieldOptions(field)" :key="s" :value="s">{{ s }}</option>
@@ -2772,7 +2807,7 @@
 
                   <!-- ══ GENERIC: Select Yes/No ══ -->
                   <div v-else-if="field.tipo_input === 'select_yn'" class="form-group" :style="field.ancho === 'full' ? 'grid-column: 1 / -1' : ''">
-                    <label>{{ field.campo_label }}</label>
+                    <label>{{ field.campo_label }}<span v-if="field.requerido" style="color:var(--accent-danger);margin-left:2px;">*</span></label>
                     <select v-model="editLead[field.campo_key]" class="form-select">
                       <option value="">—</option>
                       <option>Si</option>
@@ -2782,7 +2817,7 @@
 
                   <!-- ══ GENERIC: Select from catalog ══ -->
                   <div v-else-if="field.tipo_input === 'select'" class="form-group" :style="field.ancho === 'full' ? 'grid-column: 1 / -1' : ''">
-                    <label>{{ field.campo_label }}</label>
+                    <label>{{ field.campo_label }}<span v-if="field.requerido" style="color:var(--accent-danger);margin-left:2px;">*</span></label>
                     <select v-model="editLead[field.campo_key]" class="form-select">
                       <option value="">— Seleccionar —</option>
                       <option v-for="opt in getFieldOptions(field)" :key="opt" :value="opt">{{ opt }}</option>
@@ -2791,26 +2826,26 @@
 
                   <!-- ══ GENERIC: Textarea ══ -->
                   <div v-else-if="field.tipo_input === 'textarea'" class="form-group" :style="field.ancho === 'full' ? 'grid-column: 1 / -1' : ''">
-                    <label>{{ field.campo_label }}</label>
+                    <label>{{ field.campo_label }}<span v-if="field.requerido" style="color:var(--accent-danger);margin-left:2px;">*</span></label>
                     <textarea v-model="editLead[field.campo_key]" class="notes-textarea" rows="3"
                       :placeholder="field.campo_label + '...'" style="resize: vertical;"></textarea>
                   </div>
 
                   <!-- ══ GENERIC: Number ══ -->
                   <div v-else-if="field.tipo_input === 'number'" class="form-group" :style="field.ancho === 'full' ? 'grid-column: 1 / -1' : ''">
-                    <label>{{ field.campo_label }}</label>
+                    <label>{{ field.campo_label }}<span v-if="field.requerido" style="color:var(--accent-danger);margin-left:2px;">*</span></label>
                     <input type="number" step="0.01" v-model="editLead[field.campo_key]" class="form-input" placeholder="$0.00" />
                   </div>
 
                   <!-- ══ GENERIC: Date ══ -->
                   <div v-else-if="field.tipo_input === 'date'" class="form-group" :style="field.ancho === 'full' ? 'grid-column: 1 / -1' : ''">
-                    <label>{{ field.campo_label }}</label>
+                    <label>{{ field.campo_label }}<span v-if="field.requerido" style="color:var(--accent-danger);margin-left:2px;">*</span></label>
                     <input type="date" v-model="editLead[field.campo_key]" class="form-input" />
                   </div>
 
                   <!-- ══ GENERIC: Time ══ -->
                   <div v-else-if="field.tipo_input === 'time'" class="form-group" :style="field.ancho === 'full' ? 'grid-column: 1 / -1' : ''">
-                    <label>{{ field.campo_label }}</label>
+                    <label>{{ field.campo_label }}<span v-if="field.requerido" style="color:var(--accent-danger);margin-left:2px;">*</span></label>
                     <input type="time" v-model="editLead[field.campo_key]" class="form-input" />
                   </div>
 
@@ -2819,7 +2854,7 @@
 
                   <!-- ══ GENERIC: Text (default) ══ -->
                   <div v-else class="form-group" :style="field.ancho === 'full' ? 'grid-column: 1 / -1' : ''">
-                    <label>{{ field.campo_label }}</label>
+                    <label>{{ field.campo_label }}<span v-if="field.requerido" style="color:var(--accent-danger);margin-left:2px;">*</span></label>
                     <input type="text" v-model="editLead[field.campo_key]" class="form-input" />
                   </div>
 
@@ -3155,18 +3190,22 @@
         </div>
 
         <div class="modal-footer">
-          <button class="btn btn-secondary" @click="closeLeadModal">Cancelar</button>
+          <button class="btn btn-secondary" @click="closeLeadModal">{{ isDealFullReadOnly ? 'Cerrar' : 'Cancelar' }}</button>
+          <!-- SDR read-only banner -->
+          <span v-if="isDealFullReadOnly" style="font-size:0.8rem; color:var(--text-muted); display:flex; align-items:center; gap:0.3rem;">
+            <span class="material-symbols-outlined" style="font-size:1rem;">visibility</span> Solo lectura
+          </span>
           <!-- Pase a Ventas button (only for leads without a deal, not in creation mode) -->
-          <button v-if="!isCreating && !selectedLead._hasDeal && selectedLead._source !== 'deal'" class="btn"
+          <button v-if="!isCreating && !isDealFullReadOnly && !selectedLead._hasDeal && selectedLead._source !== 'deal'" class="btn"
             style="background: var(--accent-warning, #f59e0b); color: #fff;" @click="openHandoffModal(selectedLead)">
             <span class="material-symbols-outlined"
               style="font-size:1rem; vertical-align:middle; margin-right:0.2rem;">swap_horiz</span>
             Pase a Ventas
           </button>
-          <button v-if="isCreating" class="btn btn-success" @click="submitCreation" :disabled="saving">
+          <button v-if="isCreating && !isDealFullReadOnly" class="btn btn-success" @click="submitCreation" :disabled="saving">
             {{ saving ? 'Creando...' : (creationType === 'deal' ? '✨ Crear Deal' : '✨ Crear Lead') }}
           </button>
-          <button v-else class="btn btn-success" @click="saveLeadChanges" :disabled="saving">
+          <button v-else-if="!isDealFullReadOnly" class="btn btn-success" @click="saveLeadChanges" :disabled="saving">
             {{ saving ? 'Guardando...' : '💾 Guardar Cambios' }}
           </button>
         </div>
