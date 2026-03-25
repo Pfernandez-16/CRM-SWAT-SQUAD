@@ -48,12 +48,11 @@
 
         <nav class="sidebar-nav">
           <template v-for="item in navItems" :key="item.id">
-            <!-- Role-based visibility: SDR sees prospectos. AE sees negociaciones. Admin/Gerente sees all.
-                 'reportes' is intentionally excluded from SDR and AE arrays — it is a management analytics view. -->
+            <!-- Role-based visibility: SDR sees prospectos+reportes. AE sees negociaciones+reportes. Admin/Gerente sees all. -->
             <a v-if="
               userRole === 'ADMIN' || userRole === 'GERENTE' ||
-              (userRole === 'SDR' && ['dashboard','leads','negociaciones','calendar','account'].includes(item.id)) ||
-              (userRole === 'AE' && ['dashboard','negociaciones','calendar','account'].includes(item.id)) ||
+              (userRole === 'SDR' && ['dashboard','leads','negociaciones','reportes','calendar','account'].includes(item.id)) ||
+              (userRole === 'AE' && ['dashboard','negociaciones','reportes','calendar','account'].includes(item.id)) ||
               userRole === 'GUEST'
             " class="nav-item" :class="{ active: currentView === item.id }" @click="currentView = item.id"
               :title="item.label">
@@ -1649,7 +1648,7 @@
                 <!-- Products table -->
                 <div style="margin-bottom: 0.75rem;">
                   <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.5rem;">
-                    <label style="font-weight:600; font-size:0.85rem;">Productos (hasta 10)</label>
+                    <label style="font-weight:600; font-size:0.85rem;">Productos — Ticket Promedio Mensual (hasta 10)</label>
                     <button class="btn-sm btn-primary" @click="addPricingProduct" style="font-size:0.75rem; padding:0.25rem 0.6rem;">
                       + Agregar Producto
                     </button>
@@ -1843,6 +1842,48 @@
               </div>
             </div>
 
+            <!-- ═══ Attendance History (Admin/Gerente Only) ═══ -->
+            <div v-if="userRole === 'ADMIN' || userRole === 'GERENTE'" class="config-editor" style="margin-top: 1.5rem;">
+              <div class="config-editor-header" style="display:flex; align-items:center; justify-content:space-between;">
+                <h3>📋 Historial de Asistencia</h3>
+                <button class="btn-sm btn-primary" @click="loadAttendanceHistory" :disabled="loadingAttendance" style="font-size:0.75rem;">
+                  {{ loadingAttendance ? 'Cargando...' : 'Cargar Últimos 30 Días' }}
+                </button>
+              </div>
+              <div style="padding: 1rem;">
+                <div v-if="attendanceHistory.length === 0 && !loadingAttendance" style="text-align:center; padding:1.5rem; color:var(--text-muted); font-size:0.85rem;">
+                  Haz clic en "Cargar" para ver el historial de entradas y salidas.
+                </div>
+                <div v-else-if="loadingAttendance" style="text-align:center; padding:1.5rem; color:var(--text-muted);">
+                  Cargando...
+                </div>
+                <table v-else class="report-table" style="font-size:0.8rem;">
+                  <thead>
+                    <tr>
+                      <th>Nombre</th>
+                      <th>Email</th>
+                      <th>Tipo</th>
+                      <th>Fecha y Hora</th>
+                      <th>Duración</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(entry, idx) in attendanceHistory" :key="idx">
+                      <td style="font-weight:600;">{{ entry.nombre || '—' }}</td>
+                      <td style="font-size:0.75rem;">{{ entry.email }}</td>
+                      <td>
+                        <span :style="entry.tipo === 'entrada' ? 'color:var(--accent-success); font-weight:600;' : 'color:var(--accent-danger); font-weight:600;'">
+                          {{ entry.tipo === 'entrada' ? '🟢 Entrada' : '🔴 Salida' }}
+                        </span>
+                      </td>
+                      <td>{{ entry.fecha_hora ? new Date(entry.fecha_hora).toLocaleString('es-MX') : '—' }}</td>
+                      <td>{{ entry.duracion_sesion || '—' }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
           </div>
 
 
@@ -2013,11 +2054,17 @@
               @click="modalTab = tab">{{ tab }}</button>
           </template>
           <template v-else>
-            <!-- SDR: no Deal tab. AE/Admin: all tabs -->
+            <!-- SDR viewing a lead: show Negociación tab if lead has a deal -->
             <template v-if="userRole === 'SDR'">
-              <button v-for="tab in ['Lead', '⏱️ Logs de Toques', 'Historial', 'Notas']" :key="tab" class="modal-tab"
+              <button v-for="tab in (selectedLead._hasDeal ? ['Lead', 'Negociación', '⏱️ Logs de Toques', 'Historial', 'Notas'] : ['Lead', '⏱️ Logs de Toques', 'Historial', 'Notas'])" :key="tab" class="modal-tab"
                 :class="{ active: modalTab === tab }" @click="modalTab = tab">{{ tab }}</button>
             </template>
+            <!-- AE viewing a deal: show Prospecto tab for SDR lead data -->
+            <template v-else-if="userRole === 'AE'">
+              <button v-for="tab in (selectedLead._source === 'deal' || selectedLead._source === 'cross_deal' ? ['Prospecto', 'Deal', '⏱️ Logs de Toques', 'Historial', 'Notas'] : ['Lead', 'Deal', '⏱️ Logs de Toques', 'Historial', 'Notas'])" :key="tab" class="modal-tab"
+                :class="{ active: modalTab === tab }" @click="modalTab = tab">{{ tab }}</button>
+            </template>
+            <!-- Admin/Gerente: all tabs -->
             <template v-else>
               <button v-for="tab in ['Lead', 'Deal', '⏱️ Logs de Toques', 'Historial', 'Notas']" :key="tab"
                 class="modal-tab" :class="{ active: modalTab === tab }" @click="modalTab = tab">{{ tab }}</button>
@@ -2465,6 +2512,20 @@
                     </div>
                   </div>
 
+                  <!-- ══ SPECIAL: Loss Reason — Deal (select + Otros free text) ══ -->
+                  <div v-else-if="field.tipo_input === 'loss_reason'" class="form-group" style="grid-column: 1 / -1;">
+                    <label>{{ field.campo_label }}<span v-if="field.requerido" style="color:var(--accent-danger);margin-left:2px;">*</span></label>
+                    <select v-if="getFieldOptions(field).length" v-model="editLead[field.campo_key]" class="form-select">
+                      <option value="">— Seleccionar —</option>
+                      <option v-for="s in getFieldOptions(field)" :key="s" :value="s">{{ s }}</option>
+                    </select>
+                    <textarea v-else v-model="editLead[field.campo_key]" class="notes-textarea" rows="2"
+                      placeholder="Razón de pérdida..."></textarea>
+                    <input v-if="editLead[field.campo_key] === 'Otros'" type="text"
+                      v-model="editLead['Razón Pérdida Otra']" class="form-input" style="margin-top: 0.4rem;"
+                      placeholder="Especifique la razón..." />
+                  </div>
+
                   <!-- ══ SPECIAL: Notes Readonly ══ -->
                   <div v-else-if="field.tipo_input === 'notes_readonly'" class="form-group" style="grid-column: 1 / -1;" >
                     <template v-if="editLead[field.campo_key]">
@@ -2540,6 +2601,110 @@
                 </template>
               </template>
 
+            </div>
+          </div>
+
+          <!-- TAB: Negociación (SDR read-only view of deal) -->
+          <div v-if="modalTab === 'Negociación'" class="tab-content">
+            <div v-if="crossViewDeal" style="padding: 0.5rem;">
+              <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:1rem; padding:0.5rem 0.75rem; background:rgba(99,102,241,0.08); border-radius:8px; border:1px solid rgba(99,102,241,0.2);">
+                <span class="material-symbols-outlined" style="font-size:1.1rem; color:var(--accent-info);">visibility</span>
+                <span style="font-size:0.8rem; color:var(--text-muted);">Datos de la negociación — solo lectura</span>
+              </div>
+              <div class="form-grid" style="gap:0.75rem;">
+                <div class="form-group">
+                  <label style="font-size:0.75rem; color:var(--text-muted);">AE Asignado</label>
+                  <div class="form-input" style="opacity:0.8;" disabled>{{ crossViewDeal.ae_nombre || '—' }}</div>
+                </div>
+                <div class="form-group">
+                  <label style="font-size:0.75rem; color:var(--text-muted);">Status de Venta</label>
+                  <div><span class="status-badge" :style="{ background: getStatusColor(crossViewDeal.status_venta) }">{{ crossViewDeal.status_venta || 'N/A' }}</span></div>
+                </div>
+                <div class="form-group">
+                  <label style="font-size:0.75rem; color:var(--text-muted);">Proyección</label>
+                  <div class="form-input" style="opacity:0.8;" disabled>{{ crossViewDeal.proyeccion || '—' }}</div>
+                </div>
+                <div class="form-group">
+                  <label style="font-size:0.75rem; color:var(--text-muted);">Monto Proyección</label>
+                  <div class="form-input" style="opacity:0.8;" disabled>{{ crossViewDeal.monto_proyeccion ? '$' + Number(crossViewDeal.monto_proyeccion).toLocaleString() : '—' }}</div>
+                </div>
+                <div class="form-group">
+                  <label style="font-size:0.75rem; color:var(--text-muted);">Monto de Cierre</label>
+                  <div class="form-input" style="opacity:0.8; font-weight:700; color:var(--accent-success);" disabled>{{ crossViewDeal.monto_cierre ? '$' + Number(crossViewDeal.monto_cierre).toLocaleString() : '—' }}</div>
+                </div>
+                <div class="form-group">
+                  <label style="font-size:0.75rem; color:var(--text-muted);">Producto de Cierre</label>
+                  <div class="form-input" style="opacity:0.8;" disabled>{{ crossViewDeal.producto_cierre || '—' }}</div>
+                </div>
+                <div class="form-group">
+                  <label style="font-size:0.75rem; color:var(--text-muted);">Fecha Pase a Ventas</label>
+                  <div class="form-input" style="opacity:0.8;" disabled>{{ crossViewDeal.fecha_pase_ventas ? formatDate(crossViewDeal.fecha_pase_ventas) : '—' }}</div>
+                </div>
+                <div class="form-group">
+                  <label style="font-size:0.75rem; color:var(--text-muted);">Fecha Primer Contacto AE</label>
+                  <div class="form-input" style="opacity:0.8;" disabled>{{ crossViewDeal.fecha_primer_contacto_ae ? formatDate(crossViewDeal.fecha_primer_contacto_ae) : '—' }}</div>
+                </div>
+                <div class="form-group">
+                  <label style="font-size:0.75rem; color:var(--text-muted);">Fecha de Cierre</label>
+                  <div class="form-input" style="opacity:0.8;" disabled>{{ crossViewDeal.fecha_cierre ? formatDate(crossViewDeal.fecha_cierre) : '—' }}</div>
+                </div>
+                <div class="form-group">
+                  <label style="font-size:0.75rem; color:var(--text-muted);">Razón de Pérdida</label>
+                  <div class="form-input" style="opacity:0.8;" disabled>{{ crossViewDeal.razon_perdida || '—' }}</div>
+                </div>
+                <div class="form-group" style="grid-column: 1 / -1;">
+                  <label style="font-size:0.75rem; color:var(--text-muted);">Notas del AE</label>
+                  <div class="form-input" style="opacity:0.8; min-height:3rem; white-space:pre-wrap;" disabled>{{ crossViewDeal.notas_vendedor || '—' }}</div>
+                </div>
+              </div>
+            </div>
+            <div v-else style="padding:2rem; text-align:center; color:var(--text-muted);">
+              <span class="material-symbols-outlined" style="font-size:2rem; opacity:0.3;">hourglass_empty</span>
+              <p style="margin-top:0.5rem; font-size:0.85rem;">Este lead aún no tiene una negociación abierta.</p>
+            </div>
+          </div>
+
+          <!-- TAB: Prospecto (AE read-only view of lead origin) -->
+          <div v-if="modalTab === 'Prospecto'" class="tab-content">
+            <div style="padding: 0.5rem;">
+              <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:1rem; padding:0.5rem 0.75rem; background:rgba(16,185,129,0.08); border-radius:8px; border:1px solid rgba(16,185,129,0.2);">
+                <span class="material-symbols-outlined" style="font-size:1.1rem; color:var(--accent-success);">person_search</span>
+                <span style="font-size:0.8rem; color:var(--text-muted);">Datos del prospecto original (SDR) — solo lectura</span>
+              </div>
+              <div class="form-grid" style="gap:0.75rem;">
+                <div class="form-group">
+                  <label style="font-size:0.75rem; color:var(--text-muted);">Status del Lead</label>
+                  <div><span class="status-badge" :style="{ background: getStatusColor(editLead['Status']) }">{{ editLead['Status'] || 'N/A' }}</span></div>
+                </div>
+                <div class="form-group">
+                  <label style="font-size:0.75rem; color:var(--text-muted);">Calidad de Contacto</label>
+                  <div class="form-input" style="opacity:0.8;" disabled>{{ editLead['Calidad de Contacto'] || '—' }}</div>
+                </div>
+                <div class="form-group">
+                  <label style="font-size:0.75rem; color:var(--text-muted);">Servicio de Interés</label>
+                  <div class="form-input" style="opacity:0.8;" disabled>{{ editLead['Servicio'] || '—' }}</div>
+                </div>
+                <div class="form-group">
+                  <label style="font-size:0.75rem; color:var(--text-muted);">Toques de Contactación</label>
+                  <div class="form-input" style="opacity:0.8;" disabled>{{ editLead['Toques de Contactación'] || '0' }}</div>
+                </div>
+                <div class="form-group">
+                  <label style="font-size:0.75rem; color:var(--text-muted);">SDR Asignado</label>
+                  <div class="form-input" style="opacity:0.8;" disabled>{{ editLead['Vendedor Asignado para Seguimiento'] || '—' }}</div>
+                </div>
+                <div class="form-group">
+                  <label style="font-size:0.75rem; color:var(--text-muted);">¿Es Recompra?</label>
+                  <div class="form-input" style="opacity:0.8;" disabled>{{ editLead['¿Es recompra?'] || 'No' }}</div>
+                </div>
+                <div class="form-group" style="grid-column: 1 / -1;">
+                  <label style="font-size:0.75rem; color:var(--text-muted);">Notas del SDR</label>
+                  <div class="form-input" style="opacity:0.8; min-height:3rem; white-space:pre-wrap;" disabled>{{ editLead['Notas'] || '—' }}</div>
+                </div>
+                <div class="form-group" style="grid-column: 1 / -1;">
+                  <label style="font-size:0.75rem; color:var(--text-muted);">BANT: Necesidad Puntual</label>
+                  <div class="form-input" style="opacity:0.8; white-space:pre-wrap;" disabled>{{ editLead['¿Cuál es tu necesidad puntual?'] || '—' }}</div>
+                </div>
+              </div>
             </div>
           </div>
 

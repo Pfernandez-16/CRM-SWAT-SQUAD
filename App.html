@@ -141,7 +141,8 @@
         ['Timestamp', 'Timestamp (Último Toque)', 'date_display', 'Información de Seguimiento', '📞', 4, 'half', true],
         ['Tipo de Seguimiento', 'Tipo de Seguimiento', 'select', 'Información de Seguimiento', '📞', 4, 'half', false, 'Tipo de Seguimiento'],
         ['Status del Seguimiento', 'Status del Seguimiento', 'select', 'Información de Seguimiento', '📞', 4, 'half', false, 'Status del Seguimiento'],
-        ['Razón de pérdida', 'Razón de Pérdida', 'select', 'Información de Seguimiento', '📞', 4, 'half', false, 'Razón de pérdida'],
+        ['Razón de pérdida', 'Razón de Pérdida', 'loss_reason', 'Información de Seguimiento', '📞', 4, 'full', false, 'Razón de pérdida'],
+        ['¿Es recompra?', '¿Es recompra?', 'select_yn', 'Información de Seguimiento', '📞', 4, 'half'],
         // Section 5: Calificación BANT
         ['¿Entendió la información de Marketing?', '¿Entendió el Marketing?', 'select_yn', 'Calificación BANT', '🎯', 5],
         ['¿Mostró Interés genuino?', '¿Mostró Interés genuino?', 'select_yn', 'Calificación BANT', '🎯', 5],
@@ -297,6 +298,7 @@
             const deals = ref([]);
             const vendedoresList = ref([]);
             const recentDuplicates = ref([]);
+            const crossViewDeal = ref(null);
             const catalogs = ref({});
             const pricing = ref([]);
             const currentUser = ref({ email: '', nombre: '', rol: 'GUEST', sheetId: '' });
@@ -958,6 +960,21 @@
             const catalogNames = computed(() => Object.keys(catalogs.value).filter(k => k.trim()));
 
             // ── Config Categories ──
+            // ── Attendance History ──
+            const attendanceHistory = ref([]);
+            const loadingAttendance = ref(false);
+
+            function loadAttendanceHistory() {
+                loadingAttendance.value = true;
+                google.script.run
+                    .withSuccessHandler(function (data) {
+                        attendanceHistory.value = data || [];
+                        loadingAttendance.value = false;
+                    })
+                    .withFailureHandler(function () { loadingAttendance.value = false; })
+                    .getAttendanceHistory(30);
+            }
+
             const configCategoryMap = {
                 general: {
                     label: '⚙️ General & Status',
@@ -1284,10 +1301,13 @@
             function openLeadDetail(lead) {
                 selectedLead.value = lead;
                 Object.assign(editLead, JSON.parse(JSON.stringify(lead)));
-                modalTab.value = 'Lead';
+                // AE opening a deal → default to "Deal" tab; SDR → "Lead"
+                var isDealItem = (lead._source === 'deal' || lead._source === 'cross_deal');
+                modalTab.value = (isDealItem && userRole.value === 'AE') ? 'Deal' : 'Lead';
+                // AE opening deal → set tab to Prospecto if AE wants lead context
+                if (isDealItem && userRole.value === 'AE') modalTab.value = 'Deal';
                 showLeadModal.value = true;
                 // Load history asynchronously
-                const isDealItem = (lead._source === 'deal' || lead._source === 'cross_deal');
                 loadLeadHistory(lead._id, isDealItem);
                 // PARAM-01: Load custom responses
                 loadCustomResponses(lead);
@@ -1297,6 +1317,16 @@
                 } else {
                     dealProductLines.value = [];
                     dealClassification.value = '';
+                }
+                // Cross-view: SDR sees deal data for their lead
+                crossViewDeal.value = null;
+                if (!isDealItem && lead._hasDeal && lead._id) {
+                    google.script.run
+                        .withSuccessHandler(function (dealData) {
+                            crossViewDeal.value = dealData;
+                        })
+                        .withFailureHandler(function () { crossViewDeal.value = null; })
+                        .getDealForLead(lead._id);
                 }
                 // Phase 21: Load duplicates for this lead
                 leadDuplicates.value = [];
@@ -3131,7 +3161,7 @@
                 sidebarCollapsed, currentView, viewMode, searchQuery, filterStatus, filterDealStatus,
                 currentPage, currentNegPage, isDark, modalTab, showLeadModal, activeCatalog,
                 activeConfigCategory, configValuesList, roundRobinQueue, savingRROrder,
-                leads, deals, vendedoresList, catalogs, pricing, currentUser, stats, recentDuplicates,
+                leads, deals, vendedoresList, catalogs, pricing, currentUser, stats, recentDuplicates, crossViewDeal,
                 selectedLead, editLead, leadHistory, editingCatalogValues,
                 isCreating, creationType,
                 userRole, userConnected, clockInTime, clockTimer, activeAEs,
@@ -3162,6 +3192,7 @@
                 kanbanStatuses, filteredLeads, totalPages, paginatedLeads,
                 filteredDeals, totalDealPages, paginatedDeals,
                 catalogNames, filteredCatalogNames, configCategories,
+                attendanceHistory, loadingAttendance, loadAttendanceHistory,
                 uniqueRegions, uniqueMembershipTypes, uniqueAttractions,
                 computedPricing, comparisonLabel,
                 showQuickCalendar, quickCalForm,

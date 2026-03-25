@@ -21,6 +21,7 @@ var T_CATALOGS = 'cat_opciones';
 var T_LOG = 'log_transacciones';
 var T_USERS = 'config_users';
 var T_PLANTILLAS = 'config_plantillas_notas';
+var T_ASISTENCIA = 'log_asistencia';
 
 // Phase 3B: System columns excluded from frontend editing
 var SYSTEM_COLS = {
@@ -383,6 +384,8 @@ function getLeads() {
         'Vendedor Asignado para Seguimiento': vendedor.nombre || '',
         'Vendedor asignado (SDR)': fl.id_vendedor_sdr || '',
         'Notas': fl.notas || '', 'Razón de pérdida': fl.razon_perdida || '',
+        'Razón Pérdida Otra': fl.razon_perdida_otra || '',
+        '¿Es recompra?': fl.es_recompra || '',
         'Tipo de Seguimiento': fl.tipo_seguimiento || '',
         'Status del Seguimiento': fl.status_seguimiento || '',
         'source': campana.source || '',
@@ -1111,12 +1114,15 @@ function clockIn() {
     var emailCol = colMap['email'] || 1;
     var connCol = colMap['conectado'];
     var clockCol = colMap['ultimo_clockin'];
+    var nombreCol = colMap['nombre'];
 
     for (var i = 1; i < data.length; i++) {
       if (String(data[i][emailCol - 1] || '').trim().toLowerCase() === email.toLowerCase()) {
         var now = new Date();
+        var nombre = nombreCol ? String(data[i][nombreCol - 1] || '') : '';
         if (connCol) sheet.getRange(i + 1, connCol).setValue(true);
         if (clockCol) sheet.getRange(i + 1, clockCol).setValue(now);
+        logAttendance_(ss, email, nombre, 'entrada', now);
         return { status: 'success', clockInTime: now.toISOString() };
       }
     }
@@ -1138,17 +1144,82 @@ function clockOut() {
     var emailCol = colMap['email'] || 1;
     var connCol = colMap['conectado'];
     var clockCol = colMap['ultimo_clockin'];
+    var nombreCol = colMap['nombre'];
 
     for (var i = 1; i < data.length; i++) {
       if (String(data[i][emailCol - 1] || '').trim().toLowerCase() === email.toLowerCase()) {
+        var now = new Date();
+        var nombre = nombreCol ? String(data[i][nombreCol - 1] || '') : '';
+        var clockInTime = clockCol ? sheet.getRange(i + 1, clockCol).getValue() : null;
+        var duracion = '';
+        if (clockInTime) {
+          var diffMs = now.getTime() - new Date(clockInTime).getTime();
+          var hrs = Math.floor(diffMs / 3600000);
+          var mins = Math.floor((diffMs % 3600000) / 60000);
+          duracion = hrs + 'h ' + (mins < 10 ? '0' : '') + mins + 'm';
+        }
         if (connCol) sheet.getRange(i + 1, connCol).setValue(false);
         if (clockCol) sheet.getRange(i + 1, clockCol).setValue('');
+        logAttendance_(ss, email, nombre, 'salida', now, duracion);
         return { status: 'success' };
       }
     }
     return { status: 'error', message: 'Usuario no encontrado' };
   } catch (err) {
     return { status: 'error', message: err.message };
+  }
+}
+
+/**
+ * Appends attendance event to log_asistencia sheet.
+ */
+function logAttendance_(ss, email, nombre, tipo, fecha, duracion) {
+  try {
+    var logSheet = ss.getSheetByName(T_ASISTENCIA);
+    if (!logSheet) {
+      logSheet = ss.insertSheet(T_ASISTENCIA);
+      logSheet.appendRow(['id_registro', 'email', 'nombre', 'tipo', 'fecha_hora', 'duracion_sesion']);
+    }
+    var lastRow = Math.max(logSheet.getLastRow(), 1);
+    var nextId = lastRow; // simple auto-increment
+    logSheet.appendRow([nextId, email, nombre, tipo, fecha, duracion || '']);
+  } catch (e) {
+    Logger.log('logAttendance_ ERROR: ' + e.message);
+  }
+}
+
+/**
+ * Returns attendance history for Admin/Gerente view.
+ * @param {number} days — How many days back to fetch (default 30)
+ * @return {Array} Array of { email, nombre, tipo, fecha_hora, duracion_sesion }
+ */
+function getAttendanceHistory(days) {
+  try {
+    days = parseInt(days) || 30;
+    var cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - days);
+
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var sheet = ss.getSheetByName(T_ASISTENCIA);
+    if (!sheet) return [];
+
+    var data = sheet.getDataRange().getValues();
+    var results = [];
+    for (var i = 1; i < data.length; i++) {
+      var fecha = new Date(data[i][4]);
+      if (isNaN(fecha.getTime()) || fecha < cutoff) continue;
+      results.push({
+        email: String(data[i][1] || ''),
+        nombre: String(data[i][2] || ''),
+        tipo: String(data[i][3] || ''),
+        fecha_hora: data[i][4],
+        duracion_sesion: String(data[i][5] || '')
+      });
+    }
+    return results.reverse(); // most recent first
+  } catch (e) {
+    Logger.log('getAttendanceHistory ERROR: ' + e.message);
+    return [];
   }
 }
 
@@ -1275,6 +1346,8 @@ var LEAD_FIELD_MAP = {
   '¿Cual es su región?': '_FACT_CALIFICACION_region',
   '¿Que tipo de membresía es?': '_FACT_CALIFICACION_tipo_membresia',
   'Razón de pérdida': 'razon_perdida',
+  'Razón Pérdida Otra': 'razon_perdida_otra',
+  '¿Es recompra?': 'es_recompra',
   // Pricing & Tracking fields (in fact_leads)
   'Tipo de Cliente': 'tipo_cliente_pricing',
   'Ticket Promedio': 'ticket_promedio',
@@ -3316,6 +3389,52 @@ function getRecentDuplicates(days) {
 }
 
 // ============ Upload Payment Proof to Google Drive ============
+
+// ============ Cross-view: Fetch deal data for a lead (SDR tab) ============
+
+/**
+ * Returns the deal object associated with a given lead ID.
+ * Used by SDR to see deal progress in their lead modal.
+ * @param {string} idLead - The lead ID
+ * @return {Object|null} Deal fields or null if no deal exists
+ */
+function getDealForLead(idLead) {
+  try {
+    if (!idLead) return null;
+    var deals = readTable_(T_DEALS);
+    var deal = null;
+    for (var i = 0; i < deals.length; i++) {
+      if (String(deals[i].id_lead) === String(idLead)) { deal = deals[i]; break; }
+    }
+    if (!deal) return null;
+
+    var vendedores = readTable_('dim_vendedores');
+    var vendedorIdx = indexBy_(vendedores, 'id_vendedor');
+    var ae = vendedorIdx[String(deal.id_vendedor_ae || '')] || {};
+
+    return {
+      id_deal: deal.id_deal || '',
+      status_venta: deal.status_venta || '',
+      proyeccion: deal.proyeccion || '',
+      monto_proyeccion: deal.monto_proyeccion || '',
+      monto_apartado: deal.monto_apartado || '',
+      monto_cierre: deal.monto_cierre || '',
+      fecha_pase_ventas: deal.fecha_pase_ventas || '',
+      fecha_primer_contacto_ae: deal.fecha_primer_contacto_ae || '',
+      fecha_cierre: deal.fecha_cierre || '',
+      razon_perdida: deal.razon_perdida || '',
+      descuento_pct: deal.descuento_pct || '',
+      es_recompra: deal.es_recompra || '',
+      producto_cierre: deal.producto_cierre || '',
+      notas_vendedor: deal.notas_vendedor || '',
+      ae_nombre: ae.nombre || '',
+      ae_email: ae.email || ''
+    };
+  } catch (e) {
+    Logger.log('getDealForLead ERROR: ' + e.message);
+    return null;
+  }
+}
 
 /**
  * Uploads a payment proof file to Google Drive and stores the link in the deal row.
