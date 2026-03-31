@@ -275,6 +275,10 @@
             const filterStatus = ref('');
             const currentPage = ref(1);
             const pageSize = 50;
+            const sortBy = ref('fecha_ingreso');
+            const sortOrder = ref('desc');
+            const dealSortBy = ref('fecha_ingreso');
+            const dealSortOrder = ref('desc');
             const isDark = ref(true);
             const modalTab = ref('Info');
             const showLeadModal = ref(false);
@@ -837,15 +841,121 @@
                 let items = getLeadsByStatus(status);
                 if (searchQuery.value) {
                     const q = searchQuery.value.toLowerCase();
+                    var isNeg = currentView.value === 'negociaciones';
                     items = items.filter(l =>
                         (l._name || '').toLowerCase().includes(q) ||
                         (l._empresa || '').toLowerCase().includes(q) ||
                         (l._email || '').toLowerCase().includes(q) ||
                         (l._tel || '').toLowerCase().includes(q) ||
+                        (l['Pais'] || '').toLowerCase().includes(q) ||
+                        (isNeg ? (l['Notas Vendedor'] || '') : (l._colAS_Notas || '')).toLowerCase().includes(q) ||
                         String(l._id).includes(q)
                     );
                 }
                 return items;
+            }
+
+            // ── Sort helpers ──
+            function toggleSort(field) {
+                if (sortBy.value === field) {
+                    sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc';
+                } else {
+                    sortBy.value = field;
+                    sortOrder.value = field === 'nombre' || field === 'empresa' || field === 'pais' ? 'asc' : 'desc';
+                }
+                currentPage.value = 1;
+            }
+            function toggleDealSort(field) {
+                if (dealSortBy.value === field) {
+                    dealSortOrder.value = dealSortOrder.value === 'asc' ? 'desc' : 'asc';
+                } else {
+                    dealSortBy.value = field;
+                    dealSortOrder.value = field === 'nombre' || field === 'empresa' || field === 'pais' ? 'asc' : 'desc';
+                }
+                currentNegPage.value = 1;
+            }
+            function sortIcon(field, currentSort, currentOrder) {
+                if (currentSort !== field) return 'unfold_more';
+                return currentOrder === 'asc' ? 'arrow_upward' : 'arrow_downward';
+            }
+            function applySorting_(items, field, order) {
+                var sorted = items.slice();
+                var dir = order === 'asc' ? 1 : -1;
+                sorted.sort(function (a, b) {
+                    var valA, valB;
+                    switch (field) {
+                        case 'fecha_ingreso':
+                            valA = a['Fecha Ingreso'] || a['Fecha y Hora de asignación'] || '';
+                            valB = b['Fecha Ingreso'] || b['Fecha y Hora de asignación'] || '';
+                            return dir * (new Date(valA || 0) - new Date(valB || 0));
+                        case 'nombre':
+                            valA = (a._name || '').toLowerCase();
+                            valB = (b._name || '').toLowerCase();
+                            return dir * valA.localeCompare(valB);
+                        case 'empresa':
+                            valA = (a._empresa || '').toLowerCase();
+                            valB = (b._empresa || '').toLowerCase();
+                            return dir * valA.localeCompare(valB);
+                        case 'pais':
+                            valA = (a['Pais'] || '').toLowerCase();
+                            valB = (b['Pais'] || '').toLowerCase();
+                            return dir * valA.localeCompare(valB);
+                        case 'status':
+                            valA = (a._colW_Status || '').toLowerCase();
+                            valB = (b._colW_Status || '').toLowerCase();
+                            return dir * valA.localeCompare(valB);
+                        case 'calidad':
+                            valA = (a._colX_Calidad || '').toLowerCase();
+                            valB = (b._colX_Calidad || '').toLowerCase();
+                            return dir * valA.localeCompare(valB);
+                        case 'toques':
+                            valA = parseInt(a['Toques de Contactación'] || a['¿En qué toque va?'] || 0) || 0;
+                            valB = parseInt(b['Toques de Contactación'] || b['¿En qué toque va?'] || 0) || 0;
+                            return dir * (valA - valB);
+                        case 'monto':
+                            valA = parseFloat(a['Monto Aproximado'] || 0) || 0;
+                            valB = parseFloat(b['Monto Aproximado'] || 0) || 0;
+                            return dir * (valA - valB);
+                        case 'vendedor':
+                            valA = (a._colAQ_Vendedor || '').toLowerCase();
+                            valB = (b._colAQ_Vendedor || '').toLowerCase();
+                            return dir * valA.localeCompare(valB);
+                        // Deal-specific sorts
+                        case 'status_venta':
+                            valA = (a['Status de Venta'] || '').toLowerCase();
+                            valB = (b['Status de Venta'] || '').toLowerCase();
+                            return dir * valA.localeCompare(valB);
+                        case 'monto_cierre':
+                            valA = parseFloat(a['Monto de cierre'] || 0) || 0;
+                            valB = parseFloat(b['Monto de cierre'] || 0) || 0;
+                            return dir * (valA - valB);
+                        case 'monto_proyeccion':
+                            valA = parseFloat(a['Monto de proyección'] || 0) || 0;
+                            valB = parseFloat(b['Monto de proyección'] || 0) || 0;
+                            return dir * (valA - valB);
+                        case 'fecha_cierre':
+                            valA = a['Fecha de Cierre'] || '';
+                            valB = b['Fecha de Cierre'] || '';
+                            return dir * (new Date(valA || 0) - new Date(valB || 0));
+                        case 'fecha_pase_ventas':
+                            valA = a['Fecha Pase a Ventas'] || a['fecha_pase_ventas'] || '';
+                            valB = b['Fecha Pase a Ventas'] || b['fecha_pase_ventas'] || '';
+                            return dir * (new Date(valA || 0) - new Date(valB || 0));
+                        case 'ae':
+                            valA = (a._colAQ_Vendedor || '').toLowerCase();
+                            valB = (b._colAQ_Vendedor || '').toLowerCase();
+                            return dir * valA.localeCompare(valB);
+                        case 'proyeccion':
+                            var projOrder = { 'alta': 3, 'media': 2, 'baja': 1 };
+                            valA = projOrder[(a['Proyeccion'] || '').toLowerCase()] || 0;
+                            valB = projOrder[(b['Proyeccion'] || '').toLowerCase()] || 0;
+                            return dir * (valA - valB);
+                        default:
+                            valA = a._id || 0; valB = b._id || 0;
+                            return dir * (valA - valB);
+                    }
+                });
+                return sorted;
             }
 
             // ── Prospectos (SDR) List ──
@@ -861,10 +971,16 @@
                         (l._empresa || '').toLowerCase().includes(q) ||
                         (l._email || '').toLowerCase().includes(q) ||
                         (l._tel || '').toLowerCase().includes(q) ||
+                        (l._colW_Status || '').toLowerCase().includes(q) ||
+                        (l._colAQ_Vendedor || '').toLowerCase().includes(q) ||
+                        (l._colAS_Notas || '').toLowerCase().includes(q) ||
+                        (l['Pais'] || '').toLowerCase().includes(q) ||
+                        (l['Servicio'] || '').toLowerCase().includes(q) ||
+                        (l._colX_Calidad || '').toLowerCase().includes(q) ||
                         String(l._id).includes(q)
                     );
                 }
-                return items;
+                return applySorting_(items, sortBy.value, sortOrder.value);
             });
 
             const totalPages = computed(() => Math.ceil(filteredLeads.value.length / pageSize) || 1);
@@ -890,10 +1006,17 @@
                         (d._empresa || '').toLowerCase().includes(q) ||
                         (d._email || '').toLowerCase().includes(q) ||
                         (d._tel || '').toLowerCase().includes(q) ||
+                        (d['Status de Venta'] || '').toLowerCase().includes(q) ||
+                        (d['Notas Vendedor'] || '').toLowerCase().includes(q) ||
+                        (d['Pais'] || '').toLowerCase().includes(q) ||
+                        (d['Producto de Cierre'] || '').toLowerCase().includes(q) ||
+                        (d['Fuente de origen'] || '').toLowerCase().includes(q) ||
+                        (d['Proyeccion'] || '').toLowerCase().includes(q) ||
+                        String(d['Monto de cierre'] || '').includes(q) ||
                         String(d._id).includes(q)
                     );
                 }
-                return items;
+                return applySorting_(items, dealSortBy.value, dealSortOrder.value);
             });
 
             const totalDealPages = computed(() => Math.ceil(filteredDeals.value.length / pageSize) || 1);
@@ -901,6 +1024,17 @@
             const paginatedDeals = computed(() => {
                 const start = (currentNegPage.value - 1) * pageSize;
                 return filteredDeals.value.slice(start, start + pageSize);
+            });
+
+            // ── Config: Filtered Users (searchable) ──
+            const filteredConfigUsers = computed(() => {
+                if (!searchQuery.value || currentView.value !== 'config') return allUsers.value;
+                const q = searchQuery.value.toLowerCase();
+                return allUsers.value.filter(u =>
+                    (u.email || '').toLowerCase().includes(q) ||
+                    (u.nombre || '').toLowerCase().includes(q) ||
+                    (u.rol || '').toLowerCase().includes(q)
+                );
             });
 
             // ── Status Colors ──
@@ -1914,6 +2048,8 @@
                     .replace(/\{producto\}/gi, editLead['Servicio'] || '')
                     .replace(/\{telefono\}/gi, editLead['Teléfono'] || '');
                 quillInstance.root.innerHTML = html;
+                showEmailPlantillaPanel.value = false;
+                showToast('Plantilla insertada en el editor. Revisa y edita antes de enviar.', 'success');
             }
 
             // Phase 23: Plantillas Per-User
@@ -3078,6 +3214,9 @@
 
             // Watch for view/mode changes to re-init kanban
             watch(currentView, (newView, oldView) => {
+                searchQuery.value = '';
+                filterStatus.value = '';
+                filterDealStatus.value = '';
                 if (viewMode.value === 'kanban') {
                     nextTick(() => initKanbanDragDrop());
                 }
@@ -3132,6 +3271,12 @@
                 if (newMode === 'kanban') {
                     nextTick(() => initKanbanDragDrop());
                 }
+            });
+
+            // Reset pagination when search query changes (prevents blank table)
+            watch(searchQuery, () => {
+                currentPage.value = 1;
+                currentNegPage.value = 1;
             });
 
             // Auto-trigger report when compareType changes (PERIOD-03)
@@ -3239,6 +3384,7 @@
                 loading, refreshing, saving, savingCatalog, savingHMN, savingUsers,
                 sidebarCollapsed, currentView, viewMode, searchQuery, filterStatus, filterDealStatus,
                 currentPage, currentNegPage, isDark, modalTab, showLeadModal, activeCatalog,
+                sortBy, sortOrder, dealSortBy, dealSortOrder,
                 activeConfigCategory, configValuesList, roundRobinQueue, savingRROrder,
                 leads, deals, vendedoresList, catalogs, pricing, currentUser, stats, recentDuplicates, crossViewDeal,
                 selectedLead, editLead, leadHistory, editingCatalogValues,
@@ -3269,7 +3415,7 @@
                 // Computed
                 navItems, currentPageTitle, userInitials,
                 kanbanStatuses, filteredLeads, totalPages, paginatedLeads,
-                filteredDeals, totalDealPages, paginatedDeals,
+                filteredDeals, totalDealPages, paginatedDeals, filteredConfigUsers,
                 catalogNames, filteredCatalogNames, configCategories,
                 attendanceHistory, loadingAttendance, loadAttendanceHistory,
                 uniqueRegions, uniqueMembershipTypes, uniqueAttractions,
@@ -3279,6 +3425,7 @@
                 isReadOnlySdrFields, isDealFullReadOnly, calculoMontoAproximado,
                 sdrList, aeList, managerList,
                 // Methods
+                toggleSort, toggleDealSort, sortIcon,
                 getLeadsByStatus, getFilteredLeadsByStatus, getStatusColor,
                 toggleTheme, setTheme,
                 openLeadDetail, closeLeadModal, saveLeadChanges, onToqueChange, onAeToqueChange,

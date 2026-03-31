@@ -811,9 +811,9 @@
 
     .leads-table th {
         background: var(--bg-surface);
-        padding: 12px 14px;
+        padding: 10px 10px;
         text-align: left;
-        font-size: 0.78rem;
+        font-size: 0.72rem;
         font-weight: 600;
         color: var(--text-secondary);
         text-transform: uppercase;
@@ -821,6 +821,29 @@
         border-bottom: 1px solid var(--border);
         position: sticky;
         top: 0;
+        white-space: nowrap;
+    }
+
+    .th-sort {
+        cursor: pointer;
+        user-select: none;
+        transition: var(--transition);
+    }
+
+    .th-sort:hover {
+        color: var(--accent-primary);
+        background: var(--bg-hover);
+    }
+
+    .sort-arrow {
+        font-size: 0.85rem !important;
+        vertical-align: middle;
+        opacity: 0.5;
+        margin-left: 2px;
+    }
+
+    .th-sort:hover .sort-arrow {
+        opacity: 1;
     }
 
     .leads-table td {

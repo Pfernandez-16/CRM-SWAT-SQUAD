@@ -138,9 +138,9 @@
                   style="font-size:1.1rem; vertical-align:middle;">view_kanban</span>
               </button>
             </div>
-            <div class="search-box" v-if="currentView === 'leads' || currentView === 'negociaciones'">
+            <div class="search-box" v-if="currentView === 'leads' || currentView === 'negociaciones' || currentView === 'config'">
               <span class="material-symbols-outlined search-icon">search</span>
-              <input type="text" v-model="searchQuery" placeholder="Buscar..." class="search-input">
+              <input type="text" v-model="searchQuery" :placeholder="currentView === 'leads' ? 'Buscar lead, empresa, email, país...' : currentView === 'negociaciones' ? 'Buscar deal, empresa, monto, status...' : 'Buscar usuario, email, rol...'" class="search-input">
             </div>
             <button class="btn-icon" @click="toggleTheme" :title="isDark ? 'Modo Claro' : 'Modo Oscuro'">
               <span class="material-symbols-outlined">{{ isDark ? 'light_mode' : 'dark_mode' }}</span>
@@ -255,25 +255,51 @@
                 <table class="leads-table">
                   <thead>
                     <tr>
-                      <th>ID</th>
-                      <th>Nombre</th>
-                      <th>Empresa</th>
+                      <th class="th-sort" @click="toggleSort('fecha_ingreso')" title="Ordenar por fecha de ingreso">
+                        Fecha <span class="material-symbols-outlined sort-arrow">{{ sortIcon('fecha_ingreso', sortBy, sortOrder) }}</span>
+                      </th>
+                      <th class="th-sort" @click="toggleSort('nombre')" title="Ordenar por nombre">
+                        Nombre <span class="material-symbols-outlined sort-arrow">{{ sortIcon('nombre', sortBy, sortOrder) }}</span>
+                      </th>
+                      <th class="th-sort" @click="toggleSort('empresa')" title="Ordenar por empresa">
+                        Empresa <span class="material-symbols-outlined sort-arrow">{{ sortIcon('empresa', sortBy, sortOrder) }}</span>
+                      </th>
                       <th>Email</th>
-                      <th>Teléfono</th>
-                      <th>Status</th>
-                      <th>Vendedor</th>
-                      <th>Acciones</th>
+                      <th>Tel</th>
+                      <th class="th-sort" @click="toggleSort('status')" title="Ordenar por status">
+                        Status <span class="material-symbols-outlined sort-arrow">{{ sortIcon('status', sortBy, sortOrder) }}</span>
+                      </th>
+                      <th class="th-sort" @click="toggleSort('calidad')" title="Ordenar por calidad">
+                        Calidad <span class="material-symbols-outlined sort-arrow">{{ sortIcon('calidad', sortBy, sortOrder) }}</span>
+                      </th>
+                      <th class="th-sort" @click="toggleSort('toques')" title="Ordenar por toques">
+                        Toques <span class="material-symbols-outlined sort-arrow">{{ sortIcon('toques', sortBy, sortOrder) }}</span>
+                      </th>
+                      <th class="th-sort" @click="toggleSort('pais')" title="Ordenar por país">
+                        País <span class="material-symbols-outlined sort-arrow">{{ sortIcon('pais', sortBy, sortOrder) }}</span>
+                      </th>
+                      <th class="th-sort" @click="toggleSort('monto')" title="Ordenar por monto">
+                        Monto <span class="material-symbols-outlined sort-arrow">{{ sortIcon('monto', sortBy, sortOrder) }}</span>
+                      </th>
+                      <th class="th-sort" @click="toggleSort('vendedor')" title="Ordenar por vendedor">
+                        Vendedor <span class="material-symbols-outlined sort-arrow">{{ sortIcon('vendedor', sortBy, sortOrder) }}</span>
+                      </th>
+                      <th>Acc.</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr v-for="lead in paginatedLeads" :key="lead._row" @click="openLeadDetail(lead)" class="lead-row">
-                      <td class="col-id">{{ lead._id }}</td>
+                      <td style="font-size:0.72rem; white-space:nowrap;">{{ lead['Fecha y Hora de asignación'] ? formatDate(lead['Fecha y Hora de asignación']) : '—' }}</td>
                       <td class="col-name">{{ lead._name }}</td>
                       <td>{{ lead._empresa }}</td>
                       <td>{{ lead._email }}</td>
                       <td>{{ lead._tel }}</td>
                       <td><span class="status-badge" :style="{ background: getStatusColor(lead._colW_Status) }">{{
                           lead._colW_Status || 'N/A' }}</span></td>
+                      <td><span class="status-badge" style="font-size:0.65rem;">{{ lead._colX_Calidad || '—' }}</span></td>
+                      <td style="text-align:center;">{{ lead['Toques de Contactación'] || lead['¿En qué toque va?'] || 0 }}</td>
+                      <td>{{ lead['Pais'] || '—' }}</td>
+                      <td>{{ lead['Monto Aproximado'] ? '$' + Number(lead['Monto Aproximado']).toLocaleString() : '—' }}</td>
                       <td>{{ lead._colAQ_Vendedor }}</td>
                       <td><button class="btn-sm btn-primary" @click.stop="openLeadDetail(lead)">Ver</button></td>
                     </tr>
@@ -293,7 +319,7 @@
                 <div v-for="status in kanbanStatuses" :key="status" class="kanban-column" :data-status="status">
                   <div class="kanban-column-header" :style="{ borderTopColor: getStatusColor(status) }">
                     <span class="column-title">{{ status }}</span>
-                    <span class="column-count">{{ getLeadsByStatus(status).length }}</span>
+                    <span class="column-count">{{ getFilteredLeadsByStatus(status).length }}</span>
                   </div>
                   <div class="kanban-cards" :data-status="status">
                     <div v-for="lead in getFilteredLeadsByStatus(status)" :key="lead._row + '-' + (lead._source || '')"
@@ -335,27 +361,44 @@
                 <table class="leads-table">
                   <thead>
                     <tr>
-                      <th>ID</th>
-                      <th>Nombre</th>
-                      <th>Empresa</th>
-                      <th>Teléfono</th>
-                      <th>Email</th>
-                      <th>Status de Venta</th>
-                      <th>AE Asignado</th>
-                      <th>Monto de Cierre</th>
-                      <th>Fecha de Cierre</th>
-                      <th>Notas Vendedor</th>
-                      <th>Acciones</th>
+                      <th class="th-sort" @click="toggleDealSort('fecha_ingreso')" title="Ordenar por fecha de ingreso">
+                        Fecha Ingreso <span class="material-symbols-outlined sort-arrow">{{ sortIcon('fecha_ingreso', dealSortBy, dealSortOrder) }}</span>
+                      </th>
+                      <th class="th-sort" @click="toggleDealSort('nombre')" title="Ordenar por nombre">
+                        Nombre <span class="material-symbols-outlined sort-arrow">{{ sortIcon('nombre', dealSortBy, dealSortOrder) }}</span>
+                      </th>
+                      <th class="th-sort" @click="toggleDealSort('empresa')" title="Ordenar por empresa">
+                        Empresa <span class="material-symbols-outlined sort-arrow">{{ sortIcon('empresa', dealSortBy, dealSortOrder) }}</span>
+                      </th>
+                      <th>Tel</th>
+                      <th class="th-sort" @click="toggleDealSort('status_venta')" title="Ordenar por status de venta">
+                        Status Venta <span class="material-symbols-outlined sort-arrow">{{ sortIcon('status_venta', dealSortBy, dealSortOrder) }}</span>
+                      </th>
+                      <th class="th-sort" @click="toggleDealSort('proyeccion')" title="Ordenar por proyección">
+                        Proy. <span class="material-symbols-outlined sort-arrow">{{ sortIcon('proyeccion', dealSortBy, dealSortOrder) }}</span>
+                      </th>
+                      <th class="th-sort" @click="toggleDealSort('ae')" title="Ordenar por AE asignado">
+                        AE <span class="material-symbols-outlined sort-arrow">{{ sortIcon('ae', dealSortBy, dealSortOrder) }}</span>
+                      </th>
+                      <th class="th-sort" @click="toggleDealSort('monto_cierre')" title="Ordenar por monto de cierre">
+                        Monto Cierre <span class="material-symbols-outlined sort-arrow">{{ sortIcon('monto_cierre', dealSortBy, dealSortOrder) }}</span>
+                      </th>
+                      <th class="th-sort" @click="toggleDealSort('fecha_cierre')" title="Ordenar por fecha de cierre">
+                        Fecha Cierre <span class="material-symbols-outlined sort-arrow">{{ sortIcon('fecha_cierre', dealSortBy, dealSortOrder) }}</span>
+                      </th>
+                      <th class="th-sort" @click="toggleDealSort('pais')" title="Ordenar por país">
+                        País <span class="material-symbols-outlined sort-arrow">{{ sortIcon('pais', dealSortBy, dealSortOrder) }}</span>
+                      </th>
+                      <th>Acc.</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr v-for="deal in paginatedDeals" :key="deal._row" @click="openLeadDetail(deal)" class="lead-row"
                       :style="deal['¿Es recompra?'] === 'Si' ? 'border-left: 3px solid #a78bfa; background: rgba(139, 92, 246, 0.04);' : ''">
-                      <td class="col-id">{{ deal._id }}</td>
+                      <td style="font-size:0.72rem; white-space:nowrap;">{{ deal['Fecha y Hora de asignación'] ? formatDate(deal['Fecha y Hora de asignación']) : '—' }}</td>
                       <td class="col-name">{{ deal._name }}</td>
                       <td>{{ deal._empresa }}</td>
                       <td>{{ deal._tel }}</td>
-                      <td>{{ deal._email }}</td>
                       <td>
                         <span class="status-badge" :style="{ background: getStatusColor(deal['Status de Venta']) }">{{
                           deal['Status de Venta'] || 'N/A' }}</span>
@@ -365,11 +408,18 @@
                         <span v-if="deal['¿Es recompra?'] === 'Si'" class="recompra-badge">
                           Recompra</span>
                       </td>
+                      <td>
+                        <span v-if="deal['Proyeccion']" class="status-badge" :style="{
+                          background: deal['Proyeccion'] === 'Alta' ? 'rgba(16,185,129,0.15)' : deal['Proyeccion'] === 'Media' ? 'rgba(234,179,8,0.15)' : 'rgba(239,68,68,0.15)',
+                          color: deal['Proyeccion'] === 'Alta' ? '#10b981' : deal['Proyeccion'] === 'Media' ? '#d97706' : '#ef4444'
+                        }">{{ deal['Proyeccion'] }}</span>
+                        <span v-else>—</span>
+                      </td>
                       <td>{{ getAeDisplayName(deal) }}</td>
                       <td>{{ deal['Monto de cierre'] ? '$' + Number(deal['Monto de cierre']).toLocaleString() : '—' }}
                       </td>
                       <td>{{ deal['Fecha de Cierre'] ? formatDate(deal['Fecha de Cierre']) : '—' }}</td>
-                      <td class="col-notes">{{ formatNotes(deal['Notas Vendedor'], 40) }}</td>
+                      <td>{{ deal['Pais'] || '—' }}</td>
                       <td><button class="btn-sm btn-primary" @click.stop="openLeadDetail(deal)">Ver</button></td>
                     </tr>
                   </tbody>
@@ -388,7 +438,7 @@
                 <div v-for="status in kanbanStatuses" :key="status" class="kanban-column" :data-status="status">
                   <div class="kanban-column-header" :style="{ borderTopColor: getStatusColor(status) }">
                     <span class="column-title">{{ status }}</span>
-                    <span class="column-count">{{ getLeadsByStatus(status).length }}</span>
+                    <span class="column-count">{{ getFilteredLeadsByStatus(status).length }}</span>
                   </div>
                   <div class="kanban-cards" :data-status="status">
                     <div v-for="deal in getFilteredLeadsByStatus(status)" :key="deal._row + '-' + (deal._source || '')"
@@ -1495,7 +1545,7 @@
             <div v-if="userRole === 'ADMIN'" class="config-editor" style="margin-top: 1.5rem;">
               <div class="config-editor-header">
                 <h3>👥 Gestión de Usuarios</h3>
-                <span class="config-item-count">{{ allUsers.length }} usuarios</span>
+                <span class="config-item-count">{{ filteredConfigUsers.length }} de {{ allUsers.length }} usuarios</span>
               </div>
               <!-- Add User -->
               <div style="display:flex; gap:0.5rem; padding: 1rem; flex-wrap:wrap; align-items:flex-end;">
@@ -1533,7 +1583,7 @@
                     </tr>
                   </thead>
                   <tbody>
-                    <tr v-for="u in allUsers" :key="u.email">
+                    <tr v-for="u in filteredConfigUsers" :key="u.email">
                       <td>{{ u.email }}</td>
                       <td>{{ u.nombre || '—' }}</td>
                       <td>
