@@ -219,6 +219,50 @@
 
     const app = createApp({
         setup() {
+            // ── Login State ──
+            const isLoggedIn = ref(false);
+            const loginEmail = ref('');
+            const loginPassword = ref('');
+            const loginError = ref('');
+            const loginLoading = ref(false);
+
+            function handleLogin() {
+                loginError.value = '';
+                loginLoading.value = true;
+                google.script.run
+                    .withSuccessHandler(function (result) {
+                        loginLoading.value = false;
+                        if (result && result.status === 'success') {
+                            currentUser.value = result.data;
+                            userConnected.value = result.data.isConnected;
+                            if (result.data.isConnected && result.data.clockInTime) {
+                                clockInTime.value = new Date(result.data.clockInTime);
+                                startClockTimer_();
+                            }
+                            isLoggedIn.value = true;
+                            localStorage.setItem('crm-user-email', result.data.email);
+                            loading.value = true;
+                            initApp_();
+                        } else {
+                            loginError.value = (result && result.message) || 'Error de autenticación';
+                        }
+                    })
+                    .withFailureHandler(function (err) {
+                        loginLoading.value = false;
+                        loginError.value = 'Error de conexión: ' + err.message;
+                    })
+                    .loginUser(loginEmail.value, loginPassword.value);
+            }
+
+            function handleLogout() {
+                isLoggedIn.value = false;
+                currentUser.value = { email: '', nombre: '', rol: 'GUEST', sheetId: '' };
+                localStorage.removeItem('crm-user-email');
+                loginEmail.value = '';
+                loginPassword.value = '';
+                loginError.value = '';
+            }
+
             // ── State ──
             const loading = ref(true);
             const refreshing = ref(false);
@@ -1114,8 +1158,8 @@
             function openQuickCalendar(fieldName, dateVal, timeVal) {
                 // Auto-fill asunto with the field name + entity name
                 var entityName = '';
-                if (editLead.value) {
-                    entityName = (editLead.value['Nombre'] || '') + ' ' + (editLead.value['Apellido'] || '');
+                if (editLead && editLead['Nombre']) {
+                    entityName = (editLead['Nombre'] || '') + ' ' + (editLead['Apellido'] || '');
                     entityName = entityName.trim();
                 }
                 quickCalForm.tipo = 'Evento';
@@ -3118,16 +3162,9 @@
                 }
             });
 
-            // ── Init ──
-            onMounted(async () => {
-                // Apply saved theme
-                try {
-                    const saved = localStorage.getItem('crm-theme');
-                    if (saved) setTheme(saved); else setTheme('dark');
-                } catch (e) { setTheme('dark'); }
-
-                // Load all data
-                await Promise.all([loadLeads(), loadCatalogs(), loadPricing(), loadUser()]);
+            // ── Init helper (called after login or session restore) ──
+            async function initApp_() {
+                await Promise.all([loadLeads(), loadCatalogs(), loadPricing()]);
                 loadStats();
                 loadActiveAEs();
                 loadRoutingConfig();
@@ -3144,6 +3181,45 @@
                 });
 
                 nextTick(() => initKanbanDragDrop());
+            }
+
+            // ── Init ──
+            onMounted(async () => {
+                // Apply saved theme
+                try {
+                    const saved = localStorage.getItem('crm-theme');
+                    if (saved) setTheme(saved); else setTheme('dark');
+                } catch (e) { setTheme('dark'); }
+
+                // Try to restore session from localStorage
+                const savedEmail = localStorage.getItem('crm-user-email');
+                if (savedEmail) {
+                    google.script.run
+                        .withSuccessHandler(function (data) {
+                            if (data && data.rol && data.rol !== 'GUEST') {
+                                currentUser.value = data;
+                                userConnected.value = data.isConnected;
+                                if (data.isConnected && data.clockInTime) {
+                                    clockInTime.value = new Date(data.clockInTime);
+                                    startClockTimer_();
+                                }
+                                isLoggedIn.value = true;
+                                initApp_();
+                            } else {
+                                // Session invalid, show login
+                                localStorage.removeItem('crm-user-email');
+                                loading.value = false;
+                            }
+                        })
+                        .withFailureHandler(function () {
+                            localStorage.removeItem('crm-user-email');
+                            loading.value = false;
+                        })
+                        .getUserConfigByEmail(savedEmail);
+                } else {
+                    // No saved session, show login screen
+                    loading.value = false;
+                }
             });
 
             // Cleanup event listeners y timers al desmontar (fix MEM #1)
@@ -3156,6 +3232,9 @@
             });
 
             return {
+                // Login
+                isLoggedIn, loginEmail, loginPassword, loginError, loginLoading,
+                handleLogin, handleLogout,
                 // State
                 loading, refreshing, saving, savingCatalog, savingHMN, savingUsers,
                 sidebarCollapsed, currentView, viewMode, searchQuery, filterStatus, filterDealStatus,

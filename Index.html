@@ -25,7 +25,32 @@
 
 <body>
   <div id="app">
-    <!-- Vue App mounts here -->
+    <!-- ========== LOGIN SCREEN ========== -->
+    <div class="login-screen" v-if="!isLoggedIn && !loading">
+      <div class="login-card">
+        <div class="login-logo">
+          <span class="login-logo-icon">⚡</span>
+          <h1 class="login-title">SWAT CRM</h1>
+          <p class="login-subtitle">Ingresa tus credenciales para continuar</p>
+        </div>
+        <form class="login-form" @submit.prevent="handleLogin">
+          <div class="login-field">
+            <label class="login-label">Email</label>
+            <input type="email" v-model="loginEmail" class="login-input" placeholder="tu@email.com" autocomplete="email" required />
+          </div>
+          <div class="login-field">
+            <label class="login-label">Contraseña</label>
+            <input type="password" v-model="loginPassword" class="login-input" placeholder="••••••" autocomplete="current-password" required />
+          </div>
+          <p class="login-error" v-if="loginError">{{ loginError }}</p>
+          <button type="submit" class="login-btn" :disabled="loginLoading">
+            {{ loginLoading ? 'Ingresando...' : 'Iniciar Sesión' }}
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- ========== LOADING ========== -->
     <div class="app-loading" v-if="loading">
       <div class="loader-container">
         <div class="loader-ring"></div>
@@ -33,7 +58,7 @@
       </div>
     </div>
 
-    <div class="app-layout" v-else>
+    <div class="app-layout" v-if="isLoggedIn && !loading">
       <!-- ========== SIDEBAR ========== -->
       <aside class="sidebar" :class="{ collapsed: sidebarCollapsed }">
         <div class="sidebar-header">
@@ -71,6 +96,9 @@
               <span style="font-size:0.7rem; opacity:0.6; display:block;">{{ userRole }}</span>
             </div>
           </div>
+          <button class="btn-icon logout-btn" @click.stop="handleLogout" title="Cerrar Sesión" v-show="!sidebarCollapsed">
+            <span class="material-symbols-outlined" style="font-size:18px;">logout</span>
+          </button>
         </div>
       </aside>
 
@@ -2223,11 +2251,11 @@
                     <div class="pricing-result" v-if="computedPricing" style="grid-column: 1 / -1;">
                       <div class="pricing-card">
                         <span class="pricing-label">1 Ano</span>
-                        <span class="pricing-value">${{ computedPricing.oneYear.toLocaleString() }}</span>
+                        <span class="pricing-value">${{ (computedPricing.oneYear || 0).toLocaleString() }}</span>
                       </div>
                       <div class="pricing-card">
                         <span class="pricing-label">2 Anos</span>
-                        <span class="pricing-value">${{ computedPricing.twoYear.toLocaleString() }}</span>
+                        <span class="pricing-value">${{ (computedPricing.twoYear || 0).toLocaleString() }}</span>
                       </div>
                     </div>
                   </template>
@@ -2874,7 +2902,7 @@
                 </h4>
                 <div v-if="selectedLead._history && selectedLead._history.length" class="timeline">
                   <div v-for="(entry, idx) in selectedLead._history" :key="'h'+idx" class="timeline-item">
-                    <div class="timeline-dot" :class="entry.type.includes('Contestó') ? 'dot-success' : 'dot-danger'">
+                    <div class="timeline-dot" :class="entry.type && entry.type.includes('Contestó') ? 'dot-success' : 'dot-danger'">
                     </div>
                     <div class="timeline-content">
                       <span class="timeline-type">{{ entry.type }}</span>
@@ -3711,7 +3739,6 @@
 
   <!-- Libraries -->
   <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 

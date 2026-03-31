@@ -101,6 +101,7 @@ function calcPercentage_(part, total) {
 function calcDelta_(currentVal, previousVal) {
   if (previousVal === 0 && currentVal > 0) return '100.0';
   if (previousVal === 0 && currentVal === 0) return '0.0';
+  if (previousVal === 0) return '-100.0';
   return (((currentVal - previousVal) / previousVal) * 100).toFixed(1);
 }
 

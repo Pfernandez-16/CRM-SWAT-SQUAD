@@ -338,12 +338,14 @@ function getLeads() {
       else { _mappedDealFactCols[_dv] = 'fact'; }
     }
     var _tipo = String(pricingCfg.tipoCliente || '').trim();
-    var _ticket = parseFloat(pricingCfg.ticketPromedio) || 0;
+    // Multi-product pricing: use first product as default fallback
+    var _firstProd = (pricingCfg.productos && pricingCfg.productos.length > 0) ? pricingCfg.productos[0] : null;
+    var _ticket = _firstProd ? (parseFloat(_firstProd.ticketPromedio) || 0) : (parseFloat(pricingCfg.ticketPromedio) || 0);
     var _licencias = parseFloat(pricingCfg.licenciasPromedio) || 0;
     var _globalMonto = 0;
     if (_tipo === 'Fichas Mensuales (FEE)') _globalMonto = _ticket * 12;
     else if (_tipo === 'Proyectos') _globalMonto = _ticket;
-    else if (_tipo === 'SaaS') _globalMonto = _ticket * _licencias * 12;
+    else if (_tipo === 'SaaS') _globalMonto = _ticket * (_licencias || 1) * 12;
 
     for (var i = 0; i < rawLeads.length; i++) {
       var fl = rawLeads[i];
@@ -957,7 +959,7 @@ function getPricingData() {
 
 function getDealProducts(idDeal) {
   try {
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var ss = SpreadsheetApp.openById(SHEET_ID);
     var sheet = ss.getSheetByName(T_DEAL_PRODUCTOS);
     if (!sheet) return [];
     var rows = readTable_(T_DEAL_PRODUCTOS);
@@ -987,7 +989,7 @@ function saveDealProducts(idDeal, lineas) {
   var lock = LockService.getScriptLock();
   if (!lock.tryLock(10000)) return { status: 'error', message: 'Lock timeout' };
   try {
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var ss = SpreadsheetApp.openById(SHEET_ID);
     var sheet = ss.getSheetByName(T_DEAL_PRODUCTOS);
     if (!sheet) {
       // Auto-create the table with headers
@@ -1098,6 +1100,80 @@ function getUserConfig() {
     return { email: email, nombre: email, rol: 'GUEST', sheetId: SHEET_ID, isConnected: false, clockInTime: null };
   } catch (err) {
     Logger.log('getUserConfig error: ' + err.message);
+    return { email: '', nombre: 'Error', rol: 'GUEST', sheetId: SHEET_ID, isConnected: false, clockInTime: null, error: err.message };
+  }
+}
+
+/**
+ * Autentica un usuario por email y password contra config_users.
+ * Retorna el config del usuario si las credenciales son válidas.
+ */
+function loginUser(email, password) {
+  try {
+    if (!email || !password) return { status: 'error', message: 'Email y contraseña son requeridos' };
+
+    var rows = readTable_(T_USERS);
+    for (var i = 0; i < rows.length; i++) {
+      var row = rows[i];
+      if (String(row.email || '').trim().toLowerCase() === email.trim().toLowerCase()) {
+        // Check activo
+        var isActive = row.activo === true || row.activo === 'TRUE' || row.activo === 1 || row.activo === 'true';
+        if (!isActive) return { status: 'error', message: 'Usuario desactivado. Contacta al administrador.' };
+
+        // Check password
+        var storedPwd = String(row.password || '').trim();
+        if (storedPwd !== password.trim()) return { status: 'error', message: 'Contraseña incorrecta' };
+
+        return {
+          status: 'success',
+          data: {
+            email: String(row.email || '').trim(),
+            nombre: String(row.nombre || email),
+            rol: String(row.rol || 'GUEST').toUpperCase(),
+            sheetId: SHEET_ID,
+            isConnected: row.conectado === true || row.conectado === 'TRUE' || row.conectado === 1,
+            clockInTime: row.ultimo_clockin ? String(row.ultimo_clockin) : null,
+            _row: row._row
+          }
+        };
+      }
+    }
+    return { status: 'error', message: 'Usuario no encontrado' };
+  } catch (err) {
+    Logger.log('loginUser error: ' + err.message);
+    return { status: 'error', message: 'Error de autenticación: ' + err.message };
+  }
+}
+
+/**
+ * Obtiene la config de un usuario por email (sin depender de Session).
+ * Usado para restaurar sesión desde localStorage.
+ */
+function getUserConfigByEmail(email) {
+  try {
+    if (!email) return { email: '', nombre: 'Error', rol: 'GUEST', sheetId: SHEET_ID, isConnected: false, clockInTime: null };
+
+    var rows = readTable_(T_USERS);
+    for (var i = 0; i < rows.length; i++) {
+      var row = rows[i];
+      if (String(row.email || '').trim().toLowerCase() === email.trim().toLowerCase()) {
+        var isActive = row.activo === true || row.activo === 'TRUE' || row.activo === 1 || row.activo === 'true';
+        if (!isActive) return { email: email, nombre: 'Desactivado', rol: 'GUEST', sheetId: SHEET_ID, isConnected: false, clockInTime: null, inactive: true };
+
+        return {
+          email: String(row.email || '').trim(),
+          nombre: String(row.nombre || email),
+          rol: String(row.rol || 'GUEST').toUpperCase(),
+          sheetId: SHEET_ID,
+          isConnected: row.conectado === true || row.conectado === 'TRUE' || row.conectado === 1,
+          clockInTime: row.ultimo_clockin ? String(row.ultimo_clockin) : null,
+          _row: row._row
+        };
+      }
+    }
+    return { email: email, nombre: email, rol: 'GUEST', sheetId: SHEET_ID, isConnected: false, clockInTime: null };
+  } catch (err) {
+    Logger.log('getUserConfigByEmail error: ' + err.message);
     return { email: '', nombre: 'Error', rol: 'GUEST', sheetId: SHEET_ID, isConnected: false, clockInTime: null, error: err.message };
   }
 }
@@ -1273,7 +1349,7 @@ function updateRoundRobinOrder(orderedEmails) {
       }
     }
     // Reset cache just in case
-    cache_.remove('dim_vendedores');
+    try { CacheService.getScriptCache().remove('dim_vendedores'); } catch(e) { /* no cache to clear */ }
     return { status: 'success', message: 'Orden de Round Robin actualizado' };
   } catch (err) {
     return { status: 'error', message: err.message };
@@ -1538,11 +1614,49 @@ function updateLeadField(rowNumber, colIdentifier, newValue, isDeal) {
         }
       }
     } else if (fieldName.indexOf('_c_') === 0) {
-      // Phase 3B: Dynamic routing to dim_contactos via prefix
-      contactUpdates[fieldName.substring(3)] = { field: fieldName, value: newValue };
+      // Phase 3B: Dynamic routing to dim_contactos via prefix — write directly
+      var dcColName = fieldName.substring(3);
+      var dcIdContactoCol = colMap['id_contacto'];
+      var dcIdContacto = dcIdContactoCol ? sheet.getRange(rowNumber, dcIdContactoCol).getValue() : null;
+      if (dcIdContacto) {
+        var dcSheet = ss.getSheetByName(T_CONTACTOS);
+        if (dcSheet) {
+          var dcColMap = getColumnMap_(dcSheet);
+          var dcData = dcSheet.getDataRange().getValues();
+          var dcIdCol = dcColMap['id_contacto'] || 1;
+          for (var dci = 1; dci < dcData.length; dci++) {
+            if (String(dcData[dci][dcIdCol - 1]) === String(dcIdContacto)) {
+              var dcTargetCol = dcColMap[dcColName];
+              if (dcTargetCol) {
+                dcSheet.getRange(dci + 1, dcTargetCol).setValue(newValue);
+                result.updated = true;
+              }
+              break;
+            }
+          }
+        }
+      }
     } else if (fieldName.indexOf('_q_') === 0) {
-      // Phase 3B: Dynamic routing to fact_calificacion via prefix
-      calificacionUpdates[fieldName.substring(3)] = { field: fieldName, value: newValue };
+      // Phase 3B: Dynamic routing to fact_calificacion via prefix — write directly
+      var dqColName = fieldName.substring(3);
+      var dqCalSheet = ss.getSheetByName(T_CALIFICACION);
+      if (dqCalSheet) {
+        var dqColMap = getColumnMap_(dqCalSheet);
+        var dqData = dqCalSheet.getDataRange().getValues();
+        var dqIdLeadCol = colMap['id_lead'] || 1;
+        var dqIdLead = sheet.getRange(rowNumber, dqIdLeadCol).getValue();
+        var dqCalIdCol = dqColMap['id_lead'] || 2;
+        for (var dqi = 1; dqi < dqData.length; dqi++) {
+          if (String(dqData[dqi][dqCalIdCol - 1]) === String(dqIdLead)) {
+            var dqTargetCol = dqColMap[dqColName];
+            if (dqTargetCol) {
+              dqCalSheet.getRange(dqi + 1, dqTargetCol).setValue(newValue);
+              result.updated = true;
+            }
+            break;
+          }
+        }
+      }
     } else if (fieldName.indexOf('_camp_') === 0) {
       // Phase 3B: dim_campanas is read-only — skip silently
     } else {
@@ -1753,7 +1867,7 @@ function registrarToque(idEntidad, tipoEntidad, idVendedor, rolVendedor, numeroT
 
     // TOQUE-02: Monotonic increment — reject if new toque <= current max
     var colMap = getColumnMap_(sheet);
-    var entidadCol = colMap['entidad_id'];
+    var entidadCol = colMap['id_entidad'];
     var toqueCol = colMap['numero_toque'];
     if (entidadCol && toqueCol) {
       var data = sheet.getDataRange().getValues();
@@ -2440,6 +2554,7 @@ function createUser(email, nombre, rol) {
     if (colMap['rol']) newRow[colMap['rol'] - 1] = (rol || 'SDR').toUpperCase();
     if (colMap['activo']) newRow[colMap['activo'] - 1] = true;
     if (colMap['conectado']) newRow[colMap['conectado'] - 1] = false;
+    if (colMap['password']) newRow[colMap['password'] - 1] = '123456';
 
     sheet.getRange(insertRow, 1, 1, numCols).setValues([newRow]);
     logChange_('User', email, Session.getActiveUser().getEmail() || 'API', 'createUser', '', rol);

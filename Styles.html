@@ -76,6 +76,135 @@
         --scrollbar-thumb: #c0c8d4;
     }
 
+    /* ── Login Screen ── */
+    .login-screen {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        background: var(--bg-primary);
+        padding: 1rem;
+    }
+
+    .login-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-xl);
+        padding: 2.5rem 2rem;
+        width: 100%;
+        max-width: 400px;
+        box-shadow: var(--shadow-lg);
+    }
+
+    .login-logo {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+    .login-logo-icon {
+        font-size: 2.5rem;
+        display: block;
+        margin-bottom: 0.5rem;
+    }
+
+    .login-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        letter-spacing: 1px;
+    }
+
+    .login-subtitle {
+        color: var(--text-secondary);
+        font-size: 0.85rem;
+        margin-top: 0.4rem;
+    }
+
+    .login-form {
+        display: flex;
+        flex-direction: column;
+        gap: 1.2rem;
+    }
+
+    .login-field {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+    }
+
+    .login-label {
+        font-size: 0.8rem;
+        font-weight: 500;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .login-input {
+        background: var(--input-bg);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 0.7rem 0.9rem;
+        font-size: 0.95rem;
+        color: var(--text-primary);
+        font-family: var(--font-family);
+        outline: none;
+        transition: var(--transition);
+    }
+
+    .login-input:focus {
+        border-color: var(--accent-primary);
+        box-shadow: 0 0 0 3px var(--accent-primary-soft);
+    }
+
+    .login-input::placeholder {
+        color: var(--text-muted);
+    }
+
+    .login-error {
+        color: var(--accent-danger);
+        font-size: 0.82rem;
+        text-align: center;
+        margin: -0.3rem 0;
+    }
+
+    .login-btn {
+        background: var(--accent-primary);
+        color: #fff;
+        border: none;
+        border-radius: var(--radius-sm);
+        padding: 0.75rem;
+        font-size: 0.95rem;
+        font-weight: 600;
+        font-family: var(--font-family);
+        cursor: pointer;
+        transition: var(--transition);
+        margin-top: 0.5rem;
+    }
+
+    .login-btn:hover:not(:disabled) {
+        opacity: 0.9;
+        transform: translateY(-1px);
+    }
+
+    .login-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
+    /* ── Logout Button ── */
+    .logout-btn {
+        color: var(--text-muted);
+        opacity: 0.7;
+        transition: var(--transition);
+        flex-shrink: 0;
+    }
+
+    .logout-btn:hover {
+        color: var(--accent-danger);
+        opacity: 1;
+    }
+
     /* ── Reset & Base ── */
     *,
     *::before,
@@ -265,6 +394,9 @@
     .sidebar-footer {
         border-top: 1px solid var(--border);
         padding: 12px;
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
     }
 
     .user-info {
@@ -273,6 +405,7 @@
         gap: 10px;
         cursor: pointer;
         padding: 6px;
+        flex: 1;
         border-radius: var(--radius-md);
     }
 
@@ -1675,7 +1808,7 @@
         padding: 8px 10px;
         border-bottom: 2px solid var(--border);
         font-weight: 600;
-        text-align: left;
+        text-align: center;
         font-size: 0.72rem;
         text-transform: uppercase;
         letter-spacing: 0.3px;
@@ -1704,6 +1837,7 @@
     .report-table .col-metric {
         font-weight: 600;
         color: var(--text-primary);
+        text-align: left;
         position: sticky;
         left: 0;
         background: var(--bg-card);
@@ -1716,7 +1850,7 @@
     }
 
     .report-table .col-count {
-        text-align: right;
+        text-align: center;
         font-weight: 500;
         min-width: 60px;
     }
@@ -1733,6 +1867,7 @@
         height: 100%;
         display: flex;
         align-items: center;
+        justify-content: center;
         padding: 6px 10px;
     }
 
@@ -1755,6 +1890,7 @@
 
     /* ── Delta% Column ── */
     .col-delta {
+        text-align: center;
         white-space: nowrap;
         min-width: 80px;
     }
