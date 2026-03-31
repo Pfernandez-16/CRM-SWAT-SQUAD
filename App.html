@@ -843,13 +843,13 @@
                     const q = searchQuery.value.toLowerCase();
                     var isNeg = currentView.value === 'negociaciones';
                     items = items.filter(l =>
-                        (l._name || '').toLowerCase().includes(q) ||
-                        (l._empresa || '').toLowerCase().includes(q) ||
-                        (l._email || '').toLowerCase().includes(q) ||
-                        (l._tel || '').toLowerCase().includes(q) ||
-                        (l['Pais'] || '').toLowerCase().includes(q) ||
-                        (isNeg ? (l['Notas Vendedor'] || '') : (l._colAS_Notas || '')).toLowerCase().includes(q) ||
-                        String(l._id).includes(q)
+                        String(l._name || '').toLowerCase().includes(q) ||
+                        String(l._empresa || '').toLowerCase().includes(q) ||
+                        String(l._email || '').toLowerCase().includes(q) ||
+                        String(l._tel || '').toLowerCase().includes(q) ||
+                        String(l['Pais'] || '').toLowerCase().includes(q) ||
+                        String(isNeg ? (l['Notas Vendedor'] || '') : (l._colAS_Notas || '')).toLowerCase().includes(q) ||
+                        String(l._id || '').includes(q)
                     );
                 }
                 return items;
@@ -889,25 +889,26 @@
                             valB = b['Fecha Ingreso'] || b['Fecha y Hora de asignación'] || '';
                             return dir * (new Date(valA || 0) - new Date(valB || 0));
                         case 'nombre':
-                            valA = (a._name || '').toLowerCase();
-                            valB = (b._name || '').toLowerCase();
+                            valA = String(a._name || '').toLowerCase();
+                            valB = String(b._name || '').toLowerCase();
                             return dir * valA.localeCompare(valB);
                         case 'empresa':
-                            valA = (a._empresa || '').toLowerCase();
-                            valB = (b._empresa || '').toLowerCase();
+                            valA = String(a._empresa || a['empresa'] || '').toLowerCase();
+                            valB = String(b._empresa || b['empresa'] || '').toLowerCase();
                             return dir * valA.localeCompare(valB);
                         case 'pais':
-                            valA = (a['Pais'] || '').toLowerCase();
-                            valB = (b['Pais'] || '').toLowerCase();
+                            valA = String(a['Pais'] || '').toLowerCase();
+                            valB = String(b['Pais'] || '').toLowerCase();
                             return dir * valA.localeCompare(valB);
                         case 'status':
-                            valA = (a._colW_Status || '').toLowerCase();
-                            valB = (b._colW_Status || '').toLowerCase();
+                            valA = String(a._colW_Status || '').toLowerCase();
+                            valB = String(b._colW_Status || '').toLowerCase();
                             return dir * valA.localeCompare(valB);
                         case 'calidad':
-                            valA = (a._colX_Calidad || '').toLowerCase();
-                            valB = (b._colX_Calidad || '').toLowerCase();
-                            return dir * valA.localeCompare(valB);
+                            var calOrder = { 'excelente': 5, 'bueno': 4, 'regular': 3, 'malo': 2, 'no calificado': 1, 'sin calificar': 0 };
+                            valA = calOrder[String(a._colX_Calidad || '').toLowerCase()] || 0;
+                            valB = calOrder[String(b._colX_Calidad || '').toLowerCase()] || 0;
+                            return dir * (valA - valB);
                         case 'toques':
                             valA = parseInt(a['Toques de Contactación'] || a['¿En qué toque va?'] || 0) || 0;
                             valB = parseInt(b['Toques de Contactación'] || b['¿En qué toque va?'] || 0) || 0;
@@ -917,13 +918,13 @@
                             valB = parseFloat(b['Monto Aproximado'] || 0) || 0;
                             return dir * (valA - valB);
                         case 'vendedor':
-                            valA = (a._colAQ_Vendedor || '').toLowerCase();
-                            valB = (b._colAQ_Vendedor || '').toLowerCase();
+                            valA = String(a._colAQ_Vendedor || '').toLowerCase();
+                            valB = String(b._colAQ_Vendedor || '').toLowerCase();
                             return dir * valA.localeCompare(valB);
                         // Deal-specific sorts
                         case 'status_venta':
-                            valA = (a['Status de Venta'] || '').toLowerCase();
-                            valB = (b['Status de Venta'] || '').toLowerCase();
+                            valA = String(a['Status de Venta'] || '').toLowerCase();
+                            valB = String(b['Status de Venta'] || '').toLowerCase();
                             return dir * valA.localeCompare(valB);
                         case 'monto_cierre':
                             valA = parseFloat(a['Monto de cierre'] || 0) || 0;
@@ -942,13 +943,13 @@
                             valB = b['Fecha Pase a Ventas'] || b['fecha_pase_ventas'] || '';
                             return dir * (new Date(valA || 0) - new Date(valB || 0));
                         case 'ae':
-                            valA = (a._colAQ_Vendedor || '').toLowerCase();
-                            valB = (b._colAQ_Vendedor || '').toLowerCase();
+                            valA = String(a._colAQ_Vendedor || '').toLowerCase();
+                            valB = String(b._colAQ_Vendedor || '').toLowerCase();
                             return dir * valA.localeCompare(valB);
                         case 'proyeccion':
                             var projOrder = { 'alta': 3, 'media': 2, 'baja': 1 };
-                            valA = projOrder[(a['Proyeccion'] || '').toLowerCase()] || 0;
-                            valB = projOrder[(b['Proyeccion'] || '').toLowerCase()] || 0;
+                            valA = projOrder[String(a['Proyeccion'] || '').toLowerCase()] || 0;
+                            valB = projOrder[String(b['Proyeccion'] || '').toLowerCase()] || 0;
                             return dir * (valA - valB);
                         default:
                             valA = a._id || 0; valB = b._id || 0;
@@ -967,17 +968,17 @@
                 if (searchQuery.value) {
                     const q = searchQuery.value.toLowerCase();
                     items = items.filter(l =>
-                        (l._name || '').toLowerCase().includes(q) ||
-                        (l._empresa || '').toLowerCase().includes(q) ||
-                        (l._email || '').toLowerCase().includes(q) ||
-                        (l._tel || '').toLowerCase().includes(q) ||
-                        (l._colW_Status || '').toLowerCase().includes(q) ||
-                        (l._colAQ_Vendedor || '').toLowerCase().includes(q) ||
-                        (l._colAS_Notas || '').toLowerCase().includes(q) ||
-                        (l['Pais'] || '').toLowerCase().includes(q) ||
-                        (l['Servicio'] || '').toLowerCase().includes(q) ||
-                        (l._colX_Calidad || '').toLowerCase().includes(q) ||
-                        String(l._id).includes(q)
+                        String(l._name || '').toLowerCase().includes(q) ||
+                        String(l._empresa || '').toLowerCase().includes(q) ||
+                        String(l._email || '').toLowerCase().includes(q) ||
+                        String(l._tel || '').toLowerCase().includes(q) ||
+                        String(l._colW_Status || '').toLowerCase().includes(q) ||
+                        String(l._colAQ_Vendedor || '').toLowerCase().includes(q) ||
+                        String(l._colAS_Notas || '').toLowerCase().includes(q) ||
+                        String(l['Pais'] || '').toLowerCase().includes(q) ||
+                        String(l['Servicio'] || '').toLowerCase().includes(q) ||
+                        String(l._colX_Calidad || '').toLowerCase().includes(q) ||
+                        String(l._id || '').includes(q)
                     );
                 }
                 return applySorting_(items, sortBy.value, sortOrder.value);
@@ -1002,18 +1003,18 @@
                 if (searchQuery.value) {
                     const q = searchQuery.value.toLowerCase();
                     items = items.filter(d =>
-                        (d._name || '').toLowerCase().includes(q) ||
-                        (d._empresa || '').toLowerCase().includes(q) ||
-                        (d._email || '').toLowerCase().includes(q) ||
-                        (d._tel || '').toLowerCase().includes(q) ||
-                        (d['Status de Venta'] || '').toLowerCase().includes(q) ||
-                        (d['Notas Vendedor'] || '').toLowerCase().includes(q) ||
-                        (d['Pais'] || '').toLowerCase().includes(q) ||
-                        (d['Producto de Cierre'] || '').toLowerCase().includes(q) ||
-                        (d['Fuente de origen'] || '').toLowerCase().includes(q) ||
-                        (d['Proyeccion'] || '').toLowerCase().includes(q) ||
+                        String(d._name || '').toLowerCase().includes(q) ||
+                        String(d._empresa || '').toLowerCase().includes(q) ||
+                        String(d._email || '').toLowerCase().includes(q) ||
+                        String(d._tel || '').toLowerCase().includes(q) ||
+                        String(d['Status de Venta'] || '').toLowerCase().includes(q) ||
+                        String(d['Notas Vendedor'] || '').toLowerCase().includes(q) ||
+                        String(d['Pais'] || '').toLowerCase().includes(q) ||
+                        String(d['Producto de Cierre'] || '').toLowerCase().includes(q) ||
+                        String(d['Fuente de origen'] || '').toLowerCase().includes(q) ||
+                        String(d['Proyeccion'] || '').toLowerCase().includes(q) ||
                         String(d['Monto de cierre'] || '').includes(q) ||
-                        String(d._id).includes(q)
+                        String(d._id || '').includes(q)
                     );
                 }
                 return applySorting_(items, dealSortBy.value, dealSortOrder.value);

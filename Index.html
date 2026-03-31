@@ -76,7 +76,7 @@
             <!-- Role-based visibility: SDR sees prospectos+reportes. AE sees negociaciones+reportes. Admin/Gerente sees all. -->
             <a v-if="
               userRole === 'ADMIN' || userRole === 'GERENTE' ||
-              (userRole === 'SDR' && ['dashboard','leads','negociaciones','reportes','calendar','account'].includes(item.id)) ||
+              (userRole === 'SDR' && ['dashboard','leads','reportes','calendar','account'].includes(item.id)) ||
               (userRole === 'AE' && ['dashboard','negociaciones','reportes','calendar','account'].includes(item.id)) ||
               userRole === 'GUEST'
             " class="nav-item" :class="{ active: currentView === item.id }" @click="currentView = item.id"
@@ -296,7 +296,7 @@
                       <td>{{ lead._tel }}</td>
                       <td><span class="status-badge" :style="{ background: getStatusColor(lead._colW_Status) }">{{
                           lead._colW_Status || 'N/A' }}</span></td>
-                      <td><span class="status-badge" style="font-size:0.65rem;">{{ lead._colX_Calidad || '—' }}</span></td>
+                      <td><span class="calidad-badge" :class="'calidad-' + (lead._colX_Calidad || 'none').toLowerCase().replace(/\s+/g, '-')">{{ lead._colX_Calidad || '—' }}</span></td>
                       <td style="text-align:center;">{{ lead['Toques de Contactación'] || lead['¿En qué toque va?'] || 0 }}</td>
                       <td>{{ lead['Pais'] || '—' }}</td>
                       <td>{{ lead['Monto Aproximado'] ? '$' + Number(lead['Monto Aproximado']).toLocaleString() : '—' }}</td>

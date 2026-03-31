@@ -1,6 +1,8 @@
 **/**
 !Código.js
 !Analytics.js
+!CrearBaseDeDatos.js
+!ProcesarLeadsLanding.js
 !App.html
 !Index.html
 !Styles.html
