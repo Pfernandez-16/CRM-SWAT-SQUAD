@@ -2142,9 +2142,11 @@
               <button v-for="tab in (selectedLead._source === 'deal' || selectedLead._source === 'cross_deal' ? ['Prospecto', 'Deal', '⏱️ Logs de Toques', 'Historial', 'Notas'] : ['Lead', 'Deal', '⏱️ Logs de Toques', 'Historial', 'Notas'])" :key="tab" class="modal-tab"
                 :class="{ active: modalTab === tab }" @click="modalTab = tab">{{ tab }}</button>
             </template>
-            <!-- Admin/Gerente: all tabs -->
+            <!-- Admin/Gerente: all tabs including both mirror views -->
             <template v-else>
-              <button v-for="tab in ['Lead', 'Deal', '⏱️ Logs de Toques', 'Historial', 'Notas']" :key="tab"
+              <button v-for="tab in (selectedLead._hasDeal || selectedLead._source === 'deal' || selectedLead._source === 'cross_deal'
+                ? ['Lead', 'Negociación', 'Prospecto', 'Deal', '⏱️ Logs de Toques', 'Historial', 'Notas']
+                : ['Lead', 'Deal', '⏱️ Logs de Toques', 'Historial', 'Notas'])" :key="tab"
                 class="modal-tab" :class="{ active: modalTab === tab }" @click="modalTab = tab">{{ tab }}</button>
             </template>
           </template>
@@ -2687,8 +2689,11 @@
             <div v-if="crossViewDeal" style="padding: 0.5rem;">
               <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:1rem; padding:0.5rem 0.75rem; background:rgba(99,102,241,0.08); border-radius:8px; border:1px solid rgba(99,102,241,0.2);">
                 <span class="material-symbols-outlined" style="font-size:1.1rem; color:var(--accent-info);">visibility</span>
-                <span style="font-size:0.8rem; color:var(--text-muted);">Datos de la negociación — solo lectura</span>
+                <span style="font-size:0.8rem; color:var(--text-muted);">Datos de la negociación (Deal #{{ crossViewDeal.id_deal }}) — solo lectura</span>
               </div>
+
+              <!-- Sección: Estado de la Negociación -->
+              <h4 style="color:var(--accent-primary); font-size:0.85rem; margin:1rem 0 0.5rem; border-bottom:1px solid var(--border); padding-bottom:0.3rem;">Estado de la Negociación</h4>
               <div class="form-grid" style="gap:0.75rem;">
                 <div class="form-group">
                   <label style="font-size:0.75rem; color:var(--text-muted);">AE Asignado</label>
@@ -2700,20 +2705,68 @@
                 </div>
                 <div class="form-group">
                   <label style="font-size:0.75rem; color:var(--text-muted);">Proyección</label>
-                  <div class="form-input" style="opacity:0.8;" disabled>{{ crossViewDeal.proyeccion || '—' }}</div>
+                  <div>
+                    <span v-if="crossViewDeal.proyeccion" class="status-badge" :style="{
+                      background: crossViewDeal.proyeccion === 'Alta' ? 'rgba(16,185,129,0.15)' : crossViewDeal.proyeccion === 'Media' ? 'rgba(234,179,8,0.15)' : 'rgba(239,68,68,0.15)',
+                      color: crossViewDeal.proyeccion === 'Alta' ? '#10b981' : crossViewDeal.proyeccion === 'Media' ? '#d97706' : '#ef4444'
+                    }">{{ crossViewDeal.proyeccion }}</span>
+                    <span v-else style="opacity:0.5;">—</span>
+                  </div>
                 </div>
+                <div class="form-group">
+                  <label style="font-size:0.75rem; color:var(--text-muted);">Toque AE</label>
+                  <div class="form-input" style="opacity:0.8;" disabled>{{ crossViewDeal.numero_toque_ae || '0' }}</div>
+                </div>
+                <div class="form-group">
+                  <label style="font-size:0.75rem; color:var(--text-muted);">Fuente de Origen</label>
+                  <div class="form-input" style="opacity:0.8;" disabled>{{ crossViewDeal.fuente_origen || '—' }}</div>
+                </div>
+                <div class="form-group">
+                  <label style="font-size:0.75rem; color:var(--text-muted);">Tipo de Transacción</label>
+                  <div class="form-input" style="opacity:0.8;" disabled>{{ crossViewDeal.tipo_transaccion || '—' }}</div>
+                </div>
+                <div class="form-group">
+                  <label style="font-size:0.75rem; color:var(--text-muted);">¿Es Recompra?</label>
+                  <div class="form-input" style="opacity:0.8;" disabled>{{ crossViewDeal.es_recompra || 'No' }}</div>
+                </div>
+                <div class="form-group">
+                  <label style="font-size:0.75rem; color:var(--text-muted);">Razón de Pérdida</label>
+                  <div class="form-input" style="opacity:0.8;" disabled>{{ crossViewDeal.razon_perdida || '—' }}</div>
+                </div>
+              </div>
+
+              <!-- Sección: Montos y Cotización -->
+              <h4 style="color:var(--accent-primary); font-size:0.85rem; margin:1.2rem 0 0.5rem; border-bottom:1px solid var(--border); padding-bottom:0.3rem;">Montos y Cotización</h4>
+              <div class="form-grid" style="gap:0.75rem;">
                 <div class="form-group">
                   <label style="font-size:0.75rem; color:var(--text-muted);">Monto Proyección</label>
                   <div class="form-input" style="opacity:0.8;" disabled>{{ crossViewDeal.monto_proyeccion ? '$' + Number(crossViewDeal.monto_proyeccion).toLocaleString() : '—' }}</div>
+                </div>
+                <div class="form-group">
+                  <label style="font-size:0.75rem; color:var(--text-muted);">Monto Cotización</label>
+                  <div class="form-input" style="opacity:0.8;" disabled>{{ crossViewDeal.monto_cotizacion ? '$' + Number(crossViewDeal.monto_cotizacion).toLocaleString() : '—' }}</div>
+                </div>
+                <div class="form-group">
+                  <label style="font-size:0.75rem; color:var(--text-muted);">Monto de Apartado</label>
+                  <div class="form-input" style="opacity:0.8;" disabled>{{ crossViewDeal.monto_apartado ? '$' + Number(crossViewDeal.monto_apartado).toLocaleString() : '—' }}</div>
                 </div>
                 <div class="form-group">
                   <label style="font-size:0.75rem; color:var(--text-muted);">Monto de Cierre</label>
                   <div class="form-input" style="opacity:0.8; font-weight:700; color:var(--accent-success);" disabled>{{ crossViewDeal.monto_cierre ? '$' + Number(crossViewDeal.monto_cierre).toLocaleString() : '—' }}</div>
                 </div>
                 <div class="form-group">
+                  <label style="font-size:0.75rem; color:var(--text-muted);">Descuento</label>
+                  <div class="form-input" style="opacity:0.8;" disabled>{{ crossViewDeal.descuento_pct ? crossViewDeal.descuento_pct + '%' : '—' }}</div>
+                </div>
+                <div class="form-group">
                   <label style="font-size:0.75rem; color:var(--text-muted);">Producto de Cierre</label>
                   <div class="form-input" style="opacity:0.8;" disabled>{{ crossViewDeal.producto_cierre || '—' }}</div>
                 </div>
+              </div>
+
+              <!-- Sección: Fechas -->
+              <h4 style="color:var(--accent-primary); font-size:0.85rem; margin:1.2rem 0 0.5rem; border-bottom:1px solid var(--border); padding-bottom:0.3rem;">Fechas Clave</h4>
+              <div class="form-grid" style="gap:0.75rem;">
                 <div class="form-group">
                   <label style="font-size:0.75rem; color:var(--text-muted);">Fecha Pase a Ventas</label>
                   <div class="form-input" style="opacity:0.8;" disabled>{{ crossViewDeal.fecha_pase_ventas ? formatDate(crossViewDeal.fecha_pase_ventas) : '—' }}</div>
@@ -2723,16 +2776,29 @@
                   <div class="form-input" style="opacity:0.8;" disabled>{{ crossViewDeal.fecha_primer_contacto_ae ? formatDate(crossViewDeal.fecha_primer_contacto_ae) : '—' }}</div>
                 </div>
                 <div class="form-group">
+                  <label style="font-size:0.75rem; color:var(--text-muted);">Fecha Cotización</label>
+                  <div class="form-input" style="opacity:0.8;" disabled>{{ crossViewDeal.fecha_cotizacion ? formatDate(crossViewDeal.fecha_cotizacion) : '—' }}</div>
+                </div>
+                <div class="form-group">
+                  <label style="font-size:0.75rem; color:var(--text-muted);">Fecha Reagenda</label>
+                  <div class="form-input" style="opacity:0.8;" disabled>{{ crossViewDeal.fecha_reagenda ? formatDate(crossViewDeal.fecha_reagenda) : '—' }}</div>
+                </div>
+                <div class="form-group">
                   <label style="font-size:0.75rem; color:var(--text-muted);">Fecha de Cierre</label>
                   <div class="form-input" style="opacity:0.8;" disabled>{{ crossViewDeal.fecha_cierre ? formatDate(crossViewDeal.fecha_cierre) : '—' }}</div>
                 </div>
-                <div class="form-group">
-                  <label style="font-size:0.75rem; color:var(--text-muted);">Razón de Pérdida</label>
-                  <div class="form-input" style="opacity:0.8;" disabled>{{ crossViewDeal.razon_perdida || '—' }}</div>
-                </div>
+              </div>
+
+              <!-- Sección: Notas -->
+              <h4 style="color:var(--accent-primary); font-size:0.85rem; margin:1.2rem 0 0.5rem; border-bottom:1px solid var(--border); padding-bottom:0.3rem;">Notas</h4>
+              <div class="form-grid" style="gap:0.75rem;">
                 <div class="form-group" style="grid-column: 1 / -1;">
                   <label style="font-size:0.75rem; color:var(--text-muted);">Notas del AE</label>
                   <div class="form-input" style="opacity:0.8; min-height:3rem; white-space:pre-wrap;" disabled>{{ crossViewDeal.notas_vendedor || '—' }}</div>
+                </div>
+                <div class="form-group" style="grid-column: 1 / -1;">
+                  <label style="font-size:0.75rem; color:var(--text-muted);">Notas de Cotización</label>
+                  <div class="form-input" style="opacity:0.8; min-height:2rem; white-space:pre-wrap;" disabled>{{ crossViewDeal.notas_cotizacion || '—' }}</div>
                 </div>
               </div>
             </div>
@@ -2742,47 +2808,186 @@
             </div>
           </div>
 
-          <!-- TAB: Prospecto (AE read-only view of lead origin) -->
+          <!-- TAB: Prospecto (AE read-only view of lead origin — fresh data) -->
           <div v-if="modalTab === 'Prospecto'" class="tab-content">
-            <div style="padding: 0.5rem;">
+            <div v-if="crossViewLead" style="padding: 0.5rem;">
               <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:1rem; padding:0.5rem 0.75rem; background:rgba(16,185,129,0.08); border-radius:8px; border:1px solid rgba(16,185,129,0.2);">
                 <span class="material-symbols-outlined" style="font-size:1.1rem; color:var(--accent-success);">person_search</span>
-                <span style="font-size:0.8rem; color:var(--text-muted);">Datos del prospecto original (SDR) — solo lectura</span>
+                <span style="font-size:0.8rem; color:var(--text-muted);">Datos del prospecto original (Lead #{{ crossViewLead.id_lead }}) — solo lectura</span>
               </div>
+
+              <!-- Sección: Información de Contacto -->
+              <h4 style="color:var(--accent-success); font-size:0.85rem; margin:1rem 0 0.5rem; border-bottom:1px solid var(--border); padding-bottom:0.3rem;">Información de Contacto</h4>
               <div class="form-grid" style="gap:0.75rem;">
                 <div class="form-group">
+                  <label style="font-size:0.75rem; color:var(--text-muted);">Nombre</label>
+                  <div class="form-input" style="opacity:0.8;" disabled>{{ crossViewLead.nombre }} {{ crossViewLead.apellido }}</div>
+                </div>
+                <div class="form-group">
+                  <label style="font-size:0.75rem; color:var(--text-muted);">Email</label>
+                  <div class="form-input" style="opacity:0.8;" disabled>{{ crossViewLead.email || '—' }}</div>
+                </div>
+                <div class="form-group">
+                  <label style="font-size:0.75rem; color:var(--text-muted);">Teléfono</label>
+                  <div class="form-input" style="opacity:0.8;" disabled>{{ crossViewLead.telefono || '—' }}</div>
+                </div>
+                <div class="form-group">
+                  <label style="font-size:0.75rem; color:var(--text-muted);">Empresa</label>
+                  <div class="form-input" style="opacity:0.8;" disabled>{{ crossViewLead.empresa || '—' }}</div>
+                </div>
+                <div class="form-group">
+                  <label style="font-size:0.75rem; color:var(--text-muted);">País / Ciudad</label>
+                  <div class="form-input" style="opacity:0.8;" disabled>{{ [crossViewLead.pais, crossViewLead.ciudad].filter(Boolean).join(', ') || '—' }}</div>
+                </div>
+                <div class="form-group">
+                  <label style="font-size:0.75rem; color:var(--text-muted);">Área / Cargo</label>
+                  <div class="form-input" style="opacity:0.8;" disabled>{{ crossViewLead.area || '—' }}</div>
+                </div>
+                <div class="form-group">
+                  <label style="font-size:0.75rem; color:var(--text-muted);">Empleados</label>
+                  <div class="form-input" style="opacity:0.8;" disabled>{{ crossViewLead.empleados || '—' }}</div>
+                </div>
+                <div class="form-group">
+                  <label style="font-size:0.75rem; color:var(--text-muted);">Nivel</label>
+                  <div class="form-input" style="opacity:0.8;" disabled>{{ crossViewLead.nivel || '—' }}</div>
+                </div>
+              </div>
+
+              <!-- Sección: Gestión del SDR -->
+              <h4 style="color:var(--accent-success); font-size:0.85rem; margin:1.2rem 0 0.5rem; border-bottom:1px solid var(--border); padding-bottom:0.3rem;">Gestión del SDR</h4>
+              <div class="form-grid" style="gap:0.75rem;">
+                <div class="form-group">
+                  <label style="font-size:0.75rem; color:var(--text-muted);">SDR Asignado</label>
+                  <div class="form-input" style="opacity:0.8;" disabled>{{ crossViewLead.sdr_nombre || '—' }}</div>
+                </div>
+                <div class="form-group">
                   <label style="font-size:0.75rem; color:var(--text-muted);">Status del Lead</label>
-                  <div><span class="status-badge" :style="{ background: getStatusColor(editLead['Status']) }">{{ editLead['Status'] || 'N/A' }}</span></div>
+                  <div><span class="status-badge" :style="{ background: getStatusColor(crossViewLead.status) }">{{ crossViewLead.status || 'N/A' }}</span></div>
                 </div>
                 <div class="form-group">
                   <label style="font-size:0.75rem; color:var(--text-muted);">Calidad de Contacto</label>
-                  <div class="form-input" style="opacity:0.8;" disabled>{{ editLead['Calidad de Contacto'] || '—' }}</div>
+                  <div><span class="calidad-badge" :class="'calidad-' + (crossViewLead.calidad_contacto || 'none').toLowerCase().replace(/\s+/g, '-')">{{ crossViewLead.calidad_contacto || '—' }}</span></div>
                 </div>
                 <div class="form-group">
                   <label style="font-size:0.75rem; color:var(--text-muted);">Servicio de Interés</label>
-                  <div class="form-input" style="opacity:0.8;" disabled>{{ editLead['Servicio'] || '—' }}</div>
+                  <div class="form-input" style="opacity:0.8;" disabled>{{ crossViewLead.servicio || '—' }}</div>
                 </div>
                 <div class="form-group">
-                  <label style="font-size:0.75rem; color:var(--text-muted);">Toques de Contactación</label>
-                  <div class="form-input" style="opacity:0.8;" disabled>{{ editLead['Toques de Contactación'] || '0' }}</div>
+                  <label style="font-size:0.75rem; color:var(--text-muted);">Toques SDR</label>
+                  <div class="form-input" style="opacity:0.8;" disabled>{{ crossViewLead.numero_toques || '0' }}</div>
                 </div>
                 <div class="form-group">
-                  <label style="font-size:0.75rem; color:var(--text-muted);">SDR Asignado</label>
-                  <div class="form-input" style="opacity:0.8;" disabled>{{ editLead['Vendedor Asignado para Seguimiento'] || '—' }}</div>
+                  <label style="font-size:0.75rem; color:var(--text-muted);">Tipo de Seguimiento</label>
+                  <div class="form-input" style="opacity:0.8;" disabled>{{ crossViewLead.tipo_seguimiento || '—' }}</div>
+                </div>
+                <div class="form-group">
+                  <label style="font-size:0.75rem; color:var(--text-muted);">Status del Seguimiento</label>
+                  <div class="form-input" style="opacity:0.8;" disabled>{{ crossViewLead.status_seguimiento || '—' }}</div>
                 </div>
                 <div class="form-group">
                   <label style="font-size:0.75rem; color:var(--text-muted);">¿Es Recompra?</label>
-                  <div class="form-input" style="opacity:0.8;" disabled>{{ editLead['¿Es recompra?'] || 'No' }}</div>
+                  <div class="form-input" style="opacity:0.8;" disabled>{{ crossViewLead.es_recompra || 'No' }}</div>
                 </div>
-                <div class="form-group" style="grid-column: 1 / -1;">
-                  <label style="font-size:0.75rem; color:var(--text-muted);">Notas del SDR</label>
-                  <div class="form-input" style="opacity:0.8; min-height:3rem; white-space:pre-wrap;" disabled>{{ editLead['Notas'] || '—' }}</div>
-                </div>
-                <div class="form-group" style="grid-column: 1 / -1;">
-                  <label style="font-size:0.75rem; color:var(--text-muted);">BANT: Necesidad Puntual</label>
-                  <div class="form-input" style="opacity:0.8; white-space:pre-wrap;" disabled>{{ editLead['¿Cuál es tu necesidad puntual?'] || '—' }}</div>
+                <div class="form-group">
+                  <label style="font-size:0.75rem; color:var(--text-muted);">Razón de Pérdida (SDR)</label>
+                  <div class="form-input" style="opacity:0.8;" disabled>{{ crossViewLead.razon_perdida || '—' }}</div>
                 </div>
               </div>
+
+              <!-- Sección: Fechas -->
+              <h4 style="color:var(--accent-success); font-size:0.85rem; margin:1.2rem 0 0.5rem; border-bottom:1px solid var(--border); padding-bottom:0.3rem;">Fechas del Lead</h4>
+              <div class="form-grid" style="gap:0.75rem;">
+                <div class="form-group">
+                  <label style="font-size:0.75rem; color:var(--text-muted);">Fecha de Ingreso</label>
+                  <div class="form-input" style="opacity:0.8;" disabled>{{ crossViewLead.fecha_ingreso ? formatDate(crossViewLead.fecha_ingreso) : '—' }}</div>
+                </div>
+                <div class="form-group">
+                  <label style="font-size:0.75rem; color:var(--text-muted);">Fecha de Asignación</label>
+                  <div class="form-input" style="opacity:0.8;" disabled>{{ crossViewLead.fecha_asignacion ? formatDate(crossViewLead.fecha_asignacion) : '—' }}</div>
+                </div>
+                <div class="form-group">
+                  <label style="font-size:0.75rem; color:var(--text-muted);">Último Contacto SDR</label>
+                  <div class="form-input" style="opacity:0.8;" disabled>{{ crossViewLead.fecha_ultimo_contacto ? formatDate(crossViewLead.fecha_ultimo_contacto) : '—' }}</div>
+                </div>
+              </div>
+
+              <!-- Sección: Calificación BANT -->
+              <h4 style="color:var(--accent-success); font-size:0.85rem; margin:1.2rem 0 0.5rem; border-bottom:1px solid var(--border); padding-bottom:0.3rem;">Calificación BANT</h4>
+              <div class="form-grid" style="gap:0.75rem;">
+                <div class="form-group">
+                  <label style="font-size:0.75rem; color:var(--text-muted);">¿Entendió el Marketing?</label>
+                  <div class="form-input" style="opacity:0.8;" disabled>{{ crossViewLead.entendio_marketing || '—' }}</div>
+                </div>
+                <div class="form-group">
+                  <label style="font-size:0.75rem; color:var(--text-muted);">¿Mostró Interés genuino?</label>
+                  <div class="form-input" style="opacity:0.8;" disabled>{{ crossViewLead.mostro_interes || '—' }}</div>
+                </div>
+                <div class="form-group">
+                  <label style="font-size:0.75rem; color:var(--text-muted);">¿Perfil adecuado?</label>
+                  <div class="form-input" style="opacity:0.8;" disabled>{{ crossViewLead.perfil_adecuado || '—' }}</div>
+                </div>
+                <div class="form-group">
+                  <label style="font-size:0.75rem; color:var(--text-muted);">¿Necesita consultar?</label>
+                  <div class="form-input" style="opacity:0.8;" disabled>{{ crossViewLead.necesita_decision_tercero || '—' }}</div>
+                </div>
+                <div class="form-group">
+                  <label style="font-size:0.75rem; color:var(--text-muted);">¿Tiene presupuesto?</label>
+                  <div class="form-input" style="opacity:0.8;" disabled>{{ crossViewLead.tiene_presupuesto || '—' }}</div>
+                </div>
+                <div class="form-group">
+                  <label style="font-size:0.75rem; color:var(--text-muted);">Monto presupuesto</label>
+                  <div class="form-input" style="opacity:0.8;" disabled>{{ crossViewLead.monto_presupuesto ? '$' + Number(crossViewLead.monto_presupuesto).toLocaleString() : '—' }}</div>
+                </div>
+                <div class="form-group">
+                  <label style="font-size:0.75rem; color:var(--text-muted);">¿Asociación de industria?</label>
+                  <div class="form-input" style="opacity:0.8;" disabled>{{ crossViewLead.asociacion_industria || '—' }}</div>
+                </div>
+                <div class="form-group">
+                  <label style="font-size:0.75rem; color:var(--text-muted);">Región</label>
+                  <div class="form-input" style="opacity:0.8;" disabled>{{ crossViewLead.region || '—' }}</div>
+                </div>
+                <div class="form-group">
+                  <label style="font-size:0.75rem; color:var(--text-muted);">Tipo de Membresía</label>
+                  <div class="form-input" style="opacity:0.8;" disabled>{{ crossViewLead.tipo_membresia || '—' }}</div>
+                </div>
+                <div class="form-group">
+                  <label style="font-size:0.75rem; color:var(--text-muted);">Pricing Tier</label>
+                  <div class="form-input" style="opacity:0.8;" disabled>{{ crossViewLead.pricing_tier || '—' }}</div>
+                </div>
+                <div class="form-group" style="grid-column: 1 / -1;">
+                  <label style="font-size:0.75rem; color:var(--text-muted);">Necesidad Puntual</label>
+                  <div class="form-input" style="opacity:0.8; min-height:2.5rem; white-space:pre-wrap;" disabled>{{ crossViewLead.necesidad_puntual || '—' }}</div>
+                </div>
+              </div>
+
+              <!-- Sección: Campaña -->
+              <h4 style="color:var(--accent-success); font-size:0.85rem; margin:1.2rem 0 0.5rem; border-bottom:1px solid var(--border); padding-bottom:0.3rem;">Origen / Campaña</h4>
+              <div class="form-grid" style="gap:0.75rem;">
+                <div class="form-group">
+                  <label style="font-size:0.75rem; color:var(--text-muted);">Source</label>
+                  <div class="form-input" style="opacity:0.8;" disabled>{{ crossViewLead.source || '—' }}</div>
+                </div>
+                <div class="form-group">
+                  <label style="font-size:0.75rem; color:var(--text-muted);">Medium</label>
+                  <div class="form-input" style="opacity:0.8;" disabled>{{ crossViewLead.medium || '—' }}</div>
+                </div>
+                <div class="form-group">
+                  <label style="font-size:0.75rem; color:var(--text-muted);">Campaign</label>
+                  <div class="form-input" style="opacity:0.8;" disabled>{{ crossViewLead.campaign || '—' }}</div>
+                </div>
+              </div>
+
+              <!-- Sección: Notas -->
+              <h4 style="color:var(--accent-success); font-size:0.85rem; margin:1.2rem 0 0.5rem; border-bottom:1px solid var(--border); padding-bottom:0.3rem;">Notas del SDR</h4>
+              <div class="form-grid" style="gap:0.75rem;">
+                <div class="form-group" style="grid-column: 1 / -1;">
+                  <div class="form-input" style="opacity:0.8; min-height:3rem; white-space:pre-wrap;" disabled>{{ crossViewLead.notas || '—' }}</div>
+                </div>
+              </div>
+            </div>
+            <div v-else-if="crossViewLead === null" style="padding:2rem; text-align:center; color:var(--text-muted);">
+              <div class="loader-ring" style="width:24px; height:24px; margin:0 auto 0.5rem;"></div>
+              <p style="font-size:0.85rem;">Cargando datos del prospecto...</p>
             </div>
           </div>
 

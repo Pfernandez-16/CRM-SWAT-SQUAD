@@ -3534,19 +3534,127 @@ function getDealForLead(idLead) {
       monto_proyeccion: deal.monto_proyeccion || '',
       monto_apartado: deal.monto_apartado || '',
       monto_cierre: deal.monto_cierre || '',
+      monto_cotizacion: deal.monto_cotizacion || '',
+      fecha_cotizacion: deal.fecha_cotizacion || '',
       fecha_pase_ventas: deal.fecha_pase_ventas || '',
       fecha_primer_contacto_ae: deal.fecha_primer_contacto_ae || '',
       fecha_cierre: deal.fecha_cierre || '',
+      fecha_reagenda: deal.fecha_reagenda || '',
       razon_perdida: deal.razon_perdida || '',
       descuento_pct: deal.descuento_pct || '',
       es_recompra: deal.es_recompra || '',
       producto_cierre: deal.producto_cierre || '',
+      fuente_origen: deal.fuente_origen || '',
+      tipo_transaccion: deal.tipo_transaccion || '',
+      numero_toque_ae: deal.numero_toque_ae || '',
       notas_vendedor: deal.notas_vendedor || '',
+      notas_cotizacion: deal.notas_cotizacion || '',
       ae_nombre: ae.nombre || '',
       ae_email: ae.email || ''
     };
   } catch (e) {
     Logger.log('getDealForLead ERROR: ' + e.message);
+    return null;
+  }
+}
+
+/**
+ * Returns fresh SDR lead data for a given deal ID.
+ * Mirror of getDealForLead — allows AE to see up-to-date SDR work.
+ */
+function getLeadForDeal(idDeal) {
+  try {
+    if (!idDeal) return null;
+    var deals = readTable_(T_DEALS);
+    var deal = null;
+    for (var i = 0; i < deals.length; i++) {
+      if (String(deals[i].id_deal) === String(idDeal)) { deal = deals[i]; break; }
+    }
+    if (!deal || !deal.id_lead) return null;
+
+    // Get the SDR lead
+    var leads = readTable_(T_LEADS);
+    var lead = null;
+    for (var i = 0; i < leads.length; i++) {
+      if (String(leads[i].id_lead) === String(deal.id_lead)) { lead = leads[i]; break; }
+    }
+    if (!lead) return null;
+
+    // Get contact info
+    var contactos = readTable_(T_CONTACTOS);
+    var contacto = null;
+    if (lead.id_contacto) {
+      for (var i = 0; i < contactos.length; i++) {
+        if (String(contactos[i].id_contacto) === String(lead.id_contacto)) { contacto = contactos[i]; break; }
+      }
+    }
+    contacto = contacto || {};
+
+    // Get SDR vendedor name
+    var vendedores = readTable_('dim_vendedores');
+    var vendedorIdx = indexBy_(vendedores, 'id_vendedor');
+    var sdr = vendedorIdx[String(lead.id_vendedor_sdr || '')] || {};
+
+    // Get calificacion
+    var califs = readTable_(T_CALIFICACION);
+    var calif = null;
+    for (var i = 0; i < califs.length; i++) {
+      if (String(califs[i].id_lead) === String(lead.id_lead)) { calif = califs[i]; break; }
+    }
+    calif = calif || {};
+
+    // Get campaign
+    var campanas = readTable_(T_CAMPANAS);
+    var campanaIdx = indexBy_(campanas, 'id_campana');
+    var camp = campanaIdx[String(lead.id_campana || '')] || {};
+
+    return {
+      id_lead: lead.id_lead || '',
+      // Contact info
+      nombre: contacto.nombre || '',
+      apellido: contacto.apellido || '',
+      email: contacto.email || '',
+      telefono: contacto.telefono_1 || '',
+      empresa: contacto.empresa || '',
+      pais: contacto.pais || '',
+      ciudad: contacto.ciudad || '',
+      area: contacto.area || '',
+      empleados: contacto.empleados || '',
+      nivel: contacto.nivel || '',
+      // Lead status
+      status: lead.status || '',
+      calidad_contacto: lead.calidad_contacto || '',
+      servicio: lead.servicio_interes || '',
+      numero_toques: lead.numero_toques || 0,
+      tipo_seguimiento: lead.tipo_seguimiento || '',
+      status_seguimiento: lead.status_seguimiento || '',
+      razon_perdida: lead.razon_perdida || '',
+      fecha_ingreso: lead.fecha_ingreso || '',
+      fecha_asignacion: lead.fecha_asignacion || '',
+      fecha_ultimo_contacto: lead.fecha_ultimo_contacto || '',
+      es_recompra: lead.es_recompra || '',
+      notas: lead.notas || '',
+      sdr_nombre: sdr.nombre || '',
+      sdr_email: sdr.email || '',
+      // BANT / Calificación
+      entendio_marketing: calif.entendio_info_marketing || '',
+      mostro_interes: calif.mostro_interes_genuino || '',
+      necesidad_puntual: calif.necesidad_puntual || '',
+      perfil_adecuado: calif.perfil_adecuado || '',
+      necesita_decision_tercero: calif.necesita_decision_tercero || '',
+      tiene_presupuesto: calif.tiene_presupuesto || '',
+      monto_presupuesto: calif.monto_presupuesto || '',
+      asociacion_industria: calif.asociacion_industria || '',
+      region: calif.region || '',
+      tipo_membresia: calif.tipo_membresia || '',
+      pricing_tier: calif.pricing_tier || '',
+      // Campaign
+      source: camp.source || '',
+      medium: camp.medium || '',
+      campaign: camp.campaign || ''
+    };
+  } catch (e) {
+    Logger.log('getLeadForDeal ERROR: ' + e.message);
     return null;
   }
 }

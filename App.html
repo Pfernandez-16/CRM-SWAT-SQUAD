@@ -347,6 +347,7 @@
             const vendedoresList = ref([]);
             const recentDuplicates = ref([]);
             const crossViewDeal = ref(null);
+            const crossViewLead = ref(null);
             const catalogs = ref({});
             const pricing = ref([]);
             const currentUser = ref({ email: '', nombre: '', rol: 'GUEST', sheetId: '' });
@@ -1506,6 +1507,16 @@
                         })
                         .withFailureHandler(function () { crossViewDeal.value = null; })
                         .getDealForLead(lead._id);
+                }
+                // Cross-view: AE sees fresh SDR lead data for their deal
+                crossViewLead.value = null;
+                if (isDealItem && lead._id) {
+                    google.script.run
+                        .withSuccessHandler(function (leadData) {
+                            crossViewLead.value = leadData;
+                        })
+                        .withFailureHandler(function () { crossViewLead.value = null; })
+                        .getLeadForDeal(lead._id);
                 }
                 // Phase 21: Load duplicates for this lead
                 leadDuplicates.value = [];
@@ -3387,7 +3398,7 @@
                 currentPage, currentNegPage, isDark, modalTab, showLeadModal, activeCatalog,
                 sortBy, sortOrder, dealSortBy, dealSortOrder,
                 activeConfigCategory, configValuesList, roundRobinQueue, savingRROrder,
-                leads, deals, vendedoresList, catalogs, pricing, currentUser, stats, recentDuplicates, crossViewDeal,
+                leads, deals, vendedoresList, catalogs, pricing, currentUser, stats, recentDuplicates, crossViewDeal, crossViewLead,
                 selectedLead, editLead, leadHistory, editingCatalogValues,
                 isCreating, creationType,
                 userRole, userConnected, clockInTime, clockTimer, activeAEs,
