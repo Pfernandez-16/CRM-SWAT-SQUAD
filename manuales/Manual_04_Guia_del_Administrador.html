@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manual 4 — Guia del Administrador y Gerente</title>
+<style>
+  @page { size: A4; margin: 2cm 2.5cm; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #333; background: #fefcfb; line-height: 1.7; font-size: 11pt; }
+  .cover { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; background: linear-gradient(135deg, #4a2b2f 0%, #6b3a3f 50%, #4a2b2f 100%); color: #fefcfb; text-align: center; padding: 3rem; page-break-after: always; }
+  .cover-logo { width: 120px; height: 120px; border-radius: 50%; background: #dd934f; display: flex; align-items: center; justify-content: center; font-size: 2rem; font-weight: 900; color: #4a2b2f; margin-bottom: 2rem; box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
+  .cover h1 { font-size: 2.5rem; font-weight: 800; margin-bottom: 0.5rem; }
+  .cover h2 { font-size: 1.3rem; font-weight: 400; color: #dd934f; margin-bottom: 2rem; }
+  .cover .manual-number { background: #dd934f; color: #4a2b2f; padding: 0.5rem 2rem; border-radius: 30px; font-weight: 700; font-size: 1rem; margin-bottom: 1rem; }
+  .cover .subtitle { font-size: 1.1rem; opacity: 0.85; max-width: 500px; margin-top: 1rem; }
+  .toc { page-break-after: always; padding: 3rem 0; }
+  .toc h2 { color: #4a2b2f; font-size: 1.8rem; border-bottom: 3px solid #dd934f; padding-bottom: 0.5rem; margin-bottom: 2rem; }
+  .toc-item { display: flex; justify-content: space-between; align-items: baseline; padding: 0.6rem 0; border-bottom: 1px dotted #ddd; color: #333; }
+  .toc-section { font-weight: 700; color: #4a2b2f; font-size: 1.05rem; }
+  .toc-sub { padding-left: 1.5rem; font-size: 0.95rem; }
+  .content { padding: 1rem 0; }
+  h1.section-title { color: #4a2b2f; font-size: 1.8rem; font-weight: 800; border-left: 5px solid #dd934f; padding-left: 1rem; margin: 2.5rem 0 1rem 0; page-break-before: always; }
+  h1.section-title:first-of-type { page-break-before: avoid; }
+  h2 { color: #4a2b2f; font-size: 1.3rem; font-weight: 700; margin: 2rem 0 0.8rem 0; padding-bottom: 0.3rem; border-bottom: 2px solid #dd934f; }
+  h3 { color: #6b3a3f; font-size: 1.1rem; font-weight: 600; margin: 1.5rem 0 0.5rem 0; }
+  h4 { color: #dd934f; font-size: 1rem; font-weight: 600; margin: 1rem 0 0.5rem 0; }
+  p { margin: 0.5rem 0; }
+  .tip, .warning, .info, .important { border-radius: 8px; padding: 1rem 1.2rem; margin: 1rem 0; page-break-inside: avoid; }
+  .tip { background: #f0f9e8; border-left: 4px solid #4caf50; }
+  .tip::before { content: "CONSEJO: "; font-weight: 700; color: #4caf50; }
+  .warning { background: #fff8e1; border-left: 4px solid #ff9800; }
+  .warning::before { content: "IMPORTANTE: "; font-weight: 700; color: #ff9800; }
+  .info { background: #e8f4fd; border-left: 4px solid #2196f3; }
+  .info::before { content: "NOTA: "; font-weight: 700; color: #2196f3; }
+  .important { background: #fce4ec; border-left: 4px solid #e91e63; }
+  .important::before { content: "ATENCION: "; font-weight: 700; color: #e91e63; }
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.92rem; page-break-inside: avoid; }
+  thead th { background: #4a2b2f; color: #fefcfb; padding: 0.7rem 0.8rem; text-align: left; font-weight: 600; }
+  tbody td { padding: 0.6rem 0.8rem; border-bottom: 1px solid #e8e0dd; }
+  tbody tr:nth-child(even) { background: #faf5f0; }
+  .steps { counter-reset: step; margin: 1rem 0; }
+  .step { display: flex; gap: 1rem; margin: 1rem 0; padding: 1rem; background: #faf8f7; border-radius: 8px; border: 1px solid #e8e0dd; page-break-inside: avoid; }
+  .step-number { flex-shrink: 0; width: 36px; height: 36px; background: #dd934f; color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; }
+  .step-content { flex: 1; }
+  .step-content strong { color: #4a2b2f; }
+  .role-badge { display: inline-block; padding: 0.2rem 0.7rem; border-radius: 15px; font-size: 0.8rem; font-weight: 700; }
+  .role-admin { background: #f3e5f5; color: #7b1fa2; }
+  .role-gerente { background: #fff3e0; color: #e65100; }
+  ul, ol { margin: 0.5rem 0 0.5rem 1.5rem; }
+  li { margin: 0.3rem 0; }
+  code { background: #f5ebe3; padding: 0.1rem 0.4rem; border-radius: 4px; font-size: 0.9em; color: #4a2b2f; }
+  .page-footer { text-align: center; font-size: 0.8rem; color: #999; padding: 2rem 0 1rem 0; border-top: 1px solid #e8e0dd; margin-top: 3rem; }
+  .highlight-box { background: linear-gradient(135deg, #4a2b2f, #6b3a3f); color: #fefcfb; padding: 1.5rem; border-radius: 10px; margin: 1.5rem 0; }
+  .highlight-box h3 { color: #dd934f; margin-top: 0; }
+  .card-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin: 1rem 0; }
+  .card { background: #faf8f7; border: 1px solid #e8e0dd; border-radius: 10px; padding: 1.2rem; page-break-inside: avoid; }
+  .card h4 { margin-top: 0; color: #4a2b2f; }
+  .card p { font-size: 0.92rem; color: #666; }
+  @media print { body { font-size: 10pt; } .cover { min-height: 100vh; } h1.section-title { page-break-before: always; } .step, table, .tip, .warning, .info, .important { page-break-inside: avoid; } }
+</style>
+</head>
+<body>
+
+<!-- COVER -->
+<div class="cover">
+  <div class="cover-logo">ADMIN</div>
+  <div class="manual-number">MANUAL 4 DE 5</div>
+  <h1>Guia del Administrador y Gerente</h1>
+  <h2>Configuracion Completa del CRM</h2>
+  <p class="subtitle">Todo sobre gestion de usuarios, catalogos, campos, routing, pricing, asistencia y las herramientas de configuracion del sistema.</p>
+  <p style="margin-top:3rem; opacity:0.5; font-size:0.9rem;">Castillo &amp; Company &bull; 2026</p>
+</div>
+
+<!-- TOC -->
+<div class="toc">
+  <h2>Contenido de este Manual</h2>
+  <div class="toc-item toc-section">1. Vista General de Configuracion</div>
+  <div class="toc-item toc-section">2. Gestion de Usuarios</div>
+  <div class="toc-item toc-sub">2.1 Crear un nuevo usuario</div>
+  <div class="toc-item toc-sub">2.2 Cambiar rol de un usuario</div>
+  <div class="toc-item toc-sub">2.3 Activar / Desactivar usuarios</div>
+  <div class="toc-item toc-section">3. Configuracion de Catalogos</div>
+  <div class="toc-item toc-sub">3.1 Categorias de catalogos</div>
+  <div class="toc-item toc-sub">3.2 Editar valores de un catalogo</div>
+  <div class="toc-item toc-sub">3.3 Reordenar valores</div>
+  <div class="toc-item toc-section">4. Variables HMN (Metas y SLAs)</div>
+  <div class="toc-item toc-section">5. Reglas de Routing (Asignacion de AE)</div>
+  <div class="toc-item toc-sub">5.1 Modo: SDR Asigna Manualmente</div>
+  <div class="toc-item toc-sub">5.2 Modo: Round Robin Automatico</div>
+  <div class="toc-item toc-sub">5.3 Modo: Revision Gerencial</div>
+  <div class="toc-item toc-section">6. Configuracion de Pricing</div>
+  <div class="toc-item toc-sub">6.1 Tipo de cliente y formulas</div>
+  <div class="toc-item toc-sub">6.2 Agregar productos</div>
+  <div class="toc-item toc-section">7. Configuracion de Campos</div>
+  <div class="toc-item toc-sub">7.1 Editor visual de campos</div>
+  <div class="toc-item toc-sub">7.2 Campos obligatorios</div>
+  <div class="toc-item toc-sub">7.3 Visibilidad por rol</div>
+  <div class="toc-item toc-sub">7.4 Secciones personalizadas</div>
+  <div class="toc-item toc-section">8. Historial de Asistencia</div>
+  <div class="toc-item toc-section">9. Funciones Exclusivas del Gerente</div>
+</div>
+
+<!-- CONTENT -->
+<div class="content">
+
+<h1 class="section-title" style="page-break-before:avoid;">1. Vista General de Configuracion</h1>
+
+<p>La seccion de <strong>Configuracion</strong> es el centro de control del CRM. Aqui se define como funciona todo el sistema: que campos se muestran, que opciones tienen los desplegables, como se asignan los deals, y mas.</p>
+
+<p>Para acceder, haz clic en <strong>"Configuracion"</strong> (icono de engranaje) en la barra lateral.</p>
+
+<p>La configuracion esta organizada en <strong>pestanas por categoria</strong>:</p>
+
+<table>
+  <thead>
+    <tr><th>Pestana</th><th>Que contiene</th><th>Quien puede acceder</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><strong>General & Status</strong></td><td>Catalogos de Status de Lead, Status de Venta, y similares</td><td><span class="role-badge role-admin">ADMIN</span></td></tr>
+    <tr><td><strong>Lead Scoring</strong></td><td>Catalogos de Calidad de Contacto, BANT, Regiones, Membresias</td><td><span class="role-badge role-admin">ADMIN</span></td></tr>
+    <tr><td><strong>Seguimiento</strong></td><td>Catalogos de Tipo de Seguimiento, Razones de Perdida</td><td><span class="role-badge role-admin">ADMIN</span></td></tr>
+    <tr><td><strong>Pricing</strong></td><td>Catalogos de Tipo de Cliente, Productos, Proyeccion</td><td><span class="role-badge role-admin">ADMIN</span> <span class="role-badge role-gerente">GERENTE</span></td></tr>
+    <tr><td><strong>Otros</strong></td><td>Catalogos que no encajan en las categorias anteriores</td><td><span class="role-badge role-admin">ADMIN</span></td></tr>
+  </tbody>
+</table>
+
+<p>Debajo de las pestanas de catalogos encontraras paneles adicionales de configuracion que aparecen segun tu rol.</p>
+
+<!-- SECTION 2 -->
+<h1 class="section-title">2. Gestion de Usuarios</h1>
+
+<p>El panel de <strong>Gestion de Usuarios</strong> te permite controlar quien tiene acceso al CRM y con que rol.</p>
+
+<h2>2.1 Crear un Nuevo Usuario</h2>
+
+<div class="steps">
+  <div class="step">
+    <div class="step-number">1</div>
+    <div class="step-content">
+      <strong>Ve a Configuracion</strong> y busca el panel "Gestion de Usuarios".
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">2</div>
+    <div class="step-content">
+      <strong>Llena el formulario</strong> en la parte superior:
+      <ul>
+        <li><strong>Email</strong>: el correo de Google Workspace del nuevo usuario (debe ser exacto)</li>
+        <li><strong>Nombre</strong>: nombre completo del usuario</li>
+        <li><strong>Rol</strong>: selecciona SDR, AE, GERENTE o ADMIN</li>
+      </ul>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">3</div>
+    <div class="step-content">
+      <strong>Haz clic en "+ Agregar"</strong>. El usuario se crea y puede ingresar al CRM inmediatamente con ese email.
+    </div>
+  </div>
+</div>
+
+<div class="important">El email debe coincidir exactamente con la cuenta de Google Workspace del usuario. Si el email no coincide, el usuario vera el CRM como "GUEST" sin acceso a datos.</div>
+
+<h2>2.2 Cambiar Rol de un Usuario</h2>
+
+<p>En la tabla de usuarios, cada usuario tiene un <strong>dropdown de rol</strong> que puedes cambiar directamente:</p>
+<ul>
+  <li>Haz clic en el dropdown del rol del usuario</li>
+  <li>Selecciona el nuevo rol (SDR, AE, GERENTE, ADMIN)</li>
+  <li>El cambio se aplica inmediatamente</li>
+</ul>
+
+<h2>2.3 Activar / Desactivar Usuarios</h2>
+
+<p>No necesitas borrar usuarios. En su lugar, puedes <strong>desactivarlos</strong>:</p>
+<ul>
+  <li>En la columna "Activo" veras un icono verde (activo) o rojo (inactivo)</li>
+  <li>Haz clic en el boton "Desactivar" o "Activar" en la columna Acciones</li>
+  <li>Un usuario desactivado <strong>no puede hacer clock-in</strong> y <strong>no aparece en los dropdowns de asignacion</strong></li>
+</ul>
+
+<!-- SECTION 3 -->
+<h1 class="section-title">3. Configuracion de Catalogos</h1>
+
+<p>Los <strong>catalogos</strong> son las listas de opciones que aparecen en los campos desplegables del CRM. Por ejemplo, las opciones de "Status de Lead", "Razon de Perdida", "Tipo de Cliente", etc.</p>
+
+<h2>3.1 Categorias de Catalogos</h2>
+
+<p>Los catalogos estan organizados en las pestanas de la configuracion. Al seleccionar una pestana, veras los <strong>sub-catalogos</strong> disponibles como botones pequenos. Haz clic en uno para editarlo.</p>
+
+<p>Catalogos principales:</p>
+
+<table>
+  <thead>
+    <tr><th>Catalogo</th><th>Que controla</th><th>Donde aparece</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><strong>Status (Lead)</strong></td><td>Las etapas del proceso SDR</td><td>Ficha del Lead, columnas del Kanban de Prospectos</td></tr>
+    <tr><td><strong>Status de Venta</strong></td><td>Las etapas del pipeline del AE</td><td>Ficha del Deal, columnas del Kanban de Negociaciones</td></tr>
+    <tr><td><strong>Status del Seguimiento</strong></td><td>Estados internos de seguimiento</td><td>Ficha del Lead</td></tr>
+    <tr><td><strong>Razon de Perdida</strong></td><td>Por que se pierde un lead o deal</td><td>Ficha del Lead/Deal, Reportes</td></tr>
+    <tr><td><strong>Region</strong></td><td>Regiones geograficas</td><td>BANT en la ficha del Lead</td></tr>
+    <tr><td><strong>Membership Type</strong></td><td>Tipos de membresia</td><td>BANT en la ficha del Lead</td></tr>
+    <tr><td><strong>Producto de Cierre</strong></td><td>Productos que se pueden vender</td><td>Ficha del Deal</td></tr>
+    <tr><td><strong>Fuente de Origen</strong></td><td>De donde llegan los leads</td><td>Ficha del Deal</td></tr>
+    <tr><td><strong>Proyeccion</strong></td><td>Niveles de probabilidad de cierre</td><td>Ficha del Deal (Alta/Media/Baja)</td></tr>
+    <tr><td><strong>Tipo de Cliente</strong></td><td>Clasificacion del tipo de servicio</td><td>Configuracion de Pricing</td></tr>
+  </tbody>
+</table>
+
+<h2>3.2 Editar Valores de un Catalogo</h2>
+
+<div class="steps">
+  <div class="step">
+    <div class="step-number">1</div>
+    <div class="step-content">
+      <strong>Selecciona el catalogo</strong> haciendo clic en su boton dentro de la pestana de categoria.
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">2</div>
+    <div class="step-content">
+      <strong>Veras la lista de valores actuales</strong> como filas editables. Cada fila tiene:
+      <ul>
+        <li>Un icono de arrastre (para reordenar)</li>
+        <li>Un campo de texto editable (para cambiar el valor)</li>
+        <li>Un boton rojo de eliminar</li>
+      </ul>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">3</div>
+    <div class="step-content">
+      Para <strong>agregar un nuevo valor</strong>: haz clic en "+ Agregar Valor" al final de la lista.
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">4</div>
+    <div class="step-content">
+      Para <strong>eliminar un valor</strong>: haz clic en el icono rojo de basura junto al valor.
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">5</div>
+    <div class="step-content">
+      <strong>Haz clic en "Guardar Catalogo"</strong> para aplicar los cambios.
+    </div>
+  </div>
+</div>
+
+<div class="warning">Al guardar, los cambios aplican inmediatamente para todos los usuarios del CRM. Los registros existentes que usaban valores eliminados conservan su valor actual pero no podran seleccionarlo nuevamente.</div>
+
+<h2>3.3 Reordenar Valores</h2>
+
+<p>El orden de los valores en un catalogo determina el orden en que aparecen en los desplegables y las columnas del Kanban. Para reordenar:</p>
+
+<ul>
+  <li>Arrastra los valores usando el icono de arrastre a la izquierda de cada fila</li>
+  <li>Suelta en la posicion deseada</li>
+  <li>Guarda el catalogo</li>
+</ul>
+
+<div class="tip">El orden del catalogo "Status" define el orden de las columnas en el Kanban. Ponlos en el orden logico del proceso de ventas.</div>
+
+<!-- SECTION 4 -->
+<h1 class="section-title">4. Variables HMN (Metas y SLAs)</h1>
+
+<p>Las variables HMN (Health Management Numbers) son <strong>parametros globales del negocio</strong> que definen SLAs y metas del equipo. Solo el <span class="role-badge role-admin">ADMIN</span> puede editarlas.</p>
+
+<table>
+  <thead>
+    <tr><th>Variable</th><th>Descripcion</th><th>Ejemplo</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>SLA Respuesta SDR</strong></td>
+      <td>Tiempo maximo (en horas) que un SDR tiene para contactar un lead nuevo</td>
+      <td>2 horas</td>
+    </tr>
+    <tr>
+      <td><strong>SLA Traspaso AE</strong></td>
+      <td>Tiempo maximo (en horas) que un AE tiene para contactar un deal nuevo</td>
+      <td>4 horas</td>
+    </tr>
+    <tr>
+      <td><strong>Toques Maximos Automatizados</strong></td>
+      <td>Numero maximo de toques automaticos antes de escalar</td>
+      <td>6</td>
+    </tr>
+    <tr>
+      <td><strong>Meta Facturacion Mensual ($)</strong></td>
+      <td>Meta de facturacion del equipo por mes</td>
+      <td>$50,000</td>
+    </tr>
+    <tr>
+      <td><strong>Meta Leads Calificados SDR</strong></td>
+      <td>Meta de leads calificados por SDR por mes</td>
+      <td>20</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="steps">
+  <div class="step">
+    <div class="step-number">1</div>
+    <div class="step-content">
+      <strong>Busca el panel "Variables HMN"</strong> en la seccion de Configuracion.
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">2</div>
+    <div class="step-content">
+      <strong>Edita los valores</strong> directamente en los campos de texto.
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">3</div>
+    <div class="step-content">
+      <strong>Haz clic en "Guardar HMN"</strong>.
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 5 -->
+<h1 class="section-title">5. Reglas de Routing (Asignacion de AE)</h1>
+
+<p>Las reglas de routing determinan <strong>como se asigna un Account Executive</strong> cuando el SDR hace el Pase a Ventas. Hay 3 modos disponibles:</p>
+
+<h2>5.1 Modo: SDR Asigna Manualmente</h2>
+
+<p>El SDR elige a que AE asignar el deal desde un dropdown en el formulario de Handoff.</p>
+<ul>
+  <li><strong>Ventaja</strong>: el SDR puede elegir al AE mas adecuado segun el caso</li>
+  <li><strong>Desventaja</strong>: depende del criterio del SDR, puede generar distribucion desigual</li>
+</ul>
+
+<h2>5.2 Modo: Round Robin Automatico</h2>
+
+<p>El sistema asigna automaticamente al siguiente AE de una lista rotativa. Cada AE recibe deals de forma equitativa.</p>
+
+<div class="steps">
+  <div class="step">
+    <div class="step-number">1</div>
+    <div class="step-content">
+      <strong>Selecciona "Automatico Round Robin"</strong> en el dropdown de modo.
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">2</div>
+    <div class="step-content">
+      <strong>Configura el orden de la cola</strong>: veras una lista de los AEs activos con avatares numerados. Arrastra para reordenar.
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">3</div>
+    <div class="step-content">
+      <strong>Haz clic en "Guardar Nuevo Orden"</strong> para guardar la secuencia.
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">4</div>
+    <div class="step-content">
+      <strong>Guarda las reglas de routing</strong>. El sistema mostrara que AE fue el ultimo asignado para que sepas quien sigue.
+    </div>
+  </div>
+</div>
+
+<div class="info">Si un AE esta desactivado, el Round Robin lo salta automaticamente y asigna al siguiente activo.</div>
+
+<h2>5.3 Modo: Revision Gerencial</h2>
+
+<p>Todos los deals nuevos llegan al gerente, quien los revisa y asigna manualmente al AE adecuado.</p>
+
+<div class="steps">
+  <div class="step">
+    <div class="step-number">1</div>
+    <div class="step-content">
+      <strong>Selecciona "Gerente revisa y asigna"</strong> en el dropdown.
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">2</div>
+    <div class="step-content">
+      <strong>Selecciona el email del gerente</strong> que recibira los deals para revision.
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">3</div>
+    <div class="step-content">
+      <strong>Guarda</strong>. Los nuevos deals se crean asignados al gerente con un badge de "Pendiente revision".
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 6 -->
+<h1 class="section-title">6. Configuracion de Pricing</h1>
+
+<p>El panel de Pricing define como se calculan automaticamente los montos estimados para cada lead. Esta seccion esta disponible para <span class="role-badge role-admin">ADMIN</span> y <span class="role-badge role-gerente">GERENTE</span>.</p>
+
+<h2>6.1 Tipo de Cliente y Formulas</h2>
+
+<p>Primero debes seleccionar el <strong>Tipo de Cliente</strong> que maneja tu empresa. Esto determina la formula de calculo:</p>
+
+<table>
+  <thead>
+    <tr><th>Tipo de Cliente</th><th>Formula</th><th>Explicacion</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>SaaS</strong></td>
+      <td>Ticket x Licencias x 12</td>
+      <td>El precio mensual por licencia multiplicado por el numero de licencias y 12 meses</td>
+    </tr>
+    <tr>
+      <td><strong>Fichas Mensuales (FEE)</strong></td>
+      <td>Ticket x 12</td>
+      <td>El precio mensual multiplicado por 12 meses (cobro recurrente anual)</td>
+    </tr>
+    <tr>
+      <td><strong>Proyectos</strong></td>
+      <td>Ticket x 1</td>
+      <td>Pago unico por proyecto (sin multiplicador anual)</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>6.2 Agregar Productos</h2>
+
+<div class="steps">
+  <div class="step">
+    <div class="step-number">1</div>
+    <div class="step-content">
+      <strong>Selecciona el Tipo de Cliente</strong> del dropdown.
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">2</div>
+    <div class="step-content">
+      <strong>Haz clic en "+ Agregar Producto"</strong> para anadir un producto a la lista.
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">3</div>
+    <div class="step-content">
+      Para cada producto, llena:
+      <ul>
+        <li><strong>Nombre</strong>: nombre del producto/servicio</li>
+        <li><strong>Ticket Promedio /mes</strong>: precio mensual del producto</li>
+      </ul>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">4</div>
+    <div class="step-content">
+      <strong>Puedes agregar hasta 10 productos</strong>. Elimina uno haciendo clic en la X roja.
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">5</div>
+    <div class="step-content">
+      <strong>Haz clic en "Guardar Configuracion de Pricing"</strong>. Esta configuracion aplica globalmente a todos los leads.
+    </div>
+  </div>
+</div>
+
+<div class="tip">Estos productos aparecen en el dropdown de la seccion "Pricing Global" de cada lead, permitiendo al SDR seleccionar el producto de interes y ver el monto estimado automaticamente.</div>
+
+<!-- SECTION 7 -->
+<h1 class="section-title">7. Configuracion de Campos</h1>
+
+<p>El <strong>Editor de Campos</strong> es una de las herramientas mas poderosas del CRM. Te permite controlar exactamente que campos se muestran en las fichas de Lead y Deal, en que orden, si son obligatorios, y quien puede verlos.</p>
+
+<h2>7.1 Editor Visual de Campos</h2>
+
+<div class="steps">
+  <div class="step">
+    <div class="step-number">1</div>
+    <div class="step-content">
+      <strong>Busca el panel "Configuracion de Campos"</strong> en la seccion de Configuracion.
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">2</div>
+    <div class="step-content">
+      <strong>Selecciona que ficha quieres configurar</strong>: "Ficha Prospecto" (lead) o "Ficha Negociacion" (deal).
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">3</div>
+    <div class="step-content">
+      <strong>Veras el editor visual</strong> con todas las secciones y campos de la ficha. Cada campo muestra:
+      <ul>
+        <li><strong>Checkbox "Visible"</strong>: si esta desmarcado, el campo no se muestra (aparece tachado con borde rojo y texto "OCULTO")</li>
+        <li><strong>Checkbox "Requerido" (*)</strong>: si esta marcado (en rojo), el campo es obligatorio y el CRM no permite guardar sin llenarlo</li>
+        <li><strong>Badge "NUEVO"</strong>: aparece en campos descubiertos automaticamente de la base de datos</li>
+        <li><strong>Selector de ancho</strong>: "1/2" (medio ancho) o "Full" (ancho completo)</li>
+        <li><strong>Selector de seccion</strong>: a que seccion pertenece el campo</li>
+        <li><strong>Botones de orden</strong>: flechas arriba/abajo para cambiar la posicion</li>
+        <li><strong>Label editable</strong>: puedes cambiar el nombre visible del campo</li>
+        <li><strong>Badge de tipo</strong>: indica que tipo de input es (text, select, date, etc.)</li>
+      </ul>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">4</div>
+    <div class="step-content">
+      <strong>Haz todos tus cambios</strong> y luego clic en <strong>"Guardar Configuracion de Campos"</strong>.
+    </div>
+  </div>
+</div>
+
+<h2>7.2 Campos Obligatorios</h2>
+
+<p>Los campos marcados como <strong>obligatorios (requerido *)</strong> bloquean el guardado si estan vacios. Esto es especialmente util para:</p>
+<ul>
+  <li>Asegurar que el SDR llene informacion critica antes de cambiar de status</li>
+  <li>Asegurar que el AE complete datos antes de cerrar una venta</li>
+  <li>Prevenir que se avancen leads sin calificacion BANT</li>
+</ul>
+
+<div class="warning">Cuando un usuario intenta guardar con campos obligatorios vacios, el CRM muestra un mensaje de error indicando exactamente que campos le faltan por completar.</div>
+
+<h2>7.3 Visibilidad por Rol</h2>
+
+<p>Cada campo tiene una propiedad <code>rol_visible</code> que controla que roles pueden ver ese campo:</p>
+<ul>
+  <li><strong>ALL</strong>: visible para todos los roles</li>
+  <li><strong>SDR</strong>: solo visible para el SDR</li>
+  <li><strong>AE</strong>: solo visible para el AE</li>
+  <li><strong>ADMIN</strong>: solo visible para el admin</li>
+</ul>
+
+<h2>7.4 Secciones Personalizadas</h2>
+
+<p>Puedes crear, renombrar, reordenar y eliminar secciones:</p>
+
+<ul>
+  <li><strong>Crear seccion</strong>: llena el nombre y un icono (emoji) y haz clic en "+ Crear Seccion"</li>
+  <li><strong>Renombrar seccion</strong>: haz clic en el icono de lapiz junto al nombre de la seccion</li>
+  <li><strong>Reordenar secciones</strong>: usa las flechas arriba/abajo en el encabezado de cada seccion</li>
+  <li><strong>Eliminar seccion</strong>: haz clic en el icono rojo de basura. Los campos dentro de esa seccion se mueven a "Otros Campos"</li>
+</ul>
+
+<div class="tip">Usa el boton "Sync BD" para forzar una sincronizacion con la base de datos. Si se anadieron nuevas columnas al spreadsheet, apareceran como campos con el badge "NUEVO".</div>
+
+<!-- SECTION 8 -->
+<h1 class="section-title">8. Historial de Asistencia</h1>
+
+<p>El panel de <strong>Historial de Asistencia</strong> te permite monitorear las horas de trabajo del equipo. Disponible para <span class="role-badge role-admin">ADMIN</span> y <span class="role-badge role-gerente">GERENTE</span>.</p>
+
+<div class="steps">
+  <div class="step">
+    <div class="step-number">1</div>
+    <div class="step-content">
+      <strong>Busca el panel "Historial de Asistencia"</strong> en la configuracion.
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">2</div>
+    <div class="step-content">
+      <strong>Haz clic en "Cargar Ultimos 30 Dias"</strong>. Se carga la tabla de registros.
+    </div>
+  </div>
+</div>
+
+<p>La tabla muestra:</p>
+
+<table>
+  <thead>
+    <tr><th>Columna</th><th>Descripcion</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><strong>Nombre</strong></td><td>Nombre del usuario</td></tr>
+    <tr><td><strong>Email</strong></td><td>Email del usuario</td></tr>
+    <tr><td><strong>Tipo</strong></td><td>Entrada (verde) o Salida (rojo)</td></tr>
+    <tr><td><strong>Fecha y Hora</strong></td><td>Cuando hizo clock-in o clock-out</td></tr>
+    <tr><td><strong>Duracion</strong></td><td>Solo para salidas: cuanto tiempo estuvo conectado (ej: "6h 30m")</td></tr>
+  </tbody>
+</table>
+
+<!-- SECTION 9 -->
+<h1 class="section-title">9. Funciones Exclusivas del Gerente</h1>
+
+<p>El rol de <span class="role-badge role-gerente">GERENTE</span> tiene acceso de <strong>lectura completa</strong> a todo el CRM pero con capacidades de configuracion limitadas:</p>
+
+<table>
+  <thead>
+    <tr><th>Funcion</th><th><span class="role-badge role-admin">ADMIN</span></th><th><span class="role-badge role-gerente">GERENTE</span></th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Ver todos los leads y deals</td><td>Si</td><td>Si</td></tr>
+    <tr><td>Editar leads y deals</td><td>Si</td><td>No (solo lectura)</td></tr>
+    <tr><td>Generar reportes</td><td>Si</td><td>Si</td></tr>
+    <tr><td>Ver historial de asistencia</td><td>Si</td><td>Si</td></tr>
+    <tr><td>Configurar pricing</td><td>Si</td><td>Si</td></tr>
+    <tr><td>Gestionar usuarios</td><td>Si</td><td>No</td></tr>
+    <tr><td>Configurar catalogos</td><td>Si</td><td>No</td></tr>
+    <tr><td>Configurar campos</td><td>Si</td><td>No</td></tr>
+    <tr><td>Configurar routing</td><td>Si</td><td>No</td></tr>
+    <tr><td>Configurar HMN</td><td>Si</td><td>No</td></tr>
+  </tbody>
+</table>
+
+<div class="info">El Gerente es ideal para roles de supervision donde necesitas ver todo pero no quieres arriesgarte a cambiar configuraciones accidentalmente.</div>
+
+</div><!-- /content -->
+
+<div class="page-footer">
+  CRM SWAT Squad &bull; Manual 4 de 5: Guia del Administrador y Gerente &bull; Castillo &amp; Company &copy; 2026
+</div>
+
+</body>
+</html>

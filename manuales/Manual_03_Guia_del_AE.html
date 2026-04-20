@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manual 3 — Guia del Account Executive (AE)</title>
+<style>
+  @page { size: A4; margin: 2cm 2.5cm; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #333; background: #fefcfb; line-height: 1.7; font-size: 11pt; }
+  .cover { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; background: linear-gradient(135deg, #4a2b2f 0%, #6b3a3f 50%, #4a2b2f 100%); color: #fefcfb; text-align: center; padding: 3rem; page-break-after: always; }
+  .cover-logo { width: 120px; height: 120px; border-radius: 50%; background: #dd934f; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; font-weight: 900; color: #4a2b2f; margin-bottom: 2rem; box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
+  .cover h1 { font-size: 2.5rem; font-weight: 800; margin-bottom: 0.5rem; }
+  .cover h2 { font-size: 1.3rem; font-weight: 400; color: #dd934f; margin-bottom: 2rem; }
+  .cover .manual-number { background: #dd934f; color: #4a2b2f; padding: 0.5rem 2rem; border-radius: 30px; font-weight: 700; font-size: 1rem; margin-bottom: 1rem; }
+  .cover .subtitle { font-size: 1.1rem; opacity: 0.85; max-width: 500px; margin-top: 1rem; }
+  .toc { page-break-after: always; padding: 3rem 0; }
+  .toc h2 { color: #4a2b2f; font-size: 1.8rem; border-bottom: 3px solid #dd934f; padding-bottom: 0.5rem; margin-bottom: 2rem; }
+  .toc-item { display: flex; justify-content: space-between; align-items: baseline; padding: 0.6rem 0; border-bottom: 1px dotted #ddd; color: #333; }
+  .toc-section { font-weight: 700; color: #4a2b2f; font-size: 1.05rem; }
+  .toc-sub { padding-left: 1.5rem; font-size: 0.95rem; }
+  .content { padding: 1rem 0; }
+  h1.section-title { color: #4a2b2f; font-size: 1.8rem; font-weight: 800; border-left: 5px solid #dd934f; padding-left: 1rem; margin: 2.5rem 0 1rem 0; page-break-before: always; }
+  h1.section-title:first-of-type { page-break-before: avoid; }
+  h2 { color: #4a2b2f; font-size: 1.3rem; font-weight: 700; margin: 2rem 0 0.8rem 0; padding-bottom: 0.3rem; border-bottom: 2px solid #dd934f; }
+  h3 { color: #6b3a3f; font-size: 1.1rem; font-weight: 600; margin: 1.5rem 0 0.5rem 0; }
+  h4 { color: #dd934f; font-size: 1rem; font-weight: 600; margin: 1rem 0 0.5rem 0; }
+  p { margin: 0.5rem 0; }
+  .tip, .warning, .info, .important { border-radius: 8px; padding: 1rem 1.2rem; margin: 1rem 0; page-break-inside: avoid; }
+  .tip { background: #f0f9e8; border-left: 4px solid #4caf50; }
+  .tip::before { content: "CONSEJO: "; font-weight: 700; color: #4caf50; }
+  .warning { background: #fff8e1; border-left: 4px solid #ff9800; }
+  .warning::before { content: "IMPORTANTE: "; font-weight: 700; color: #ff9800; }
+  .info { background: #e8f4fd; border-left: 4px solid #2196f3; }
+  .info::before { content: "NOTA: "; font-weight: 700; color: #2196f3; }
+  .important { background: #fce4ec; border-left: 4px solid #e91e63; }
+  .important::before { content: "ATENCION: "; font-weight: 700; color: #e91e63; }
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.92rem; page-break-inside: avoid; }
+  thead th { background: #4a2b2f; color: #fefcfb; padding: 0.7rem 0.8rem; text-align: left; font-weight: 600; }
+  tbody td { padding: 0.6rem 0.8rem; border-bottom: 1px solid #e8e0dd; }
+  tbody tr:nth-child(even) { background: #faf5f0; }
+  .steps { counter-reset: step; margin: 1rem 0; }
+  .step { display: flex; gap: 1rem; margin: 1rem 0; padding: 1rem; background: #faf8f7; border-radius: 8px; border: 1px solid #e8e0dd; page-break-inside: avoid; }
+  .step-number { flex-shrink: 0; width: 36px; height: 36px; background: #dd934f; color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; }
+  .step-content { flex: 1; }
+  .step-content strong { color: #4a2b2f; }
+  .role-badge { display: inline-block; padding: 0.2rem 0.7rem; border-radius: 15px; font-size: 0.8rem; font-weight: 700; }
+  .role-ae { background: #e8f5e9; color: #2e7d32; }
+  .flow-diagram { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 0.3rem; margin: 1.5rem 0; padding: 1.5rem; background: #faf8f7; border-radius: 10px; border: 1px solid #e8e0dd; }
+  .flow-box { padding: 0.6rem 1rem; border-radius: 8px; font-weight: 600; font-size: 0.85rem; text-align: center; min-width: 90px; }
+  .flow-arrow { font-size: 1.3rem; color: #dd934f; font-weight: 900; }
+  .fb-brown { background: #4a2b2f; color: #fefcfb; }
+  .fb-gold { background: #dd934f; color: #fff; }
+  .fb-light { background: #f5ebe3; color: #4a2b2f; border: 2px solid #dd934f; }
+  .fb-green { background: #4caf50; color: #fff; }
+  .fb-blue { background: #2196f3; color: #fff; }
+  .fb-red { background: #e91e63; color: #fff; }
+  ul, ol { margin: 0.5rem 0 0.5rem 1.5rem; }
+  li { margin: 0.3rem 0; }
+  code { background: #f5ebe3; padding: 0.1rem 0.4rem; border-radius: 4px; font-size: 0.9em; color: #4a2b2f; }
+  .page-footer { text-align: center; font-size: 0.8rem; color: #999; padding: 2rem 0 1rem 0; border-top: 1px solid #e8e0dd; margin-top: 3rem; }
+  .card-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin: 1rem 0; }
+  .card { background: #faf8f7; border: 1px solid #e8e0dd; border-radius: 10px; padding: 1.2rem; page-break-inside: avoid; }
+  .card h4 { margin-top: 0; color: #4a2b2f; }
+  .card p { font-size: 0.92rem; color: #666; }
+  .highlight-box { background: linear-gradient(135deg, #4a2b2f, #6b3a3f); color: #fefcfb; padding: 1.5rem; border-radius: 10px; margin: 1.5rem 0; }
+  .highlight-box h3 { color: #dd934f; margin-top: 0; }
+  @media print { body { font-size: 10pt; } .cover { min-height: 100vh; } h1.section-title { page-break-before: always; } .step, table, .tip, .warning, .info, .important { page-break-inside: avoid; } }
+</style>
+</head>
+<body>
+
+<!-- COVER -->
+<div class="cover">
+  <div class="cover-logo">AE</div>
+  <div class="manual-number">MANUAL 3 DE 5</div>
+  <h1>Guia del Account Executive</h1>
+  <h2>AE — Ejecutivo de Ventas</h2>
+  <p class="subtitle">Tu guia completa para gestionar negociaciones, pipeline de ventas, cotizaciones, cierre y cobranza.</p>
+  <p style="margin-top:3rem; opacity:0.5; font-size:0.9rem;">Castillo &amp; Company &bull; 2026</p>
+</div>
+
+<!-- TOC -->
+<div class="toc">
+  <h2>Contenido de este Manual</h2>
+  <div class="toc-item toc-section">1. Tu Rol como AE</div>
+  <div class="toc-item toc-section">2. Vista de Negociaciones</div>
+  <div class="toc-item toc-sub">2.1 Vista de Tabla</div>
+  <div class="toc-item toc-sub">2.2 Vista Kanban</div>
+  <div class="toc-item toc-section">3. La Ficha del Deal (Modal de Detalle)</div>
+  <div class="toc-item toc-sub">3.1 Pestana: Prospecto (datos del SDR)</div>
+  <div class="toc-item toc-sub">3.2 Pestana: Deal</div>
+  <div class="toc-item toc-sub">3.3 Pestana: Logs de Toques</div>
+  <div class="toc-item toc-sub">3.4 Pestana: Historial</div>
+  <div class="toc-item toc-sub">3.5 Pestana: Notas</div>
+  <div class="toc-item toc-section">4. El Pipeline de Ventas</div>
+  <div class="toc-item toc-sub">4.1 Las etapas del pipeline</div>
+  <div class="toc-item toc-sub">4.2 Indicador de contacto del AE</div>
+  <div class="toc-item toc-section">5. Registrar Toques como AE</div>
+  <div class="toc-item toc-section">6. Cotizacion y Montos</div>
+  <div class="toc-item toc-section">7. Productos del Deal</div>
+  <div class="toc-item toc-sub">7.1 Cross-Selling y Up-Selling</div>
+  <div class="toc-item toc-section">8. Recompra y Clientes Activos</div>
+  <div class="toc-item toc-section">9. Cerrar la Venta</div>
+  <div class="toc-item toc-section">10. Cobranza y Comprobante de Pago</div>
+  <div class="toc-item toc-section">11. Razon de Perdida</div>
+  <div class="toc-item toc-section">12. Calendario y Correo</div>
+</div>
+
+<!-- CONTENT -->
+<div class="content">
+
+<h1 class="section-title" style="page-break-before:avoid;">1. Tu Rol como AE</h1>
+
+<p>Como Account Executive (AE), tu eres el <strong>cerrador de negocios</strong>. Recibes leads calificados del SDR y tu mision es convertirlos en ventas exitosas.</p>
+
+<div class="highlight-box">
+  <h3>Responsabilidades del AE:</h3>
+  <ul>
+    <li><strong>Recibir</strong> leads calificados que el SDR te transfiere (deals/negociaciones)</li>
+    <li><strong>Contactar</strong> al prospecto para iniciar la negociacion</li>
+    <li><strong>Cotizar</strong> y presentar la propuesta de valor</li>
+    <li><strong>Negociar</strong> terminos, demos y condiciones</li>
+    <li><strong>Cerrar</strong> la venta y registrar el monto</li>
+    <li><strong>Gestionar</strong> la cobranza y subir comprobantes de pago</li>
+  </ul>
+</div>
+
+<div class="flow-diagram">
+  <div class="flow-box fb-blue">SDR te pasa el lead</div>
+  <span class="flow-arrow">&#8594;</span>
+  <div class="flow-box fb-light">Primer contacto</div>
+  <span class="flow-arrow">&#8594;</span>
+  <div class="flow-box fb-light">Cotizacion</div>
+  <span class="flow-arrow">&#8594;</span>
+  <div class="flow-box fb-light">Negociacion</div>
+  <span class="flow-arrow">&#8594;</span>
+  <div class="flow-box fb-gold">Demo</div>
+  <span class="flow-arrow">&#8594;</span>
+  <div class="flow-box fb-light">Firma</div>
+  <span class="flow-arrow">&#8594;</span>
+  <div class="flow-box fb-green">Fondeo</div>
+</div>
+
+<!-- SECTION 2 -->
+<h1 class="section-title">2. Vista de Negociaciones</h1>
+
+<p>La seccion de <strong>Negociaciones</strong> es tu area de trabajo principal. Aqui ves todos los deals que te han sido asignados.</p>
+
+<h2>2.1 Vista de Tabla</h2>
+
+<table>
+  <thead>
+    <tr><th>Columna</th><th>Que muestra</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><strong>ID</strong></td><td>Numero unico del deal</td></tr>
+    <tr><td><strong>Nombre</strong></td><td>Nombre del contacto</td></tr>
+    <tr><td><strong>Empresa</strong></td><td>Nombre de la empresa</td></tr>
+    <tr><td><strong>Telefono</strong></td><td>Telefono del contacto</td></tr>
+    <tr><td><strong>Email</strong></td><td>Email del contacto</td></tr>
+    <tr><td><strong>Status de Venta</strong></td><td>Etapa actual del pipeline (con badge de color)</td></tr>
+    <tr><td><strong>AE Asignado</strong></td><td>Tu nombre (o el del AE responsable)</td></tr>
+    <tr><td><strong>Monto de Cierre</strong></td><td>Valor monetario del deal (si ya se cotizo/cerro)</td></tr>
+    <tr><td><strong>Fecha de Cierre</strong></td><td>Cuando se cerro la venta</td></tr>
+    <tr><td><strong>Notas</strong></td><td>Primeras palabras de tus notas (preview)</td></tr>
+    <tr><td><strong>Acciones</strong></td><td>Boton "Ver" para abrir la ficha completa</td></tr>
+  </tbody>
+</table>
+
+<div class="info">Los deals marcados como <strong>Recompra</strong> se destacan con un borde morado a la izquierda y un fondo ligeramente morado para que los identifiques rapidamente.</div>
+
+<h2>2.2 Vista Kanban</h2>
+
+<p>Funciona igual que el Kanban de prospectos, pero las columnas son los <strong>Status de Venta</strong> (etapas del pipeline). Puedes arrastrar deals entre columnas para cambiar su etapa.</p>
+
+<p>Cada tarjeta de deal muestra:</p>
+<ul>
+  <li><strong>#ID</strong> del deal</li>
+  <li><strong>Badge de Calidad</strong> (la calificacion BANT que trajo del SDR)</li>
+  <li><strong>Nombre y Empresa</strong></li>
+  <li><strong>Badge "Recompra"</strong> (si aplica, con diseno morado especial)</li>
+  <li><strong>Nombre del AE</strong> asignado</li>
+  <li><strong>Telefono y email</strong></li>
+  <li><strong>Monto de cierre</strong> (si ya hay uno)</li>
+</ul>
+
+<!-- SECTION 3 -->
+<h1 class="section-title">3. La Ficha del Deal (Modal de Detalle)</h1>
+
+<p>Al hacer clic en un deal, se abre el panel deslizante con toda la informacion. Tiene las siguientes pestanas:</p>
+
+<h2>3.1 Pestana: Prospecto (Datos del SDR)</h2>
+
+<p>Esta pestana te muestra la informacion que el SDR recopilo <strong>antes de pasarte el lead</strong>. Todos los campos son de <strong>solo lectura</strong>:</p>
+
+<ul>
+  <li><strong>Status del Lead</strong>: como estaba el lead cuando salio del SDR</li>
+  <li><strong>Calidad de Contacto</strong>: calificacion BANT (Alto/Medio/Bajo)</li>
+  <li><strong>Servicio de Interes</strong>: que producto le interesaba al lead</li>
+  <li><strong>Toques de Contactacion</strong>: cuantas veces lo contacto el SDR</li>
+  <li><strong>SDR Asignado</strong>: quien fue el SDR</li>
+  <li><strong>Es Recompra?</strong>: si es un cliente recurrente</li>
+  <li><strong>Notas del SDR</strong>: la informacion que te dejo el SDR (la "bandeja de plata")</li>
+  <li><strong>Necesidad Puntual</strong>: del BANT, que necesita exactamente el cliente</li>
+</ul>
+
+<div class="tip">Lee siempre la pestana de Prospecto antes de contactar al cliente. El SDR ya hizo un trabajo de investigacion que te sera muy util.</div>
+
+<h2>3.2 Pestana: Deal</h2>
+
+<p>Esta es tu pestana principal de trabajo. Aqui gestionas toda la negociacion. Esta organizada en secciones:</p>
+
+<h4>Seccion: AE Asignado</h4>
+<ul>
+  <li><strong>Vendedor AE</strong>: tu nombre (el AE asignado a este deal)</li>
+  <li><strong>Fecha 1er Contacto AE</strong>: se registra automaticamente cuando haces tu primer toque</li>
+  <li><strong>Toque AE</strong>: contador de toques del AE con boton para registrar el siguiente</li>
+</ul>
+
+<h4>Seccion: Status de Venta</h4>
+<ul>
+  <li><strong>Status de Venta</strong>: la etapa actual del pipeline. Cambiala conforme avanza la negociacion.</li>
+  <li><strong>Ventas Contacto Cliente?</strong>: badge automatico. Se pone en verde "Si - Contactado" en el momento que registras tu primer toque como AE. No lo editas manualmente.</li>
+  <li><strong>Fecha de Reagenda</strong>: fecha para la proxima cita/llamada. Tiene un boton de calendario para crear un evento directamente.</li>
+  <li><strong>Hora de Reagenda</strong>: hora para la proxima cita.</li>
+  <li><strong>Por que perdimos la venta?</strong>: selecciona la razon si el deal se pierde. Si eliges "Otros", aparece un campo de texto libre.</li>
+</ul>
+
+<h4>Seccion: Cotizacion</h4>
+<ul>
+  <li><strong>Proyeccion</strong>: Alta, Media o Baja. Tu estimacion de probabilidad de cierre.</li>
+  <li><strong>Monto Estimado (SDR)</strong>: lo que el SDR estimo como valor. Solo lectura.</li>
+  <li><strong>Monto de Cotizacion</strong>: el monto que cotizaste oficialmente al cliente. Al escribir el primer monto, la fecha de cotizacion se registra automaticamente.</li>
+  <li><strong>Fecha de Cotizacion</strong>: se llena automatica cuando ingresas el monto.</li>
+  <li><strong>Notas de Cotizacion</strong>: detalles de la cotizacion.</li>
+  <li><strong>1 Year Mem / 2 Year Mem</strong>: membresias de 1 o 2 anos (si aplica).</li>
+  <li><strong>Descuento (%)</strong>: porcentaje de descuento aplicado.</li>
+</ul>
+
+<h4>Seccion: Cierre</h4>
+<ul>
+  <li><strong>Monto de Venta (Cierre)</strong>: el monto final de la venta cerrada.</li>
+  <li><strong>Monto de Apartado</strong>: si el cliente hizo un pago parcial inicial.</li>
+  <li><strong>Producto de Cierre</strong>: que producto se vendio.</li>
+  <li><strong>Fecha de Cierre</strong>: se registra automaticamente cuando cambias el status a "Vendido".</li>
+</ul>
+
+<h4>Seccion: Productos del Deal</h4>
+<p>Aqui detallas los productos vendidos linea por linea. Ver seccion 7.</p>
+
+<h4>Seccion: Cross Selling e Historial</h4>
+<ul>
+  <li><strong>Cross Selling?</strong>: Si/No. Se clasifica automaticamente basado en los productos.</li>
+  <li><strong>Es cliente activo?</strong>: Si/No.</li>
+  <li><strong>Es recompra?</strong>: Si/No.</li>
+  <li><strong>Producto de Recompra, Valor, Fecha</strong>: si es recompra, los detalles de la compra anterior.</li>
+</ul>
+
+<h4>Seccion: Cobranza y Facturacion</h4>
+<ul>
+  <li><strong>Link de Pago</strong>: URL de la plataforma de pago.</li>
+  <li><strong>Renovacion</strong>: informacion de renovacion.</li>
+  <li><strong>Soporte de pago</strong>: datos de soporte.</li>
+  <li><strong>Comprobante de Pago</strong>: boton para subir archivo (PNG, JPG o PDF). Ver seccion 10.</li>
+  <li><strong>Tipo de Transaccion</strong>: se calcula automaticamente (Venta Directa, Cross-Selling, Up-Selling).</li>
+  <li><strong>Fuente de Origen</strong>: de donde vino el lead original.</li>
+  <li><strong>Deal Code</strong>: codigo interno del deal.</li>
+</ul>
+
+<h4>Seccion: Notas del AE</h4>
+<ul>
+  <li><strong>Notas del SDR</strong>: lectura solamente, lo que el SDR escribio.</li>
+  <li><strong>Notas Vendedor AE</strong>: tu espacio para escribir notas.</li>
+</ul>
+
+<h2>3.3 Pestana: Logs de Toques</h2>
+<p>Muestra el historial combinado de toques del SDR y del AE, ordenados por fecha. Puedes ver facilmente cuantos toques hizo cada uno.</p>
+
+<h2>3.4 Pestana: Historial</h2>
+<p>Igual que el historial de leads: todos los cambios, eventos de pipeline y modificaciones de datos.</p>
+
+<h2>3.5 Pestana: Notas</h2>
+<p>Tu espacio de notas con soporte de plantillas, igual que el SDR. Puedes usar las mismas variables automaticas.</p>
+
+<!-- SECTION 4 -->
+<h1 class="section-title">4. El Pipeline de Ventas</h1>
+
+<h2>4.1 Las Etapas del Pipeline</h2>
+
+<p>Cada deal pasa por una serie de etapas que representan el avance de la negociacion. Las etapas tipicas son:</p>
+
+<div class="flow-diagram" style="flex-direction:column; align-items:stretch; gap:0;">
+  <div style="display:flex; align-items:center; gap:0.5rem; margin:0.3rem 0;">
+    <div class="flow-box fb-blue" style="min-width:160px;">Recien llegado</div>
+    <div style="flex:1; font-size:0.85rem; color:#666;">El lead acaba de llegar del SDR. Aun no lo has contactado.</div>
+  </div>
+  <div style="text-align:center; color:#dd934f; font-size:1.5rem;">&#8595;</div>
+  <div style="display:flex; align-items:center; gap:0.5rem; margin:0.3rem 0;">
+    <div class="flow-box fb-light" style="min-width:160px;">Primer Contacto</div>
+    <div style="flex:1; font-size:0.85rem; color:#666;">Ya hiciste el primer acercamiento con el prospecto.</div>
+  </div>
+  <div style="text-align:center; color:#dd934f; font-size:1.5rem;">&#8595;</div>
+  <div style="display:flex; align-items:center; gap:0.5rem; margin:0.3rem 0;">
+    <div class="flow-box fb-light" style="min-width:160px;">Cotizacion</div>
+    <div style="flex:1; font-size:0.85rem; color:#666;">Le enviaste una propuesta o cotizacion al prospecto.</div>
+  </div>
+  <div style="text-align:center; color:#dd934f; font-size:1.5rem;">&#8595;</div>
+  <div style="display:flex; align-items:center; gap:0.5rem; margin:0.3rem 0;">
+    <div class="flow-box fb-gold" style="min-width:160px;">En Negociacion</div>
+    <div style="flex:1; font-size:0.85rem; color:#666;">Estan en dialogo activo sobre terminos, precios, condiciones.</div>
+  </div>
+  <div style="text-align:center; color:#dd934f; font-size:1.5rem;">&#8595;</div>
+  <div style="display:flex; align-items:center; gap:0.5rem; margin:0.3rem 0;">
+    <div class="flow-box fb-light" style="min-width:160px;">Demo</div>
+    <div style="flex:1; font-size:0.85rem; color:#666;">El prospecto asistio a una demostracion del producto.</div>
+  </div>
+  <div style="text-align:center; color:#dd934f; font-size:1.5rem;">&#8595;</div>
+  <div style="display:flex; align-items:center; gap:0.5rem; margin:0.3rem 0;">
+    <div class="flow-box fb-light" style="min-width:160px;">Firmado</div>
+    <div style="flex:1; font-size:0.85rem; color:#666;">El contrato esta firmado. Falta el pago.</div>
+  </div>
+  <div style="text-align:center; color:#dd934f; font-size:1.5rem;">&#8595;</div>
+  <div style="display:flex; align-items:center; gap:0.5rem; margin:0.3rem 0;">
+    <div class="flow-box fb-green" style="min-width:160px;">Fondeado</div>
+    <div style="flex:1; font-size:0.85rem; color:#666;">El pago se recibio. El deal esta completamente cerrado.</div>
+  </div>
+</div>
+
+<div class="info">En cualquier punto del pipeline, el deal puede pasar a <strong>"Perdido"</strong> si la negociacion no prospera. En ese caso, debes seleccionar la razon de perdida.</div>
+
+<h2>4.2 Indicador: Ventas Contacto Cliente?</h2>
+
+<p>Este es un badge automatico que aparece en la ficha del deal:</p>
+
+<table>
+  <thead>
+    <tr><th>Estado</th><th>Significado</th><th>Como se activa</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="background:#ef5350;color:#fff;border-radius:4px;text-align:center;font-weight:600;">No - Sin contacto AE</td>
+      <td>El AE aun no ha contactado al prospecto</td>
+      <td>Aparece por defecto cuando el deal se crea</td>
+    </tr>
+    <tr>
+      <td style="background:#4caf50;color:#fff;border-radius:4px;text-align:center;font-weight:600;">Si - Contactado</td>
+      <td>El AE ya hizo al menos un intento de contacto</td>
+      <td>Se activa automaticamente cuando registras tu primer toque como AE</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="warning">Este indicador es automatico y no se puede editar manualmente. Se usa en los reportes para medir que tan rapido los AE contactan los deals que reciben.</div>
+
+<!-- SECTION 5 -->
+<h1 class="section-title">5. Registrar Toques como AE</h1>
+
+<p>El proceso es identico al del SDR, pero tus toques se registran como <strong>toques del AE</strong> y aparecen diferenciados en el historial:</p>
+
+<div class="steps">
+  <div class="step">
+    <div class="step-number">1</div>
+    <div class="step-content">
+      <strong>Abre la ficha del deal</strong>, pestana "Deal".
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">2</div>
+    <div class="step-content">
+      <strong>Busca "Toque AE"</strong> en la seccion de AE Asignado. Veras el numero actual y un boton azul "+ Registrar Toque #N".
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">3</div>
+    <div class="step-content">
+      <strong>Haz clic, selecciona el canal</strong> (Telefono, WhatsApp, Correo) y confirma.
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">4</div>
+    <div class="step-content">
+      El toque se registra. Si es tu <strong>primer toque</strong>, el indicador "Ventas Contacto Cliente?" cambia automaticamente a <strong>verde "Si"</strong>.
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 6 -->
+<h1 class="section-title">6. Cotizacion y Montos</h1>
+
+<p>El CRM maneja varios campos de montos en diferentes etapas de la negociacion:</p>
+
+<table>
+  <thead>
+    <tr><th>Campo</th><th>Quien lo llena</th><th>Cuando</th><th>Descripcion</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Monto Estimado (SDR)</strong></td>
+      <td>Automatico</td>
+      <td>Al crear el deal</td>
+      <td>La estimacion que calculo el SDR con el pricing global. Solo lectura.</td>
+    </tr>
+    <tr>
+      <td><strong>Monto de Cotizacion</strong></td>
+      <td>AE</td>
+      <td>Al cotizar</td>
+      <td>El monto oficial que cotizaste al cliente. Al escribirlo por primera vez, la "Fecha de Cotizacion" se registra automaticamente.</td>
+    </tr>
+    <tr>
+      <td><strong>Monto de Venta (Cierre)</strong></td>
+      <td>AE</td>
+      <td>Al cerrar</td>
+      <td>El monto final que el cliente acepto pagar.</td>
+    </tr>
+    <tr>
+      <td><strong>Monto de Apartado</strong></td>
+      <td>AE</td>
+      <td>Si aplica</td>
+      <td>Si el cliente hizo un pago parcial inicial o anticipo.</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="tip">Cuando cambias el Status de Venta a <strong>"Vendido"</strong>, la Fecha de Cierre se registra automaticamente con la fecha actual. No necesitas llenarla manualmente.</div>
+
+<!-- SECTION 7 -->
+<h1 class="section-title">7. Productos del Deal</h1>
+
+<p>En la seccion "Productos del Deal" puedes detallar exactamente que productos estas vendiendo al cliente:</p>
+
+<div class="steps">
+  <div class="step">
+    <div class="step-number">1</div>
+    <div class="step-content">
+      <strong>Haz clic en "+ Agregar"</strong> para anadir una linea de producto.
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">2</div>
+    <div class="step-content">
+      <strong>Llena cada columna</strong>:
+      <ul>
+        <li><strong>Producto</strong>: nombre del producto/servicio</li>
+        <li><strong>Cantidad</strong>: unidades</li>
+        <li><strong>Precio Unitario</strong>: precio por unidad</li>
+        <li><strong>Descuento %</strong>: porcentaje de descuento</li>
+        <li><strong>Subtotal</strong>: se calcula automaticamente (Qty x Precio x (1 - Descuento%))</li>
+      </ul>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">3</div>
+    <div class="step-content">
+      <strong>Repite</strong> para cada producto adicional. Puedes agregar tantos como necesites.
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">4</div>
+    <div class="step-content">
+      <strong>Haz clic en "Guardar Productos"</strong>. El CRM guarda la lista y automaticamente clasifica el tipo de transaccion.
+    </div>
+  </div>
+</div>
+
+<h2>7.1 Cross-Selling y Up-Selling</h2>
+
+<p>Cuando guardas los productos, el CRM compara automaticamente lo que vendes con el <strong>servicio de interes original</strong> que trajo el lead del SDR:</p>
+
+<table>
+  <thead>
+    <tr><th>Clasificacion</th><th>Cuando se aplica</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><strong>Venta Directa</strong></td><td>El producto vendido coincide con el que el lead queria originalmente</td></tr>
+    <tr><td><strong>Cross-Selling</strong></td><td>El producto vendido incluye el original MAS otros adicionales</td></tr>
+    <tr><td><strong>Up-Selling</strong></td><td>El producto vendido es completamente diferente al original (de mayor valor)</td></tr>
+  </tbody>
+</table>
+
+<p>Esta clasificacion aparece como un badge junto al titulo de la tabla de productos y se usa en los reportes del equipo.</p>
+
+<!-- SECTION 8 -->
+<h1 class="section-title">8. Recompra y Clientes Activos</h1>
+
+<p>Si el prospecto es un <strong>cliente que ya compro antes</strong> (recompra), la ficha del deal tiene campos especiales:</p>
+
+<ul>
+  <li><strong>Es recompra?</strong>: Si/No</li>
+  <li><strong>Es cliente activo?</strong>: Si/No</li>
+  <li><strong>Producto de Recompra</strong>: que compro antes</li>
+  <li><strong>Valor de recompra</strong>: cuanto pago la vez anterior</li>
+  <li><strong>Fecha de recompra</strong>: cuando fue la compra anterior</li>
+</ul>
+
+<p>Los deals marcados como recompra se destacan visualmente en la tabla y el kanban con un <strong>borde morado</strong> y badge especial para que los identifiques facilmente.</p>
+
+<!-- SECTION 9 -->
+<h1 class="section-title">9. Cerrar la Venta</h1>
+
+<div class="steps">
+  <div class="step">
+    <div class="step-number">1</div>
+    <div class="step-content">
+      <strong>Llena el "Monto de Venta (Cierre)"</strong> con el monto final acordado.
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">2</div>
+    <div class="step-content">
+      <strong>Llena el "Producto de Cierre"</strong> con el nombre del producto vendido.
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">3</div>
+    <div class="step-content">
+      <strong>Cambia el "Status de Venta" a "Vendido"</strong> (o "Firmado" si aun falta el pago). La Fecha de Cierre se registra automaticamente.
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">4</div>
+    <div class="step-content">
+      <strong>Si ya recibiste el pago</strong>, cambia a "Fondeado" y sube el comprobante de pago (ver seccion siguiente).
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">5</div>
+    <div class="step-content">
+      <strong>Guarda los cambios</strong>. El deal ahora se refleja como ganado en los reportes.
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 10 -->
+<h1 class="section-title">10. Cobranza y Comprobante de Pago</h1>
+
+<p>Cuando el cliente realiza el pago, debes subir el comprobante al CRM:</p>
+
+<div class="steps">
+  <div class="step">
+    <div class="step-number">1</div>
+    <div class="step-content">
+      <strong>Abre la ficha del deal</strong>, pestana "Deal".
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">2</div>
+    <div class="step-content">
+      <strong>Busca la seccion "Cobranza y Facturacion"</strong>.
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">3</div>
+    <div class="step-content">
+      <strong>En "Comprobante de Pago", haz clic en "Subir archivo"</strong>. Selecciona el archivo desde tu computadora.
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">4</div>
+    <div class="step-content">
+      <strong>Formatos permitidos</strong>: PNG, JPG o PDF. Tamano maximo: <strong>10MB</strong>.
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">5</div>
+    <div class="step-content">
+      <strong>El archivo se sube a Google Drive</strong> automaticamente en una carpeta llamada "CRM_Comprobantes_Pago". Se guarda un link publico en el deal.
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">6</div>
+    <div class="step-content">
+      <strong>Una vez subido</strong>, veras un link "Ver comprobante" que abre el archivo. Si necesitas reemplazarlo, haz clic en "Reemplazar".
+    </div>
+  </div>
+</div>
+
+<div class="info">El comprobante queda almacenado permanentemente en Google Drive y el link se guarda en la base de datos del deal para consulta futura.</div>
+
+<!-- SECTION 11 -->
+<h1 class="section-title">11. Razon de Perdida</h1>
+
+<p>Cuando un deal se pierde (Status = "Perdido"), debes seleccionar la razon:</p>
+
+<table>
+  <thead>
+    <tr><th>Razon</th><th>Cuando usarla</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Sin Presupuesto</td><td>El cliente no tiene dinero para invertir</td></tr>
+    <tr><td>Eligio Competidor</td><td>Se fue con otra empresa</td></tr>
+    <tr><td>No Responde</td><td>Dejo de contestar llamadas/mensajes</td></tr>
+    <tr><td>Timing Inadecuado</td><td>No es el momento adecuado para el cliente</td></tr>
+    <tr><td>No Tiene Poder de Decision</td><td>Necesita aprobacion de alguien mas y no la obtuvo</td></tr>
+    <tr><td>Producto No Se Ajusta</td><td>Lo que ofrecemos no es lo que necesita</td></tr>
+    <tr><td>Cambio Prioridades</td><td>Las prioridades del cliente cambiaron</td></tr>
+    <tr><td>Precio Muy Alto</td><td>El precio esta fuera de su presupuesto</td></tr>
+    <tr><td>Proceso Interno Largo</td><td>El proceso de aprobacion interna del cliente es demasiado largo</td></tr>
+    <tr><td><strong>Otros</strong></td><td>Si ninguna aplica, selecciona "Otros" y escribe la razon en el campo de texto que aparece</td></tr>
+  </tbody>
+</table>
+
+<div class="warning">Siempre registra la razon de perdida. Esta informacion es crucial para los reportes y ayuda al equipo a entender por que se pierden negocios y como mejorar.</div>
+
+<!-- SECTION 12 -->
+<h1 class="section-title">12. Calendario y Correo</h1>
+
+<p>Como AE, tienes acceso a las mismas herramientas de Calendario y Correo que el SDR (ver Manual 2, secciones 12 y 13).</p>
+
+<h3>Funciones especiales para el AE:</h3>
+
+<ul>
+  <li><strong>Reagendar desde la ficha del deal</strong>: los campos "Fecha de Reagenda" y "Hora de Reagenda" tienen un boton de calendario que te permite crear un evento directamente en Google Calendar vinculado a ese deal.</li>
+  <li><strong>Enviar correos desde el deal</strong>: usa el boton "Enviar Correo" en el encabezado del modal para enviar un correo al prospecto. Se registra automaticamente como toque con canal "Email".</li>
+  <li><strong>Plantillas de correo</strong>: igual que el SDR, puedes crear plantillas predefinidas para tus correos mas frecuentes (cotizaciones, seguimientos, etc.). Las variables <code>{nombre}</code>, <code>{empresa}</code>, <code>{producto}</code> se reemplazan automaticamente.</li>
+</ul>
+
+</div><!-- /content -->
+
+<div class="page-footer">
+  CRM SWAT Squad &bull; Manual 3 de 5: Guia del Account Executive &bull; Castillo &amp; Company &copy; 2026
+</div>
+
+</body>
+</html>

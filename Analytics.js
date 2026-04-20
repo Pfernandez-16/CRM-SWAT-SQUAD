@@ -850,7 +850,8 @@ function calculateRazonesPerdioVenta_(currentLeads, previousLeads, calificacionI
     { key: 'procesoInternoLargo', label: 'Proceso interno largo' },
     { key: 'seFueConOtraSolucion', label: 'Se fue con otra solución', alt: 'Se fue con otra solucion' },
     { key: 'noEraElPerfil', label: 'No era el perfil' },
-    { key: 'empresaCerro', label: 'Empresa cerró', alt: 'Empresa cerro' }
+    { key: 'empresaCerro', label: 'Empresa cerró', alt: 'Empresa cerro' },
+    { key: 'otro', label: 'Otro' }
   ];
 
   // Helper: check if lead has a lost deal with a specific reason (supports alt label for accent variants)

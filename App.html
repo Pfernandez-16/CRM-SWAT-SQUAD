@@ -234,11 +234,6 @@
                         loginLoading.value = false;
                         if (result && result.status === 'success') {
                             currentUser.value = result.data;
-                            userConnected.value = result.data.isConnected;
-                            if (result.data.isConnected && result.data.clockInTime) {
-                                clockInTime.value = new Date(result.data.clockInTime);
-                                startClockTimer_();
-                            }
                             isLoggedIn.value = true;
                             localStorage.setItem('crm-user-email', result.data.email);
                             loading.value = true;
@@ -268,7 +263,8 @@
             const refreshing = ref(false);
             const saving = ref(false);
             const savingCatalog = ref(false);
-            const sidebarCollapsed = ref(false);
+            const sidebarCollapsed = ref(window.innerWidth < 768);
+            const isMobile = ref(window.innerWidth < 768);
             const currentView = ref('dashboard');
             const viewMode = ref('table'); // 'table' or 'kanban'
             const searchQuery = ref('');
@@ -440,18 +436,313 @@
                 if (tipo === 'SaaS') return ticket * (licencias || 1) * 12;
                 return 0;
             });
-            const userConnected = ref(false);
-            const clockInTime = ref(null);
-            const clockTimer = ref('');
             const activeAEs = ref([]);
-            let clockInterval = null;
-            let inactivityTimeout = null;
-            const INACTIVITY_LIMIT_MS = 30 * 60 * 1000; // 30 minutes
-            const stats = ref({ total: 0, thisWeek: 0, thisMonth: 0, byStatus: {}, byCalidad: {}, byVendedor: {} });
+            // ── Contactos ──
+            const contacts = ref([]);
+            const contactsLoaded = ref(false);
+            const contactSearch = ref('');
+            const contactPage = ref(1);
+            const contactSortBy = ref('id');
+            const contactSortOrder = ref('asc');
+            const contactFilterPais = ref('');
+            const contactFilterEstado = ref('');
+            const contactFilterLeads = ref('');
+            const contactFilterDeals = ref('');
+            const contactDetailModal = reactive({ show: false, contact: null, related: null, loading: false, saving: false });
+            const stats = ref({ total: 0, thisWeek: 0, thisMonth: 0, byStatus: {}, byCalidad: {}, byVendedor: {}, byCampana: {} });
             const routingConfig = reactive({ aeAssignmentMode: 'SDR_CHOICE', managerEmail: '', lastSdrRRSavedEmail: '', lastAeRRSavedEmail: '' });
             const savingRouting = ref(false);
             const selectedLead = ref({});
             const editLead = reactive({});
+            const lossReasonOtroOpen = ref(false);
+            // ── Custom confirm modal (replaces native confirm()) ──
+            const confirmModal = reactive({ show: false, message: '', resolve: null });
+            function showConfirm(message) {
+                return new Promise(function (resolve) {
+                    confirmModal.message = message;
+                    confirmModal.resolve = resolve;
+                    confirmModal.show = true;
+                });
+            }
+            function confirmModalAccept() { confirmModal.show = false; if (confirmModal.resolve) confirmModal.resolve(true); }
+            function confirmModalCancel() { confirmModal.show = false; if (confirmModal.resolve) confirmModal.resolve(false); }
+            // ── Lista Negra modal ──
+            const listaNegraModal = reactive({ show: false, motivo: '', loading: false });
+            function openListaNegraModal() { listaNegraModal.motivo = ''; listaNegraModal.show = true; listaNegraModal.loading = false; }
+            function cancelListaNegra() { listaNegraModal.show = false; }
+            function confirmListaNegra() {
+                listaNegraModal.loading = true;
+                var row = selectedLead.value._row;
+                var isDeal = selectedLead.value._source === 'deal' || selectedLead.value._source === 'cross_deal';
+                var motivo = listaNegraModal.motivo.trim();
+                var contactId = String(selectedLead.value._id_contacto || '');
+                google.script.run
+                    .withSuccessHandler(function (res) {
+                        listaNegraModal.loading = false;
+                        listaNegraModal.show = false;
+                        if (res && res.status === 'success') {
+                            // CASCADE: update ALL leads/deals for this contact in memory
+                            var cid = res.idContacto || contactId;
+                            leads.value.forEach(function (l) {
+                                if (String(l._id_contacto) === cid) {
+                                    l._listaNegra = true;
+                                    l['lista_negra'] = 'TRUE';
+                                    l['fecha_lista_negra'] = new Date().toISOString();
+                                    l['motivo_lista_negra'] = motivo;
+                                    l._colW_Status = 'Perdido';
+                                    l['Status'] = 'Perdido';
+                                }
+                            });
+                            deals.value.forEach(function (d) {
+                                if (String(d._id_contacto) === cid) {
+                                    d._listaNegra = true;
+                                    d['lista_negra'] = 'TRUE';
+                                    d['fecha_lista_negra'] = new Date().toISOString();
+                                    d['motivo_lista_negra'] = motivo;
+                                    d._colW_Status = 'Perdido';
+                                    d['Status de Venta'] = 'Perdido';
+                                }
+                            });
+                            var msg = 'Contacto enviado a Lista Negra';
+                            if (res.cascadedLeads || res.cascadedDeals)
+                                msg += ' — ' + (res.cascadedLeads || 0) + ' leads y ' + (res.cascadedDeals || 0) + ' deals actualizados';
+                            showToast(msg, 'success');
+                            closeLeadModal();
+                        } else {
+                            showToast('Error: ' + (res && res.message || 'desconocido'), 'error');
+                        }
+                    })
+                    .withFailureHandler(function (err) {
+                        listaNegraModal.loading = false;
+                        showToast('Error: ' + err.message, 'error');
+                    })
+                    .toggleListaNegra(row, isDeal, true, motivo, currentUser.value.email);
+            }
+            function removeFromListaNegra(item) {
+                // Support both individual lead/deal items and grouped contact items
+                var row = item._sampleRow || item._row;
+                var isDeal = item._sampleIsDeal || item._source === 'deal' || item._source === 'cross_deal';
+                var contactId = String(item._id_contacto || '');
+                showConfirm('¿Deseas sacar este contacto de la Lista Negra? Sus leads y deals permanecerán en status Perdido.').then(function (ok) {
+                    if (!ok) return;
+                    google.script.run
+                        .withSuccessHandler(function (res) {
+                            if (res && res.status === 'success') {
+                                // Clear blacklist flag on ALL leads/deals for this contact
+                                var cid = res.idContacto || contactId;
+                                leads.value.forEach(function (l) {
+                                    if (String(l._id_contacto) === cid) {
+                                        l._listaNegra = false;
+                                        l['lista_negra'] = '';
+                                        l['fecha_lista_negra'] = '';
+                                        l['motivo_lista_negra'] = '';
+                                    }
+                                });
+                                deals.value.forEach(function (d) {
+                                    if (String(d._id_contacto) === cid) {
+                                        d._listaNegra = false;
+                                        d['lista_negra'] = '';
+                                        d['fecha_lista_negra'] = '';
+                                        d['motivo_lista_negra'] = '';
+                                    }
+                                });
+                                showToast('Contacto removido de Lista Negra', 'success');
+                                if (showLeadModal.value) closeLeadModal();
+                            } else {
+                                showToast('Error: ' + (res && res.message || 'desconocido'), 'error');
+                            }
+                        })
+                        .withFailureHandler(function (err) { showToast('Error: ' + err.message, 'error'); })
+                        .toggleListaNegra(row, isDeal, false, '', currentUser.value.email);
+                });
+            }
+            // ── Duplicate Analysis ──
+            const duplicatesModal = reactive({ show: false, loading: false, groups: [], total: 0 });
+            // ── Phantom Cleanup State ──
+            const phantomCleanup = reactive({
+                scanning: false,
+                confirming: false,
+                executing: false,
+                done: false,
+                phantoms: [],
+                totalFound: 0,
+                totalCleaned: 0
+            });
+            function runDuplicateAnalysis() {
+                duplicatesModal.loading = true;
+                duplicatesModal.show = true;
+                duplicatesModal.groups = [];
+                duplicatesModal.total = 0;
+                // Reset phantom state on each fresh analysis
+                phantomCleanup.scanning = false;
+                phantomCleanup.confirming = false;
+                phantomCleanup.executing = false;
+                phantomCleanup.done = false;
+                phantomCleanup.phantoms = [];
+                phantomCleanup.totalFound = 0;
+                phantomCleanup.totalCleaned = 0;
+                google.script.run
+                    .withSuccessHandler(function (data) {
+                        var res = JSON.parse(data || '{"groups":[],"total":0}');
+                        duplicatesModal.groups = res.groups || [];
+                        duplicatesModal.total = res.total || 0;
+                        duplicatesModal.loading = false;
+                        // Auto-scan for phantoms after analysis completes
+                        scanPhantoms();
+                    })
+                    .withFailureHandler(function (err) {
+                        duplicatesModal.loading = false;
+                        showToast('Error al analizar duplicados: ' + err.message, 'error');
+                    })
+                    .analyzeAllDuplicates();
+            }
+            function scanPhantoms() {
+                phantomCleanup.scanning = true;
+                google.script.run
+                    .withSuccessHandler(function (data) {
+                        var res = JSON.parse(data || '{}');
+                        if (res.error) { showToast('Error: ' + res.error, 'error'); phantomCleanup.scanning = false; return; }
+                        phantomCleanup.phantoms = res.phantoms || [];
+                        phantomCleanup.totalFound = res.totalFound || 0;
+                        phantomCleanup.scanning = false;
+                    })
+                    .withFailureHandler(function (err) {
+                        phantomCleanup.scanning = false;
+                        showToast('Error al escanear fantasmas: ' + err.message, 'error');
+                    })
+                    .cleanPhantomDuplicates('preview');
+            }
+            function executePhantomCleanup() {
+                phantomCleanup.executing = true;
+                google.script.run
+                    .withSuccessHandler(function (data) {
+                        var res = JSON.parse(data || '{}');
+                        if (res.error) { showToast('Error: ' + res.error, 'error'); phantomCleanup.executing = false; return; }
+                        phantomCleanup.totalCleaned = res.totalCleaned || 0;
+                        phantomCleanup.executing = false;
+                        phantomCleanup.confirming = false;
+                        phantomCleanup.done = true;
+                        showToast(res.totalCleaned + ' leads fantasma eliminados correctamente', 'success');
+                        // Refresh the lead list
+                        if (typeof loadLeads === 'function') loadLeads();
+                    })
+                    .withFailureHandler(function (err) {
+                        phantomCleanup.executing = false;
+                        showToast('Error al limpiar fantasmas: ' + err.message, 'error');
+                    })
+                    .cleanPhantomDuplicates('execute');
+            }
+
+            // ── Contactos functions ──
+            function loadContacts() {
+                google.script.run
+                    .withSuccessHandler(function (data) { contacts.value = JSON.parse(data || '[]'); contactsLoaded.value = true; })
+                    .withFailureHandler(function () { contactsLoaded.value = true; })
+                    .getContacts();
+            }
+            const contactCountries = computed(() => {
+                var countries = {};
+                contacts.value.forEach(function (c) { var p = (c.pais || '').trim(); if (p) countries[p] = true; });
+                return Object.keys(countries).sort();
+            });
+            const filteredContacts = computed(() => {
+                var items = contacts.value;
+                if (contactSearch.value) {
+                    var q = contactSearch.value.toLowerCase();
+                    items = items.filter(function (c) {
+                        return String(c.nombre || '').toLowerCase().includes(q) ||
+                            String(c.apellido || '').toLowerCase().includes(q) ||
+                            String(c.empresa || '').toLowerCase().includes(q) ||
+                            String(c.email || '').toLowerCase().includes(q) ||
+                            String(c.telefono_1 || '').includes(q) ||
+                            String(c.id_contacto || '').includes(q);
+                    });
+                }
+                if (contactFilterPais.value) {
+                    items = items.filter(function (c) { return (c.pais || '') === contactFilterPais.value; });
+                }
+                if (contactFilterEstado.value === 'activo') {
+                    items = items.filter(function (c) { return !c.lista_negra && !c.es_prueba; });
+                } else if (contactFilterEstado.value === 'prueba') {
+                    items = items.filter(function (c) { return c.es_prueba; });
+                } else if (contactFilterEstado.value === 'lista_negra') {
+                    items = items.filter(function (c) { return c.lista_negra; });
+                }
+                if (contactFilterLeads.value === '2+') {
+                    items = items.filter(function (c) { return (c._leadCount || 0) >= 2; });
+                } else if (contactFilterLeads.value === '3+') {
+                    items = items.filter(function (c) { return (c._leadCount || 0) >= 3; });
+                }
+                if (contactFilterDeals.value === '1+') {
+                    items = items.filter(function (c) { return (c._dealCount || 0) >= 1; });
+                } else if (contactFilterDeals.value === '2+') {
+                    items = items.filter(function (c) { return (c._dealCount || 0) >= 2; });
+                }
+                // Sorting
+                var sorted = items.slice();
+                var field = contactSortBy.value;
+                var dir = contactSortOrder.value === 'asc' ? 1 : -1;
+                sorted.sort(function (a, b) {
+                    var valA, valB;
+                    switch (field) {
+                        case 'id': valA = parseInt(a.id_contacto) || 0; valB = parseInt(b.id_contacto) || 0; return dir * (valA - valB);
+                        case 'nombre': valA = String(a.nombre || '').toLowerCase(); valB = String(b.nombre || '').toLowerCase(); return dir * valA.localeCompare(valB);
+                        case 'apellido': valA = String(a.apellido || '').toLowerCase(); valB = String(b.apellido || '').toLowerCase(); return dir * valA.localeCompare(valB);
+                        case 'empresa': valA = String(a.empresa || '').toLowerCase(); valB = String(b.empresa || '').toLowerCase(); return dir * valA.localeCompare(valB);
+                        case 'email': valA = String(a.email || '').toLowerCase(); valB = String(b.email || '').toLowerCase(); return dir * valA.localeCompare(valB);
+                        case 'pais': valA = String(a.pais || '').toLowerCase(); valB = String(b.pais || '').toLowerCase(); return dir * valA.localeCompare(valB);
+                        case 'leads': valA = a._leadCount || 0; valB = b._leadCount || 0; return dir * (valA - valB);
+                        case 'deals': valA = a._dealCount || 0; valB = b._dealCount || 0; return dir * (valA - valB);
+                        case 'estado': valA = a.lista_negra ? 2 : (a.es_prueba ? 1 : 0); valB = b.lista_negra ? 2 : (b.es_prueba ? 1 : 0); return dir * (valA - valB);
+                        default: valA = parseInt(a.id_contacto) || 0; valB = parseInt(b.id_contacto) || 0; return dir * (valA - valB);
+                    }
+                });
+                return sorted;
+            });
+            const paginatedContacts = computed(() => {
+                var start = (contactPage.value - 1) * pageSize;
+                return filteredContacts.value.slice(start, start + pageSize);
+            });
+            const totalContactPages = computed(() => Math.ceil(filteredContacts.value.length / pageSize) || 1);
+            function openContactDetail(c) {
+                contactDetailModal.contact = JSON.parse(JSON.stringify(c));
+                contactDetailModal.related = null;
+                contactDetailModal.loading = true;
+                contactDetailModal.saving = false;
+                contactDetailModal.show = true;
+                google.script.run
+                    .withSuccessHandler(function (data) {
+                        contactDetailModal.related = JSON.parse(data || '{"leads":[],"deals":[]}');
+                        contactDetailModal.loading = false;
+                    })
+                    .withFailureHandler(function () { contactDetailModal.loading = false; })
+                    .getContactRelated(c.id_contacto);
+            }
+            function saveContactChanges() {
+                var c = contactDetailModal.contact;
+                if (!c || !c._row) return;
+                contactDetailModal.saving = true;
+                var updates = {
+                    nombre: c.nombre, apellido: c.apellido, email: c.email,
+                    telefono_1: c.telefono_1, telefono_2: c.telefono_2 || '',
+                    empresa: c.empresa, area: c.area || '', pais: c.pais || '',
+                    ciudad: c.ciudad || '', empleados: c.empleados || '', nivel: c.nivel || ''
+                };
+                google.script.run
+                    .withSuccessHandler(function (res) {
+                        contactDetailModal.saving = false;
+                        if (res && res.status === 'success') {
+                            showToast('Contacto actualizado', 'success');
+                            // Sync local contacts array
+                            var idx = contacts.value.findIndex(function (x) { return x._row === c._row; });
+                            if (idx !== -1) Object.assign(contacts.value[idx], updates, { nombre: c.nombre, apellido: c.apellido });
+                            contactDetailModal.show = false;
+                        } else { showToast('Error: ' + (res && res.message || ''), 'error'); }
+                    })
+                    .withFailureHandler(function (err) { contactDetailModal.saving = false; showToast('Error: ' + err.message, 'error'); })
+                    .updateContact(c._row, updates, currentUser.value.email);
+            }
+            function closeContactModal() { contactDetailModal.show = false; }
             const leadHistory = reactive({ pipeline: [], leads: [], deals: [], loading: false });
             const editingCatalogValues = ref([]);
 
@@ -462,6 +753,75 @@
 
             // ── Creation Mode ──
             const isCreating = ref(false);
+
+            // ── Bulk Edit Mode ──
+            const bulkMode = ref(false);
+            const bulkSelected = ref([]);
+            const bulkProcessing = ref(false);
+
+            function toggleBulkMode() {
+                bulkMode.value = !bulkMode.value;
+                bulkSelected.value = [];
+            }
+            function toggleBulkItem(rowKey) {
+                var idx = bulkSelected.value.indexOf(rowKey);
+                if (idx !== -1) bulkSelected.value.splice(idx, 1);
+                else bulkSelected.value.push(rowKey);
+            }
+            function isBulkSelected(rowKey) { return bulkSelected.value.indexOf(rowKey) !== -1; }
+            function bulkSelectAll(items) {
+                var allRows = items.map(function (i) { return i._row; });
+                if (bulkSelected.value.length === allRows.length) { bulkSelected.value = []; }
+                else { bulkSelected.value = allRows.slice(); }
+            }
+            function bulkApplyAction(fieldName, newValue, label) {
+                if (bulkSelected.value.length === 0) return;
+                showConfirm('¿Aplicar "' + (label || fieldName) + ' → ' + newValue + '" a ' + bulkSelected.value.length + ' registros?').then(function (ok) {
+                    if (!ok) return;
+                    bulkProcessing.value = true;
+                    var rows = bulkSelected.value.slice();
+                    if (currentView.value === 'contactos') {
+                        google.script.run
+                            .withSuccessHandler(function (res) {
+                                bulkProcessing.value = false;
+                                if (res && res.status === 'success') {
+                                    contacts.value.forEach(function (c) {
+                                        if (rows.indexOf(c._row) !== -1) {
+                                            c[fieldName] = newValue;
+                                            if (fieldName === 'es_prueba') c.es_prueba = newValue === 'TRUE';
+                                        }
+                                    });
+                                    showToast(res.updated + ' contactos actualizados', 'success');
+                                    bulkSelected.value = [];
+                                } else { showToast('Error: ' + (res && res.message || ''), 'error'); }
+                            })
+                            .withFailureHandler(function (err) { bulkProcessing.value = false; showToast('Error: ' + err.message, 'error'); })
+                            .bulkUpdateContacts(rows, fieldName, newValue, currentUser.value.email);
+                    } else {
+                        var isDeal = currentView.value === 'negociaciones';
+                        google.script.run
+                            .withSuccessHandler(function (res) {
+                                bulkProcessing.value = false;
+                                if (res && res.status === 'success') {
+                                    var dataset = isDeal ? deals : leads;
+                                    dataset.value.forEach(function (item) {
+                                        if (rows.indexOf(item._row) !== -1) {
+                                            item[fieldName] = newValue;
+                                            if (fieldName === 'Status') { item._colW_Status = newValue; item['Status'] = newValue; }
+                                            if (fieldName === 'Status de Venta') { item._colW_Status = newValue; item['Status de Venta'] = newValue; }
+                                            if (fieldName === 'es_prueba') item._esPrueba = newValue === 'TRUE';
+                                            if (fieldName === 'Vendedor asignado (SDR)') item._id_vendedor_sdr = newValue;
+                                        }
+                                    });
+                                    showToast(res.updated + ' registros actualizados', 'success');
+                                    bulkSelected.value = [];
+                                } else { showToast('Error: ' + (res && res.message || ''), 'error'); }
+                            })
+                            .withFailureHandler(function (err) { bulkProcessing.value = false; showToast('Error: ' + err.message, 'error'); })
+                            .bulkUpdateField(rows, fieldName, newValue, isDeal, currentUser.value.email);
+                    }
+                });
+            }
             const creationType = ref('lead'); // 'lead' or 'deal'
 
             // ── Phase 21: Duplicate info for lead detail ──
@@ -794,16 +1154,20 @@
                 { id: 'dashboard', icon: 'dashboard', label: 'Dashboard' },
                 { id: 'leads', icon: 'list_alt', label: 'Prospectos', badge: leads.value.length || null },
                 { id: 'negociaciones', icon: 'handshake', label: 'Negociaciones', badge: deals.value.length || null },
+                { id: 'contactos', icon: 'contacts', label: 'Contactos' },
+                { id: 'lista_negra', icon: 'block', label: 'Lista Negra', badge: blacklistedItems.value.length || null },
                 { id: 'reportes', icon: 'assessment', label: 'Reportes' },
                 { id: 'calendar', icon: 'calendar_month', label: 'Calendario' },
                 { id: 'config', icon: 'settings', label: 'Configuración' },
+                { id: 'importar', icon: 'upload_file', label: 'Importar' },
                 { id: 'account', icon: 'person', label: 'Cuenta' },
             ]);
 
             const currentPageTitle = computed(() => {
                 const titles = {
                     dashboard: 'Dashboard', leads: 'Prospectos', negociaciones: 'Negociaciones',
-                    reportes: 'Reportes', calendar: 'Calendario', config: 'Configuración', account: 'Cuenta'
+                    contactos: 'Contactos', lista_negra: 'Lista Negra', reportes: 'Reportes', calendar: 'Calendario',
+                    config: 'Configuración', importar: 'Importar Leads', account: 'Cuenta'
                 };
                 return titles[currentView.value] || '';
             });
@@ -829,10 +1193,10 @@
                 const isNeg = currentView.value === 'negociaciones';
                 let items;
                 if (isNeg) {
-                    items = deals.value.filter(d => (d['Status de Venta'] || '').trim() === status);
+                    items = deals.value.filter(d => !d._listaNegra && (d['Status de Venta'] || '').trim() === status);
                     items.forEach(d => { d._source = 'deal'; });
                 } else {
-                    items = leads.value.filter(l => (l._colW_Status || '').trim() === status);
+                    items = leads.value.filter(l => !l._listaNegra && (l._colW_Status || '').trim() === status);
                     items.forEach(l => { l._source = 'lead'; });
                 }
                 return items;
@@ -879,6 +1243,23 @@
                 if (currentSort !== field) return 'unfold_more';
                 return currentOrder === 'asc' ? 'arrow_upward' : 'arrow_downward';
             }
+            function toggleContactSort(field) {
+                if (contactSortBy.value === field) {
+                    contactSortOrder.value = contactSortOrder.value === 'asc' ? 'desc' : 'asc';
+                } else {
+                    contactSortBy.value = field;
+                    contactSortOrder.value = (field === 'nombre' || field === 'apellido' || field === 'empresa' || field === 'pais') ? 'asc' : 'desc';
+                }
+                contactPage.value = 1;
+            }
+            function toggleBlacklistSort(field) {
+                if (blacklistSortBy.value === field) {
+                    blacklistSortOrder.value = blacklistSortOrder.value === 'asc' ? 'desc' : 'asc';
+                } else {
+                    blacklistSortBy.value = field;
+                    blacklistSortOrder.value = (field === 'nombre' || field === 'empresa') ? 'asc' : 'desc';
+                }
+            }
             function applySorting_(items, field, order) {
                 var sorted = items.slice();
                 var dir = order === 'asc' ? 1 : -1;
@@ -918,6 +1299,10 @@
                             valA = parseFloat(a['Monto Aproximado'] || 0) || 0;
                             valB = parseFloat(b['Monto Aproximado'] || 0) || 0;
                             return dir * (valA - valB);
+                        case 'campaign':
+                            valA = String(a._campaign || a['campaign'] || '').toLowerCase();
+                            valB = String(b._campaign || b['campaign'] || '').toLowerCase();
+                            return dir * valA.localeCompare(valB);
                         case 'vendedor':
                             valA = String(a._colAQ_Vendedor || '').toLowerCase();
                             valB = String(b._colAQ_Vendedor || '').toLowerCase();
@@ -960,9 +1345,84 @@
                 return sorted;
             }
 
+            // ── Lista Negra: all blacklisted leads + deals ──
+            // Lista Negra: group by unique contact (not individual leads/deals)
+            const blacklistedItems = computed(() => {
+                var contactMap = {};
+                leads.value.filter(function (l) { return l._listaNegra; }).forEach(function (l) {
+                    var cid = String(l._id_contacto || '');
+                    if (!contactMap[cid]) contactMap[cid] = {
+                        _id_contacto: cid, _name: l._name, _empresa: l._empresa,
+                        _email: l._email, _tel: l._tel,
+                        'motivo_lista_negra': l['motivo_lista_negra'] || '',
+                        'fecha_lista_negra': l['fecha_lista_negra'] || '',
+                        leadCount: 0, dealCount: 0,
+                        _sampleRow: l._row, _sampleIsDeal: false, _source: 'lead'
+                    };
+                    contactMap[cid].leadCount++;
+                });
+                deals.value.filter(function (d) { return d._listaNegra; }).forEach(function (d) {
+                    var cid = String(d._id_contacto || '');
+                    if (!contactMap[cid]) contactMap[cid] = {
+                        _id_contacto: cid, _name: d._name, _empresa: d._empresa,
+                        _email: d._email, _tel: d._tel,
+                        'motivo_lista_negra': d['motivo_lista_negra'] || '',
+                        'fecha_lista_negra': d['fecha_lista_negra'] || '',
+                        leadCount: 0, dealCount: 0,
+                        _sampleRow: d._row, _sampleIsDeal: true, _source: 'deal'
+                    };
+                    contactMap[cid].dealCount++;
+                });
+                return Object.values(contactMap);
+            });
+            const blacklistSearch = ref('');
+            const blacklistSortBy = ref('nombre');
+            const blacklistSortOrder = ref('asc');
+            const filteredBlacklist = computed(() => {
+                var items = blacklistedItems.value;
+                if (blacklistSearch.value) {
+                    var q = blacklistSearch.value.toLowerCase();
+                    items = items.filter(function (item) {
+                        return String(item._name || '').toLowerCase().includes(q) ||
+                            String(item._empresa || '').toLowerCase().includes(q) ||
+                            String(item._email || '').toLowerCase().includes(q) ||
+                            String(item['motivo_lista_negra'] || '').toLowerCase().includes(q);
+                    });
+                }
+                var sorted = items.slice();
+                var field = blacklistSortBy.value;
+                var dir = blacklistSortOrder.value === 'asc' ? 1 : -1;
+                sorted.sort(function (a, b) {
+                    var valA, valB;
+                    switch (field) {
+                        case 'nombre': valA = String(a._name || '').toLowerCase(); valB = String(b._name || '').toLowerCase(); return dir * valA.localeCompare(valB);
+                        case 'empresa': valA = String(a._empresa || '').toLowerCase(); valB = String(b._empresa || '').toLowerCase(); return dir * valA.localeCompare(valB);
+                        case 'email': valA = String(a._email || '').toLowerCase(); valB = String(b._email || '').toLowerCase(); return dir * valA.localeCompare(valB);
+                        case 'leads': valA = a.leadCount || 0; valB = b.leadCount || 0; return dir * (valA - valB);
+                        case 'deals': valA = a.dealCount || 0; valB = b.dealCount || 0; return dir * (valA - valB);
+                        case 'fecha': valA = a['fecha_lista_negra'] || ''; valB = b['fecha_lista_negra'] || ''; return dir * (new Date(valA || 0) - new Date(valB || 0));
+                        default: valA = String(a._name || '').toLowerCase(); valB = String(b._name || '').toLowerCase(); return dir * valA.localeCompare(valB);
+                    }
+                });
+                return sorted;
+            });
+            function openBlacklistContactDetail(item) {
+                function findAndOpen() {
+                    var c = contacts.value.find(function (x) { return String(x.id_contacto) === String(item._id_contacto); });
+                    if (c) { openContactDetail(c); } else { showToast('Contacto no encontrado', 'error'); }
+                }
+                if (contactsLoaded.value) { findAndOpen(); }
+                else {
+                    google.script.run
+                        .withSuccessHandler(function (data) { contacts.value = JSON.parse(data || '[]'); contactsLoaded.value = true; findAndOpen(); })
+                        .withFailureHandler(function () { contactsLoaded.value = true; showToast('Error al cargar contactos', 'error'); })
+                        .getContacts();
+                }
+            }
+
             // ── Prospectos (SDR) List ──
             const filteredLeads = computed(() => {
-                let items = leads.value;
+                let items = leads.value.filter(l => !l._listaNegra);
                 if (filterStatus.value) {
                     items = items.filter(l => l._colW_Status === filterStatus.value);
                 }
@@ -979,6 +1439,7 @@
                         String(l['Pais'] || '').toLowerCase().includes(q) ||
                         String(l['Servicio'] || '').toLowerCase().includes(q) ||
                         String(l._colX_Calidad || '').toLowerCase().includes(q) ||
+                        String(l._campaign || '').toLowerCase().includes(q) ||
                         String(l._id || '').includes(q)
                     );
                 }
@@ -997,7 +1458,7 @@
             const filterDealStatus = ref('');
 
             const filteredDeals = computed(() => {
-                let items = deals.value;
+                let items = deals.value.filter(d => !d._listaNegra);
                 if (filterDealStatus.value) {
                     items = items.filter(d => d['Status de Venta'] === filterDealStatus.value);
                 }
@@ -1114,6 +1575,24 @@
                 return statusColorMap[status] || '#8892b0';
             }
 
+            // ── Campaign Badge Helpers ──
+            var CAMPAIGN_COLORS = {
+                'LP - Principal':        { cls: 'campaign-principal',  short: 'Principal' },
+                'LP - Directores':       { cls: 'campaign-directores', short: 'Directores' },
+                'LP - Recursos Humanos': { cls: 'campaign-rrhh',      short: 'RRHH' },
+                'LP - Webinar':          { cls: 'campaign-webinar',    short: 'Webinar' },
+                'demo_campaign':         { cls: 'campaign-demo',       short: 'Demo' },
+                'Manual':                { cls: 'campaign-manual',     short: 'Manual' }
+            };
+            function getCampaignClass(campaign) {
+                var entry = CAMPAIGN_COLORS[campaign];
+                return entry ? entry.cls : 'campaign-other';
+            }
+            function getCampaignShort(campaign) {
+                var entry = CAMPAIGN_COLORS[campaign];
+                return entry ? entry.short : (campaign || '').replace(/^LP - /, '');
+            }
+
             // ── Pricing Computed ──
             const uniqueRegions = computed(() => [...new Set(pricing.value.map(p => p.region))]);
             const uniqueMembershipTypes = computed(() => [...new Set(pricing.value.map(p => p.membershipType))]);
@@ -1140,21 +1619,6 @@
             const catalogNames = computed(() => Object.keys(catalogs.value).filter(k => k.trim()));
 
             // ── Config Categories ──
-            // ── Attendance History ──
-            const attendanceHistory = ref([]);
-            const loadingAttendance = ref(false);
-
-            function loadAttendanceHistory() {
-                loadingAttendance.value = true;
-                google.script.run
-                    .withSuccessHandler(function (data) {
-                        attendanceHistory.value = data || [];
-                        loadingAttendance.value = false;
-                    })
-                    .withFailureHandler(function () { loadingAttendance.value = false; })
-                    .getAttendanceHistory(30);
-            }
-
             const configCategoryMap = {
                 general: {
                     label: '⚙️ General & Status',
@@ -1284,9 +1748,10 @@
             // Watch for view changes to init FullCalendar
             watch(currentView, function (newView) {
                 if (newView === 'calendar') {
-                    nextTick(function () {
-                        initFullCalendar();
-                    });
+                    nextTick(function () { initFullCalendar(); });
+                }
+                if (newView === 'contactos' && !contactsLoaded.value) {
+                    loadContacts();
                 }
             });
 
@@ -1361,12 +1826,12 @@
                     .updateCalendarEvent(selectedEventData.id, data);
             }
 
-            function deleteEventFromCalendar() {
+            async function deleteEventFromCalendar() {
                 if (!selectedEventData.id) {
                     showToast('❌ No se puede eliminar: ID no disponible', 'error');
                     return;
                 }
-                if (!confirm('¿Estás seguro de que deseas eliminar "' + selectedEventData.title + '"?')) return;
+                if (!(await showConfirm('¿Estás seguro de que deseas eliminar "' + selectedEventData.title + '"?'))) return;
                 google.script.run
                     .withSuccessHandler(function (result) {
                         if (result.status === 'success') {
@@ -1481,6 +1946,7 @@
             function openLeadDetail(lead) {
                 selectedLead.value = lead;
                 Object.assign(editLead, JSON.parse(JSON.stringify(lead)));
+                lossReasonOtroOpen.value = !!(lead['Razón Pérdida Otra'] || '').trim();
                 // AE opening a deal → default to "Deal" tab; SDR → "Lead"
                 var isDealItem = (lead._source === 'deal' || lead._source === 'cross_deal');
                 modalTab.value = (isDealItem && userRole.value === 'AE') ? 'Deal' : 'Lead';
@@ -1626,9 +2092,153 @@
                     .getLeadHistory(idLead);
             }
 
+            function hasUnsavedChanges() {
+                if (isCreating.value) {
+                    // For new leads, check if any field has been filled
+                    return Object.keys(editLead).some(function (k) {
+                        if (k === 'Status') return false; // default value
+                        return String(editLead[k] || '').trim() !== '';
+                    });
+                }
+                if (!selectedLead.value || !selectedLead.value._row) return false;
+                var isDeal = selectedLead.value._source === 'deal' || selectedLead.value._source === 'cross_deal';
+                var layout = isDeal
+                    ? (fieldLayoutDeal.value.length > 0 ? fieldLayoutDeal.value : DEFAULT_DEAL_LAYOUT)
+                    : (fieldLayoutLead.value.length > 0 ? fieldLayoutLead.value : DEFAULT_LEAD_LAYOUT);
+                for (var i = 0; i < layout.length; i++) {
+                    var key = layout[i].campo_key;
+                    if (layout[i].solo_lectura || layout[i].tipo_input === 'hidden') continue;
+                    var oldVal = String(selectedLead.value[key] ?? '');
+                    var newVal = String(editLead[key] ?? '');
+                    if (oldVal !== newVal) return true;
+                }
+                return false;
+            }
+
             function closeLeadModal() {
                 showLeadModal.value = false;
                 isCreating.value = false;
+                linkedContact.value = null;
+            }
+
+            async function safeCloseLeadModal() {
+                if (hasUnsavedChanges()) {
+                    var confirmed = await showConfirm('Tienes cambios sin guardar. ¿Deseas salir y perder los cambios?');
+                    if (!confirmed) return;
+                }
+                closeLeadModal();
+            }
+
+            // ── Prueba toggle & auto-detection ──
+            function togglePrueba() {
+                editLead['es_prueba'] = editLead['es_prueba'] === 'TRUE' ? '' : 'TRUE';
+            }
+            function detectPruebaInEditLead() {
+                var fieldsToCheck = ['Nombre', 'Apellido', 'Email', 'empresa', 'Notas', 'Teléfono', 'Area', 'Nivel', 'Servicio', 'Teléfono 2', 'Pais', 'City'];
+                for (var i = 0; i < fieldsToCheck.length; i++) {
+                    var val = String(editLead[fieldsToCheck[i]] || '').toLowerCase();
+                    if (val.indexOf('prueba') !== -1) return true;
+                }
+                return false;
+            }
+
+            // ── Contact Picker & Contact Creation ──
+            const contactPickerOpen = ref(false);
+            const contactPickerSearch = ref('');
+            const linkedContact = ref(null);
+            const createContactModal = reactive({ show: false, saving: false, data: {} });
+
+            const contactPickerFiltered = computed(() => {
+                var items = contacts.value.filter(function (c) { return !c.lista_negra; });
+                if (!contactPickerSearch.value) return items;
+                var q = contactPickerSearch.value.toLowerCase();
+                return items.filter(function (c) {
+                    return String(c.nombre || '').toLowerCase().includes(q) ||
+                        String(c.apellido || '').toLowerCase().includes(q) ||
+                        String(c.empresa || '').toLowerCase().includes(q) ||
+                        String(c.email || '').toLowerCase().includes(q) ||
+                        String(c.telefono_1 || '').includes(q) ||
+                        String(c.id_contacto || '').includes(q);
+                });
+            });
+
+            function openContactPicker() {
+                if (!contactsLoaded.value) loadContacts();
+                contactPickerSearch.value = '';
+                contactPickerOpen.value = true;
+            }
+
+            function selectContactForLead(contact) {
+                showConfirm('¿Enlazar a ' + (contact.nombre || '') + ' ' + (contact.apellido || '') + ' a esta nueva ficha de Lead?').then(function (ok) {
+                    if (!ok) return;
+                    linkedContact.value = contact;
+                    editLead['Nombre'] = contact.nombre || '';
+                    editLead['Apellido'] = contact.apellido || '';
+                    editLead['Email'] = contact.email || '';
+                    editLead['Teléfono'] = contact.telefono_1 || '';
+                    editLead['Teléfono 2'] = contact.telefono_2 || '';
+                    editLead['empresa'] = contact.empresa || '';
+                    editLead['Area'] = contact.area || '';
+                    editLead['Pais'] = contact.pais || '';
+                    editLead['City'] = contact.ciudad || '';
+                    editLead['Empleados'] = contact.empleados || '';
+                    editLead['Nivel'] = contact.nivel || '';
+                    contactPickerOpen.value = false;
+                });
+            }
+
+            function unlinkContact() {
+                linkedContact.value = null;
+            }
+
+            function isFieldLocked(fieldKey) {
+                if (!isCreating.value || !linkedContact.value) return false;
+                return ['Nombre', 'Apellido', 'Email', 'Teléfono', 'Teléfono 2', 'empresa', 'Area', 'Pais', 'City', 'Empleados', 'Nivel'].indexOf(fieldKey) !== -1;
+            }
+
+            function openCreateLeadFromContact(contact) {
+                closeContactModal();
+                nextTick(function () {
+                    openCreateLead();
+                    nextTick(function () {
+                        linkedContact.value = contact;
+                        editLead['Nombre'] = contact.nombre || '';
+                        editLead['Apellido'] = contact.apellido || '';
+                        editLead['Email'] = contact.email || '';
+                        editLead['Teléfono'] = contact.telefono_1 || '';
+                        editLead['Teléfono 2'] = contact.telefono_2 || '';
+                        editLead['empresa'] = contact.empresa || '';
+                        editLead['Area'] = contact.area || '';
+                        editLead['Pais'] = contact.pais || '';
+                        editLead['City'] = contact.ciudad || '';
+                        editLead['Empleados'] = contact.empleados || '';
+                        editLead['Nivel'] = contact.nivel || '';
+                    });
+                });
+            }
+
+            function openCreateContactModal() {
+                createContactModal.data = { nombre: '', apellido: '', email: '', telefono_1: '', telefono_2: '', empresa: '', area: '', pais: '', ciudad: '', empleados: '', nivel: '', es_prueba: false };
+                createContactModal.saving = false;
+                createContactModal.show = true;
+            }
+
+            function submitCreateContact() {
+                if (!createContactModal.data.nombre && !createContactModal.data.email) {
+                    showToast('Al menos Nombre o Email es requerido', 'error'); return;
+                }
+                createContactModal.saving = true;
+                google.script.run
+                    .withSuccessHandler(function (res) {
+                        createContactModal.saving = false;
+                        if (res && res.status === 'success') {
+                            showToast('Contacto #' + res.data.id + ' creado', 'success');
+                            createContactModal.show = false;
+                            loadContacts();
+                        } else { showToast('Error: ' + (res && res.message || ''), 'error'); }
+                    })
+                    .withFailureHandler(function (err) { createContactModal.saving = false; showToast('Error: ' + err.message, 'error'); })
+                    .createContact(createContactModal.data, currentUser.value.email);
             }
 
             // ── Manual Creation ──
@@ -1636,6 +2246,8 @@
                 // Clear all keys in editLead
                 Object.keys(editLead).forEach(k => delete editLead[k]);
                 selectedLead.value = {};
+                editLead['Status'] = 'Nuevo';
+                linkedContact.value = null;
                 isCreating.value = true;
                 creationType.value = 'lead';
                 modalTab.value = 'Lead';
@@ -1646,6 +2258,7 @@
                 Object.keys(editLead).forEach(k => delete editLead[k]);
                 selectedLead.value = {};
                 editLead['Status'] = 'Nuevo';
+                linkedContact.value = null;
                 isCreating.value = true;
                 creationType.value = 'deal';
                 modalTab.value = 'Deal';
@@ -1654,6 +2267,24 @@
 
             function submitCreation() {
                 saving.value = true;
+
+                // ── Required fields validation (same logic as saveLeadChanges) ──
+                if (creationType.value === 'lead') {
+                    var _createLayout = fieldLayoutLead.value.length > 0 ? fieldLayoutLead.value : DEFAULT_LEAD_LAYOUT;
+                    var missingRequired = [];
+                    _createLayout.forEach(function (f) {
+                        if (f.requerido && f.visible && f.tipo_input !== 'hidden') {
+                            var val = String(editLead[f.campo_key] || '').trim();
+                            if (!val) missingRequired.push(f.campo_label);
+                        }
+                    });
+                    if (missingRequired.length > 0) {
+                        saving.value = false;
+                        showToast('Campos obligatorios vacíos: ' + missingRequired.join(', '), 'error');
+                        return;
+                    }
+                }
+
                 const payload = {};
                 const ALL_KEYS = [
                     'Nombre', 'Apellido', 'Email', 'Teléfono', 'Teléfono 2',
@@ -1669,18 +2300,26 @@
                     '¿han sido parte de alguna asociación de la industria?',
                     '¿Cual es su región?', '¿Que tipo de membresía es?', 'Pricing Tier',
                     '¿Cuánto?', 'Modo Presupuesto', 'Presupuesto Rango Alto',
-                    'Vendedor Asignado para Seguimiento',
+                    'Vendedor Asignado para Seguimiento', 'Vendedor asignado (SDR)',
                     'Notas', 'Status de Venta', '¿Ventas Contactó Cliente?',
                     'Fecha de Reagenda', 'Hora de Reagenda', 'Index',
                     '1 Year Mem', '2 Year Mem', 'Descuento',
                     '¿Por qué perdimos la venta?', 'City', 'Country',
-                    'Link de Pago', 'Renovación', 'Soporte de pago'
+                    'Link de Pago', 'Renovación', 'Soporte de pago', 'es_prueba'
                 ];
                 for (const key of ALL_KEYS) {
                     const v = editLead[key];
                     if (v !== undefined && v !== null && String(v).trim() !== '') {
                         payload[key] = v;
                     }
+                }
+                // Auto-detect prueba in fields if not already toggled
+                if (!payload['es_prueba'] && detectPruebaInEditLead()) {
+                    payload['es_prueba'] = 'TRUE';
+                }
+                // Link to existing contact if selected from picker
+                if (linkedContact.value && linkedContact.value.id_contacto) {
+                    payload['_linkedContactId'] = linkedContact.value.id_contacto;
                 }
 
                 // DUP-01: Check for duplicates before creating (leads only)
@@ -1701,7 +2340,7 @@
                             saving.value = false;
                             showToast('Error al crear: ' + err.message, 'error');
                         })
-                        .createNewLeadOrDeal(payload, creationType.value);
+                        .createNewLeadOrDeal(payload, creationType.value, currentUser.value.email);
                 }
 
                 if (creationType.value === 'lead' && (payload['Email'] || payload['Teléfono'])) {
@@ -1714,31 +2353,33 @@
                                     msg += '• ' + m.nombre.trim() + ' (' + m.matchType + ': ' + (m.matchType === 'Email' ? m.email : m.telefono) + ') — Status: ' + (m.status || 'N/A') + '\n';
                                 }
                                 msg += '\n¿Deseas crear el lead de todas formas? (Se marcará como Duplicado)';
-                                if (window.confirm(msg)) {
-                                    // Phase 21: Auto-link duplicate to original
-                                    payload['_isDuplicate'] = true;
-                                    payload['_idLeadOriginal'] = res.matches[0].id || '';
-                                    doCreate();
-                                } else {
-                                    saving.value = false;
-                                }
+                                showConfirm(msg).then(function (ok) {
+                                    if (ok) {
+                                        // Phase 21: Auto-link duplicate to original
+                                        payload['_isDuplicate'] = true;
+                                        payload['_idLeadOriginal'] = res.matches[0].id || '';
+                                        doCreate();
+                                    } else {
+                                        saving.value = false;
+                                    }
+                                });
                             } else {
                                 doCreate();
                             }
                         })
                         .withFailureHandler(function () { doCreate(); })
-                        .checkDuplicateLeads(payload['Email'] || '', payload['Teléfono'] || '');
+                        .checkDuplicateLeads(payload['Email'] || '', payload['Teléfono'] || '', payload['Nombre'] || '', payload['Apellido'] || '');
                 } else {
                     doCreate();
                 }
             }
 
             // ── Phase 1.3: Touch Change Handler (Relational — writes to fact_toques) ──
-            function onToqueChange(newToqueValue) {
+            async function onToqueChange(newToqueValue) {
                 var oldValue = String(selectedLead.value['Toques de Contactación'] || '0');
                 if (newToqueValue === oldValue) return;
 
-                if (!window.confirm('¿Registrar toque #' + newToqueValue + '? Esto actualizará el Timestamp.')) {
+                if (!(await showConfirm('¿Registrar toque #' + newToqueValue + '? Esto actualizará el Timestamp.'))) {
                     return;
                 }
 
@@ -1756,6 +2397,11 @@
                         if (res && res.success) {
                             editLead['Timestamp'] = res.fecha;
                             editLead['time stamp'] = res.fecha;
+                            // Sync selectedLead.value so guard check and diff stay correct
+                            selectedLead.value['Toques de Contactación'] = newToqueValue;
+                            selectedLead.value['¿En qué toque va?'] = newToqueValue;
+                            selectedLead.value['Timestamp'] = res.fecha;
+                            selectedLead.value['time stamp'] = res.fecha;
                             if (!selectedLead.value._toquesList) selectedLead.value._toquesList = [];
                             selectedLead.value._toquesList.push({
                                 toque: newToqueValue, fecha: res.fecha, vendedor: idVendedor, rol: rolVendedor, canal: canal
@@ -1774,11 +2420,11 @@
             }
 
             // ── AE Touch Change Handler (Relational — writes to fact_toques with rol AE) ──
-            function onAeToqueChange(newToqueValue) {
+            async function onAeToqueChange(newToqueValue) {
                 var oldValue = String(selectedLead.value['Numero de toque'] || '0');
                 if (newToqueValue === oldValue) return;
 
-                if (!window.confirm('¿Registrar toque AE #' + newToqueValue + '? Esto quedará registrado en el historial.')) {
+                if (!(await showConfirm('¿Registrar toque AE #' + newToqueValue + '? Esto quedará registrado en el historial.'))) {
                     return;
                 }
 
@@ -1794,6 +2440,8 @@
                 google.script.run
                     .withSuccessHandler(function (res) {
                         if (res && res.success) {
+                            // Sync selectedLead.value so guard check and diff stay correct
+                            selectedLead.value['Numero de toque'] = newToqueValue;
                             if (!selectedLead.value._toquesList) selectedLead.value._toquesList = [];
                             selectedLead.value._toquesList.push({
                                 toque: newToqueValue, fecha: res.fecha, vendedor: idVendedor, rol: rolVendedor, canal: canal
@@ -1813,7 +2461,17 @@
                     .registrarToque(idEntidad, tipoEntidad, idVendedor, rolVendedor, newToqueValue, canal);
             }
 
-            function saveLeadChanges() {
+            // ── Save Confirmation Modal ──
+            const saveConfirmModal = reactive({ show: false });
+            function promptSaveChanges() {
+                saveConfirmModal.show = true;
+            }
+            function saveConfirmCancel() { saveConfirmModal.show = false; }
+            function saveConfirmSave() { saveConfirmModal.show = false; saveLeadChanges(false); }
+            function saveConfirmSaveAndExit() { saveConfirmModal.show = false; saveLeadChanges(true); }
+
+            function saveLeadChanges(closeAfterSave) {
+                if (closeAfterSave === undefined) closeAfterSave = true;
                 saving.value = true;
                 const row = selectedLead.value._row;
                 const updates = {};
@@ -1855,7 +2513,7 @@
                     .filter(function (f) { return f.visible && !f.solo_lectura && f.tipo_input !== 'hidden'; })
                     .map(function (f) { return f.campo_key; })
                     // Also include special pseudo-keys that are always needed
-                    .concat(['Modo Presupuesto', 'Presupuesto Rango Alto', 'Razón Pérdida Otra']);
+                    .concat(['Modo Presupuesto', 'Presupuesto Rango Alto', 'Razón Pérdida Otra', 'es_prueba']);
 
                 // Phase 8: Monto Aproximado is now computed from global pricing config (no per-lead injection)
 
@@ -1880,6 +2538,12 @@
                     if (oldVal !== newVal) {
                         updates[key] = editLead[key];
                     }
+                }
+
+                // Auto-detect prueba if not already toggled and fields contain "prueba"
+                if (editLead['es_prueba'] !== 'TRUE' && detectPruebaInEditLead()) {
+                    editLead['es_prueba'] = 'TRUE';
+                    updates['es_prueba'] = 'TRUE';
                 }
 
                 if (Object.keys(updates).length === 0) {
@@ -1928,15 +2592,29 @@
                             dataset.value[idx]._empresa = dataset.value[idx]['empresa'] || '';
                             dataset.value[idx]._email = dataset.value[idx]['Email'] || '';
                             dataset.value[idx]._tel = dataset.value[idx]['Teléfono'] || '';
+                            dataset.value[idx]._campaign = dataset.value[idx]['campaign'] || '';
+                            dataset.value[idx]._esPrueba = dataset.value[idx]['es_prueba'] === 'TRUE';
                         }
-                        closeLeadModal();
+                        if (closeAfterSave) {
+                            closeLeadModal();
+                        } else {
+                            // Sync selectedLead snapshot so next diff detects only new changes
+                            for (var k in updates) {
+                                if (updates.hasOwnProperty(k)) {
+                                    selectedLead.value[k] = editLead[k];
+                                }
+                            }
+                            if (result && result.calidadContacto) {
+                                selectedLead.value['Calidad de Contacto'] = result.calidadContacto;
+                            }
+                        }
                         loadStats();
                     })
                     .withFailureHandler(function (err) {
                         saving.value = false;
                         showToast('❌ Error al guardar: ' + err.message, 'error');
                     })
-                    .updateLeadMultiple(row, updates, selectedLead.value._source === 'deal' || selectedLead.value._source === 'cross_deal');
+                    .updateLeadMultiple(row, updates, selectedLead.value._source === 'deal' || selectedLead.value._source === 'cross_deal', currentUser.value.email);
             }
 
             // ── Catalog Editor ──
@@ -2127,8 +2805,8 @@
                     .savePlantilla(email, plantillaForm.nombre, plantillaForm.contenido, plantillaForm.compartida, plantillaForm.editId || null, plantillaForm.tipo, currentVendedorId.value);
             }
 
-            function deletePlantillaItem(id) {
-                if (!window.confirm('¿Eliminar esta plantilla?')) return;
+            async function deletePlantillaItem(id) {
+                if (!(await showConfirm('¿Eliminar esta plantilla?'))) return;
                 google.script.run
                     .withSuccessHandler(function (res) {
                         if (res && res.status === 'success') {
@@ -2276,11 +2954,6 @@
                     google.script.run
                         .withSuccessHandler(function (data) {
                             currentUser.value = data || { email: 'Unknown', nombre: 'Unknown', rol: 'GUEST' };
-                            userConnected.value = data && data.isConnected;
-                            if (data && data.isConnected && data.clockInTime) {
-                                clockInTime.value = new Date(data.clockInTime);
-                                startClockTimer_();
-                            }
                             resolve();
                         })
                         .withFailureHandler(function (err) {
@@ -2289,67 +2962,6 @@
                         })
                         .getUserConfig();
                 });
-            }
-
-            // ── Clock-In / Clock-Out ──
-            function handleClockIn() {
-                google.script.run
-                    .withSuccessHandler(function (result) {
-                        if (result && result.status === 'success') {
-                            userConnected.value = true;
-                            clockInTime.value = new Date();
-                            startClockTimer_();
-                            showToast('🟢 Conectado — ¡a trabajar!', 'success');
-                            resetInactivityTimer_();
-                        } else {
-                            showToast('Error al conectarse: ' + (result && result.message), 'error');
-                        }
-                    })
-                    .withFailureHandler(function (err) {
-                        showToast('Error: ' + err.message, 'error');
-                    })
-                    .clockIn();
-            }
-
-            function handleClockOut() {
-                google.script.run
-                    .withSuccessHandler(function (result) {
-                        if (result && result.status === 'success') {
-                            userConnected.value = false;
-                            clockInTime.value = null;
-                            clockTimer.value = '';
-                            if (clockInterval) { clearInterval(clockInterval); clockInterval = null; }
-                            if (inactivityTimeout) { clearTimeout(inactivityTimeout); inactivityTimeout = null; }
-                            showToast('🔴 Desconectado', 'info');
-                        }
-                    })
-                    .withFailureHandler(function (err) {
-                        showToast('Error: ' + err.message, 'error');
-                    })
-                    .clockOut();
-            }
-
-            function startClockTimer_() {
-                if (clockInterval) clearInterval(clockInterval);
-                clockInterval = setInterval(() => {
-                    if (!clockInTime.value) return;
-                    const diff = Date.now() - new Date(clockInTime.value).getTime();
-                    const h = Math.floor(diff / 3600000);
-                    const m = Math.floor((diff % 3600000) / 60000);
-                    clockTimer.value = h + 'h ' + String(m).padStart(2, '0') + 'm';
-                }, 10000); // Update every 10 sec
-            }
-
-            // ── Inactivity Auto-Disconnect ──
-            function resetInactivityTimer_() {
-                if (inactivityTimeout) clearTimeout(inactivityTimeout);
-                if (!userConnected.value) return;
-                inactivityTimeout = setTimeout(() => {
-                    if (userConnected.value) {
-                        handleClockOut();
-                        showToast('⏰ Desconectado por inactividad (30 min)', 'info');
-                    }
-                }, INACTIVITY_LIMIT_MS);
             }
 
             function loadActiveAEs() {
@@ -2463,7 +3075,7 @@
                     .savePricingConfig({
                         tipoCliente: pricingConfig.tipoCliente,
                         productos: JSON.parse(JSON.stringify(pricingConfig.productos))
-                    });
+                    }, currentUser.value.email);
             }
 
             // ── Phase 8: Field Layout Load/Save ──
@@ -2654,7 +3266,7 @@
                         savingFieldLayout.value = false;
                         showToast('Error: ' + err.message, 'error');
                     })
-                    .saveFieldLayout(tipo, fields);
+                    .saveFieldLayout(tipo, fields, currentUser.value.email);
             }
 
             // ── Round Robin Queue ──
@@ -2823,7 +3435,7 @@
                                             }
                                             showToast('Error al mover: ' + err.message, 'error');
                                         })
-                                        .updateLeadField(rowNum, itemIsDeal ? 'Status de Venta' : 'Status', newStatus, itemIsDeal);
+                                        .updateLeadField(rowNum, itemIsDeal ? 'Status de Venta' : 'Status', newStatus, itemIsDeal, currentUser.value.email);
                                 }
                             }
                         });
@@ -2927,7 +3539,7 @@
                         saving.value = false;
                         showToast('❌ Error: ' + err.message, 'error');
                     })
-                    .processHandoff(payload);
+                    .processHandoff(payload, currentUser.value.email);
             }
 
             // ── Email Compose Functions ──
@@ -2972,8 +3584,14 @@
                                         },
                                         'link': function (value) {
                                             if (value) {
-                                                var href = prompt('Ingrese el enlace URL:');
-                                                if (href) this.quill.format('link', href);
+                                                var q = this.quill;
+                                                linkModalUrl.value = '';
+                                                linkModalQuill.value = q;
+                                                showLinkModal.value = true;
+                                                nextTick(function () {
+                                                    var inp = document.getElementById('link-modal-input');
+                                                    if (inp) inp.focus();
+                                                });
                                             } else {
                                                 this.quill.format('link', false);
                                             }
@@ -3052,7 +3670,7 @@
                             uploadingPayment.value = false;
                             showToast('Error: ' + err.message, 'error');
                         })
-                        .uploadPaymentProof(base64, file.name, file.type, dealRow);
+                        .uploadPaymentProof(base64, file.name, file.type, dealRow, currentUser.value.email);
                 };
                 reader.readAsDataURL(file);
             }
@@ -3105,7 +3723,8 @@
                             emailForm.entityId,
                             emailForm.entityType,
                             htmlBody,
-                            processedAttachments
+                            processedAttachments,
+                            currentUser.value.email
                         );
                 }
 
@@ -3162,7 +3781,7 @@
                         savingHMN.value = false;
                         showToast('❌ Error: ' + err.message, 'error');
                     })
-                    .saveHMNConfig(JSON.parse(JSON.stringify(hmnVariables.value)));
+                    .saveHMNConfig(JSON.parse(JSON.stringify(hmnVariables.value)), currentUser.value.email);
             }
 
             // ── User Management Functions ──
@@ -3197,7 +3816,7 @@
                         savingUsers.value = false;
                         showToast('❌ Error: ' + err.message, 'error');
                     })
-                    .createUser(newUserEmail.value.trim(), newUserNombre.value.trim(), newUserRol.value);
+                    .createUser(newUserEmail.value.trim(), newUserNombre.value.trim(), newUserRol.value, currentUser.value.email);
             }
 
             function toggleUserActive(user) {
@@ -3209,7 +3828,7 @@
                         }
                     })
                     .withFailureHandler(function (err) { showToast('❌ Error: ' + err.message, 'error'); })
-                    .toggleUserActive(user.email);
+                    .toggleUserActive(user.email, currentUser.value.email);
             }
 
             function updateUserRole(user, newRole) {
@@ -3221,7 +3840,7 @@
                         }
                     })
                     .withFailureHandler(function (err) { showToast('❌ Error: ' + err.message, 'error'); })
-                    .updateUserRole(user.email, newRole);
+                    .updateUserRole(user.email, newRole, currentUser.value.email);
             }
 
             // Watch for view/mode changes to re-init kanban
@@ -3229,6 +3848,8 @@
                 searchQuery.value = '';
                 filterStatus.value = '';
                 filterDealStatus.value = '';
+                bulkMode.value = false;
+                bulkSelected.value = [];
                 if (viewMode.value === 'kanban') {
                     nextTick(() => initKanbanDragDrop());
                 }
@@ -3291,6 +3912,11 @@
                 currentNegPage.value = 1;
             });
 
+            // Reset contact pagination when contact search changes
+            watch(contactSearch, () => {
+                contactPage.value = 1;
+            });
+
             // Auto-trigger report when compareType changes (PERIOD-03)
             watch(compareType, function (newType) {
                 if (newType === 'custom') {
@@ -3332,16 +3958,128 @@
                 loadRecentDuplicates(); // Duplicate alerts
                 loading.value = false;
 
-                // Set up inactivity listener
-                ['click', 'keydown', 'mousemove', 'scroll'].forEach(ev => {
-                    document.addEventListener(ev, resetInactivityTimer_, { passive: true });
-                });
-
                 nextTick(() => initKanbanDragDrop());
+            }
+
+            // ── Link Modal (Quill) ──
+            const showLinkModal = ref(false);
+            const linkModalUrl = ref('');
+            const linkModalQuill = ref(null);
+
+            function linkModalConfirm() {
+                var url = (linkModalUrl.value || '').trim();
+                if (url && linkModalQuill.value) {
+                    if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+                    linkModalQuill.value.format('link', url);
+                }
+                showLinkModal.value = false;
+                linkModalQuill.value = null;
+            }
+
+            function linkModalCancel() {
+                showLinkModal.value = false;
+                linkModalQuill.value = null;
+            }
+
+            // ── Import Universal State ──
+            const importStep = ref(1);
+            const importLoading = ref(false);
+            const importSheetReady = ref(false);
+            const importData = ref({ headers: [], sampleData: [], suggestions: [], totalRows: 0, fieldRegistry: [] });
+            const importMappings = ref([]);
+            const importPreviewData = ref({ headers: [], rows: [], stats: {} });
+            const importResult = ref({ imported: 0, contacts: 0, campaigns: 0, qualifications: 0, skipped: 0 });
+
+            const importHasMappings = computed(function () {
+                return importMappings.value.some(function (m) { return m.target; });
+            });
+
+            function importFieldsByTable(table) {
+                return (importData.value.fieldRegistry || []).filter(function (f) { return f.table === table; });
+            }
+
+            function importInitSheet() {
+                importLoading.value = true;
+                google.script.run
+                    .withSuccessHandler(function (res) {
+                        importLoading.value = false;
+                        if (res.status === 'success') { importSheetReady.value = true; showToast(res.message, 'success'); }
+                        else { showToast(res.message, 'error'); }
+                    })
+                    .withFailureHandler(function (err) { importLoading.value = false; showToast('Error: ' + err.message, 'error'); })
+                    .initImportSheet();
+            }
+
+            function importAnalyze() {
+                importLoading.value = true;
+                google.script.run
+                    .withSuccessHandler(function (res) {
+                        importLoading.value = false;
+                        if (res.status === 'success') {
+                            importData.value = res;
+                            importMappings.value = JSON.parse(JSON.stringify(res.suggestions));
+                            importStep.value = 2;
+                        } else { showToast(res.message, 'error'); }
+                    })
+                    .withFailureHandler(function (err) { importLoading.value = false; showToast('Error: ' + err.message, 'error'); })
+                    .readImportData();
+            }
+
+            function importPreview() {
+                importLoading.value = true;
+                var cfg = { mappings: importMappings.value.filter(function (m) { return m.target; }) };
+                google.script.run
+                    .withSuccessHandler(function (res) {
+                        importLoading.value = false;
+                        if (res.status === 'success') { importPreviewData.value = res; importStep.value = 3; }
+                        else { showToast(res.message, 'error'); }
+                    })
+                    .withFailureHandler(function (err) { importLoading.value = false; showToast('Error: ' + err.message, 'error'); })
+                    .previewImportData(cfg);
+            }
+
+            function importExecute() {
+                importLoading.value = true;
+                var cfg = { mappings: importMappings.value.filter(function (m) { return m.target; }) };
+                google.script.run
+                    .withSuccessHandler(function (res) {
+                        importLoading.value = false;
+                        if (res.status === 'success') {
+                            importResult.value = res;
+                            importStep.value = 4;
+                            showToast('Importación exitosa: ' + res.imported + ' leads importados', 'success');
+                        } else { showToast('Error: ' + res.message, 'error'); }
+                    })
+                    .withFailureHandler(function (err) { importLoading.value = false; showToast('Error: ' + err.message, 'error'); })
+                    .executeLeadImport(cfg, currentUser.value.email);
+            }
+
+            function importCleanup() {
+                google.script.run
+                    .withSuccessHandler(function (res) {
+                        if (res.status === 'success') showToast('Hoja temporal eliminada', 'success');
+                    })
+                    .clearImportSheet();
+            }
+
+            function importReset() {
+                importStep.value = 1;
+                importSheetReady.value = false;
+                importData.value = { headers: [], sampleData: [], suggestions: [], totalRows: 0, fieldRegistry: [] };
+                importMappings.value = [];
+                importPreviewData.value = { headers: [], rows: [], stats: {} };
+                importResult.value = { imported: 0, contacts: 0, campaigns: 0, qualifications: 0, skipped: 0 };
             }
 
             // ── Init ──
             onMounted(async () => {
+                // Responsive: listen for viewport changes
+                window.addEventListener('resize', function () {
+                    var mobile = window.innerWidth < 768;
+                    isMobile.value = mobile;
+                    if (mobile && !sidebarCollapsed.value) sidebarCollapsed.value = true;
+                });
+
                 // Apply saved theme
                 try {
                     const saved = localStorage.getItem('crm-theme');
@@ -3355,11 +4093,6 @@
                         .withSuccessHandler(function (data) {
                             if (data && data.rol && data.rol !== 'GUEST') {
                                 currentUser.value = data;
-                                userConnected.value = data.isConnected;
-                                if (data.isConnected && data.clockInTime) {
-                                    clockInTime.value = new Date(data.clockInTime);
-                                    startClockTimer_();
-                                }
                                 isLoggedIn.value = true;
                                 initApp_();
                             } else {
@@ -3379,14 +4112,6 @@
                 }
             });
 
-            // Cleanup event listeners y timers al desmontar (fix MEM #1)
-            onUnmounted(() => {
-                ['click', 'keydown', 'mousemove', 'scroll'].forEach(ev => {
-                    document.removeEventListener(ev, resetInactivityTimer_);
-                });
-                if (clockInterval) { clearInterval(clockInterval); clockInterval = null; }
-                if (inactivityTimeout) { clearTimeout(inactivityTimeout); inactivityTimeout = null; }
-            });
 
             return {
                 // Login
@@ -3394,14 +4119,19 @@
                 handleLogin, handleLogout,
                 // State
                 loading, refreshing, saving, savingCatalog, savingHMN, savingUsers,
-                sidebarCollapsed, currentView, viewMode, searchQuery, filterStatus, filterDealStatus,
+                sidebarCollapsed, isMobile, currentView, viewMode, searchQuery, filterStatus, filterDealStatus,
                 currentPage, currentNegPage, isDark, modalTab, showLeadModal, activeCatalog,
                 sortBy, sortOrder, dealSortBy, dealSortOrder,
                 activeConfigCategory, configValuesList, roundRobinQueue, savingRROrder,
                 leads, deals, vendedoresList, catalogs, pricing, currentUser, stats, recentDuplicates, crossViewDeal, crossViewLead,
-                selectedLead, editLead, leadHistory, editingCatalogValues,
-                isCreating, creationType,
-                userRole, userConnected, clockInTime, clockTimer, activeAEs,
+                selectedLead, editLead, lossReasonOtroOpen, confirmModal, confirmModalAccept, confirmModalCancel,
+                leadHistory, editingCatalogValues,
+                isCreating, creationType, togglePrueba, detectPruebaInEditLead,
+                bulkMode, bulkSelected, bulkProcessing, toggleBulkMode, toggleBulkItem, isBulkSelected, bulkSelectAll, bulkApplyAction,
+                contactPickerOpen, contactPickerSearch, linkedContact, contactPickerFiltered,
+                openContactPicker, selectContactForLead, unlinkContact, isFieldLocked,
+                openCreateLeadFromContact, createContactModal, openCreateContactModal, submitCreateContact,
+                userRole, activeAEs,
                 // Deal Product Lines (Phase 10)
                 dealProductLines, savingProducts, dealClassification,
                 toast,
@@ -3429,7 +4159,6 @@
                 kanbanStatuses, filteredLeads, totalPages, paginatedLeads,
                 filteredDeals, totalDealPages, paginatedDeals, filteredConfigUsers,
                 catalogNames, filteredCatalogNames, configCategories,
-                attendanceHistory, loadingAttendance, loadAttendanceHistory,
                 uniqueRegions, uniqueMembershipTypes, uniqueAttractions,
                 computedPricing, comparisonLabel,
                 showQuickCalendar, quickCalForm,
@@ -3438,11 +4167,13 @@
                 sdrList, aeList, managerList,
                 // Methods
                 toggleSort, toggleDealSort, sortIcon,
-                getLeadsByStatus, getFilteredLeadsByStatus, getStatusColor,
+                getLeadsByStatus, getFilteredLeadsByStatus, getStatusColor, getCampaignClass, getCampaignShort,
                 toggleTheme, setTheme,
-                openLeadDetail, closeLeadModal, saveLeadChanges, onToqueChange, onAeToqueChange,
+                openLeadDetail, closeLeadModal, safeCloseLeadModal, saveLeadChanges, promptSaveChanges,
+                saveConfirmModal, saveConfirmCancel, saveConfirmSave, saveConfirmSaveAndExit,
+                onToqueChange, onAeToqueChange,
                 openCreateLead, openCreateDeal, submitCreation,
-                handleClockIn, handleClockOut, loadActiveAEs,
+                loadActiveAEs,
                 saveCatalog, showToast, formatDate, formatNotes,
                 refreshData, dismissDuplicateAlert,
                 openQuickCalendar, saveQuickCalendar,
@@ -3479,6 +4210,25 @@
                 emailPlantillasForDropdown, showPlantillasInFicha, fichaPlantillasTipo, currentVendedorId,
                 showEmailPlantillaPanel, showCalPlantillaPanel,
                 loadPlantillas, openPlantillaForm, savePlantillaForm, deletePlantillaItem, insertEmailTemplate,
+                // Link Modal
+                showLinkModal, linkModalUrl, linkModalConfirm, linkModalCancel,
+                // Import Universal
+                importStep, importLoading, importSheetReady, importData, importMappings,
+                importPreviewData, importResult, importHasMappings, importFieldsByTable,
+                importInitSheet, importAnalyze, importPreview, importExecute, importCleanup, importReset,
+                // Lista Negra
+                blacklistedItems, blacklistSearch, listaNegraModal,
+                blacklistSortBy, blacklistSortOrder, filteredBlacklist, toggleBlacklistSort, openBlacklistContactDetail,
+                openListaNegraModal, cancelListaNegra, confirmListaNegra, removeFromListaNegra,
+                // Duplicate Analysis + Phantom Cleanup
+                duplicatesModal, runDuplicateAnalysis,
+                phantomCleanup, scanPhantoms, executePhantomCleanup,
+                // Contactos
+                contacts, contactSearch, contactPage, contactDetailModal, contactsLoaded,
+                contactSortBy, contactSortOrder, contactFilterPais, contactFilterEstado,
+                contactFilterLeads, contactFilterDeals, contactCountries, toggleContactSort,
+                filteredContacts, paginatedContacts, totalContactPages,
+                loadContacts, openContactDetail, saveContactChanges, closeContactModal,
             };
         }
     });

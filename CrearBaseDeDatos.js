@@ -37,7 +37,6 @@ function crearBaseDeDatos() {
 
   // LOGS
   sheets.log_transacciones = ss.insertSheet('log_transacciones');
-  sheets.log_asistencia = ss.insertSheet('log_asistencia');
 
   // CONFIGURACIÓN
   sheets.cat_opciones = ss.insertSheet('cat_opciones');
@@ -54,7 +53,8 @@ function crearBaseDeDatos() {
 
   setHeaders_(sheets.dim_contactos, [
     'id_contacto','nombre','apellido','email','telefono_1','telefono_2',
-    'empresa','area','pais','ciudad','empleados','nivel','link','ip','fecha_creacion'
+    'empresa','area','pais','ciudad','empleados','nivel','link','ip','fecha_creacion',
+    'lista_negra','fecha_lista_negra','motivo_lista_negra'
   ]);
 
   setHeaders_(sheets.dim_campanas, [
@@ -74,7 +74,8 @@ function crearBaseDeDatos() {
     'status','calidad_contacto','servicio_interes','fecha_ingreso','fecha_asignacion',
     'fecha_ultimo_contacto','numero_toques','tipo_seguimiento','status_seguimiento',
     'tipo_cliente_pricing','ticket_promedio','licencias','monto_aproximado',
-    'es_recompra','razon_perdida','razon_perdida_otra','notas'
+    'es_recompra','razon_perdida','razon_perdida_otra','notas',
+    'lista_negra','fecha_lista_negra','motivo_lista_negra'
   ]);
 
   setHeaders_(sheets.fact_deals, [
@@ -89,7 +90,8 @@ function crearBaseDeDatos() {
     'es_cliente_activo','producto_cierre','fuente_origen','index_ae',
     'tipo_transaccion','link_pago','soporte_pago','deal_code',
     'notas_vendedor','en_negociacion','asistio_demo','firmo_contrato',
-    'fondeo','comprobante_pago_url'
+    'fondeo','comprobante_pago_url',
+    'lista_negra','fecha_lista_negra','motivo_lista_negra'
   ]);
 
   setHeaders_(sheets.fact_calificacion, [
@@ -117,16 +119,12 @@ function crearBaseDeDatos() {
     'campo_modificado','valor_anterior','valor_nuevo'
   ]);
 
-  setHeaders_(sheets.log_asistencia, [
-    'id_registro','email','nombre','tipo','fecha_hora','duracion_sesion'
-  ]);
-
   setHeaders_(sheets.cat_opciones, [
     'id_opcion','categoria','valor','orden','activo'
   ]);
 
   setHeaders_(sheets.config_users, [
-    'email','nombre','rol','activo','conectado','ultimo_clockin','password'
+    'email','nombre','rol','activo','password'
   ]);
 
   setHeaders_(sheets.config_plantillas_notas, [
@@ -233,17 +231,21 @@ function crearBaseDeDatos() {
     [122,'Preguntas Custom','',1,true],
     [123,'Plantillas de Notas','Plantilla de nota',1,true],
     [124,'Plantillas de Notas','Plantilla de nota 2',2,true],
-    [125,'¿Por qué perdimos la venta?','Toque 6',1,true],
-    [126,'¿Por qué perdimos la venta?','Dejó de responder',2,true],
-    [127,'¿Por qué perdimos la venta?','No tuvo más interés',3,true],
-    [128,'¿Por qué perdimos la venta?','Ya resolvió su necesidad',4,true],
-    [129,'¿Por qué perdimos la venta?','No se cuenta con el servicio',5,true],
-    [130,'¿Por qué perdimos la venta?','Pidió no volver a llamar',6,true],
-    [131,'¿Por qué perdimos la venta?','Motivos Personales',7,true],
-    [132,'¿Por qué perdimos la venta?','No me llames, yo te llamo',8,true],
-    [133,'¿Por qué perdimos la venta?','No califica',9,true],
-    [134,'¿Por qué perdimos la venta?','No contaba con el presupuesto',10,true],
-    [135,'¿Por qué perdimos la venta?','Otro',11,true],
+    [125,'¿Por qué perdimos la venta?','Sin presupuesto',1,true],
+    [126,'¿Por qué perdimos la venta?','Eligió competidor',2,true],
+    [127,'¿Por qué perdimos la venta?','No responde',3,true],
+    [128,'¿Por qué perdimos la venta?','Timing inadecuado',4,true],
+    [129,'¿Por qué perdimos la venta?','No tiene poder de decisión',5,true],
+    [130,'¿Por qué perdimos la venta?','Producto no se ajusta',6,true],
+    [131,'¿Por qué perdimos la venta?','Cambio de prioridades',7,true],
+    [132,'¿Por qué perdimos la venta?','Mala experiencia previa',8,true],
+    [133,'¿Por qué perdimos la venta?','Precio muy alto',9,true],
+    [134,'¿Por qué perdimos la venta?','Proceso interno largo',10,true],
+    [135,'¿Por qué perdimos la venta?','Se fue con otra solución',11,true],
+    [136,'¿Por qué perdimos la venta?','No era el perfil',12,true],
+    [137,'¿Por qué perdimos la venta?','Empresa cerró',13,true],
+    [138,'¿Por qué perdimos la venta?','Prueba perdida',14,true],
+    [139,'¿Por qué perdimos la venta?','Otro',15,true],
     [136,'Status Lead','Nuevo',1,true],
     [137,'Status Lead','Contactado sin Respuesta',2,true],
     [138,'Status Lead','Contactado',3,true],
@@ -254,20 +256,17 @@ function crearBaseDeDatos() {
     [143,'Status Lead','Duplicado',8,true],
     [144,'Status Lead','Perdido',9,true],
     [145,'Status Lead','Paso a Ventas',10,true],
-    [146,'Razón de Pérdida','Sin presupuesto',1,true],
-    [147,'Razón de Pérdida','Eligió competidor',2,true],
-    [148,'Razón de Pérdida','No responde',3,true],
-    [149,'Razón de Pérdida','Timing inadecuado',4,true],
-    [150,'Razón de Pérdida','No tiene poder de decisión',5,true],
-    [151,'Razón de Pérdida','Producto no se ajusta',6,true],
-    [152,'Razón de Pérdida','Cambio de prioridades',7,true],
-    [153,'Razón de Pérdida','Mala experiencia previa',8,true],
-    [154,'Razón de Pérdida','Precio muy alto',9,true],
-    [155,'Razón de Pérdida','Proceso interno largo',10,true],
-    [156,'Razón de Pérdida','Se fue con otra solución',11,true],
-    [157,'Razón de Pérdida','No era el perfil',12,true],
-    [158,'Razón de Pérdida','Empresa cerró',13,true],
-    [159,'Razón de Pérdida','Prueba perdida',14,true]
+    [150,'Razón de Pérdida','Toque 6',1,true],
+    [151,'Razón de Pérdida','Dejó de responder',2,true],
+    [152,'Razón de Pérdida','No tuvo más interés',3,true],
+    [153,'Razón de Pérdida','Ya resolvió su necesidad',4,true],
+    [154,'Razón de Pérdida','No se cuenta con el servicio',5,true],
+    [155,'Razón de Pérdida','Pidió no volver a llamar',6,true],
+    [156,'Razón de Pérdida','Motivos Personales',7,true],
+    [157,'Razón de Pérdida','No me llames, yo te llamo',8,true],
+    [158,'Razón de Pérdida','No califica',9,true],
+    [159,'Razón de Pérdida','No contaba con el presupuesto',10,true],
+    [160,'Razón de Pérdida','Otro',11,true]
   ];
   bulkWrite_(sheets.cat_opciones, catData);
 
@@ -369,7 +368,7 @@ function crearBaseDeDatos() {
     [25,'lead','Timestamp','Timestamp (Último Toque)','date_display','Información de Seguimiento','\ud83d\udcde',4,2,true,'half',false,true,'','ALL'],
     [26,'lead','Tipo de Seguimiento','Tipo de Seguimiento','select','Información de Seguimiento','\ud83d\udcde',4,3,true,'half',false,false,'Tipo de Seguimiento','ALL'],
     [27,'lead','Status del Seguimiento','Status del Seguimiento','select','Información de Seguimiento','\ud83d\udcde',4,4,true,'half',false,false,'Status del Seguimiento','ALL'],
-    [28,'lead','Razón de pérdida','Razón de Pérdida','select','Información de Seguimiento','\ud83d\udcde',4,5,true,'half',false,false,'Razón de pérdida','ALL'],
+    [28,'lead','Razón de pérdida','Razón de Pérdida','loss_reason','Información de Seguimiento','\ud83d\udcde',4,5,true,'full',false,false,'Razón de pérdida','ALL'],
     [29,'lead','Status','Status','select','Información de Seguimiento','\ud83d\udcde',4,6,true,'half',false,false,'Status','ALL'],
     [30,'lead','¿Mostró Interés genuino?','¿Mostró Interés genuino?','select_yn','Calificación BANT','\ud83c\udfaf',5,29,true,'half',false,false,'','ALL'],
     [31,'lead','¿Cuál es tu necesidad puntual?','¿Cuál es tu necesidad puntual?','textarea','Calificación BANT','\ud83c\udfaf',5,1,true,'full',false,false,'','ALL'],

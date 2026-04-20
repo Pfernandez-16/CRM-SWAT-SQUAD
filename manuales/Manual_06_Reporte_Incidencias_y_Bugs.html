@@ -1,0 +1,1289 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manual 6 — Reporte de Incidencias y Bugs Resueltos</title>
+<style>
+  @page {
+    size: A4;
+    margin: 2cm 2.5cm;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #333;
+    background: #fefcfb;
+    line-height: 1.7;
+    font-size: 11pt;
+  }
+
+  /* ===== COVER PAGE ===== */
+  .cover {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background: linear-gradient(135deg, #4a2b2f 0%, #6b3a3f 50%, #4a2b2f 100%);
+    color: #fefcfb;
+    text-align: center;
+    padding: 3rem;
+    page-break-after: always;
+  }
+  .cover-logo {
+    width: 120px; height: 120px;
+    border-radius: 50%;
+    background: #dd934f;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 3rem; font-weight: 900; color: #4a2b2f;
+    margin-bottom: 2rem;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  }
+  .cover h1 {
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin-bottom: 0.5rem;
+    letter-spacing: -1px;
+  }
+  .cover h2 {
+    font-size: 1.3rem;
+    font-weight: 400;
+    color: #dd934f;
+    margin-bottom: 2rem;
+  }
+  .cover .manual-number {
+    background: #dd934f;
+    color: #4a2b2f;
+    padding: 0.5rem 2rem;
+    border-radius: 30px;
+    font-weight: 700;
+    font-size: 1rem;
+    margin-bottom: 1rem;
+  }
+  .cover .subtitle {
+    font-size: 1.1rem;
+    opacity: 0.85;
+    max-width: 550px;
+    margin-top: 1rem;
+  }
+  .cover .footer-cover {
+    position: absolute;
+    bottom: 2rem;
+    font-size: 0.85rem;
+    opacity: 0.6;
+  }
+
+  /* ===== TABLE OF CONTENTS ===== */
+  .toc {
+    page-break-after: always;
+    padding: 3rem 0;
+  }
+  .toc h2 {
+    color: #4a2b2f;
+    font-size: 1.8rem;
+    border-bottom: 3px solid #dd934f;
+    padding-bottom: 0.5rem;
+    margin-bottom: 2rem;
+  }
+  .toc-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 0.6rem 0;
+    border-bottom: 1px dotted #ddd;
+    text-decoration: none;
+    color: #333;
+  }
+  .toc-item:hover { color: #dd934f; }
+  .toc-section {
+    font-weight: 700;
+    color: #4a2b2f;
+    font-size: 1.05rem;
+  }
+  .toc-sub {
+    padding-left: 1.5rem;
+    font-size: 0.95rem;
+  }
+
+  /* ===== CONTENT ===== */
+  .content { padding: 1rem 0; max-width: 800px; margin: 0 auto; }
+
+  h1.section-title {
+    color: #4a2b2f;
+    font-size: 1.8rem;
+    font-weight: 800;
+    border-left: 5px solid #dd934f;
+    padding-left: 1rem;
+    margin: 2.5rem 0 1rem 0;
+    page-break-before: always;
+  }
+  h1.section-title:first-of-type { page-break-before: avoid; }
+
+  h2 {
+    color: #4a2b2f;
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin: 2rem 0 0.8rem 0;
+    padding-bottom: 0.3rem;
+    border-bottom: 2px solid #dd934f;
+  }
+  h3 {
+    color: #6b3a3f;
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 1.5rem 0 0.5rem 0;
+  }
+  h4 {
+    color: #dd934f;
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 1rem 0 0.5rem 0;
+  }
+
+  p { margin: 0.5rem 0; }
+
+  /* ===== CALLOUT BOXES ===== */
+  .tip, .warning, .info, .important {
+    border-radius: 8px;
+    padding: 1rem 1.2rem;
+    margin: 1rem 0;
+    page-break-inside: avoid;
+  }
+  .tip {
+    background: #f0f9e8;
+    border-left: 4px solid #4caf50;
+  }
+  .tip::before { content: "RESUELTO: "; font-weight: 700; color: #4caf50; }
+  .warning {
+    background: #fff8e1;
+    border-left: 4px solid #ff9800;
+  }
+  .warning::before { content: "IMPORTANTE: "; font-weight: 700; color: #ff9800; }
+  .info {
+    background: #e8f4fd;
+    border-left: 4px solid #2196f3;
+  }
+  .info::before { content: "CONTEXTO: "; font-weight: 700; color: #2196f3; }
+  .important {
+    background: #fce4ec;
+    border-left: 4px solid #e91e63;
+  }
+  .important::before { content: "CRITICO: "; font-weight: 700; color: #e91e63; }
+
+  /* ===== TABLES ===== */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+    font-size: 0.92rem;
+    page-break-inside: avoid;
+  }
+  thead th {
+    background: #4a2b2f;
+    color: #fefcfb;
+    padding: 0.7rem 0.8rem;
+    text-align: left;
+    font-weight: 600;
+  }
+  tbody td {
+    padding: 0.6rem 0.8rem;
+    border-bottom: 1px solid #e8e0dd;
+  }
+  tbody tr:nth-child(even) { background: #faf5f0; }
+  tbody tr:hover { background: #f5ebe3; }
+
+  /* ===== STATUS BADGES ===== */
+  .badge {
+    display: inline-block;
+    padding: 0.2rem 0.7rem;
+    border-radius: 15px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    margin: 0.1rem 0.2rem;
+  }
+  .badge-critical { background: #fce4ec; color: #c62828; }
+  .badge-high { background: #fff3e0; color: #e65100; }
+  .badge-medium { background: #fff8e1; color: #f57f17; }
+  .badge-low { background: #e8f5e9; color: #2e7d32; }
+  .badge-resolved { background: #e8f5e9; color: #2e7d32; }
+  .badge-feature { background: #e3f2fd; color: #1565c0; }
+  .badge-bug { background: #fce4ec; color: #c62828; }
+  .badge-file { background: #f3e5f5; color: #7b1fa2; }
+  .badge-date { background: #e0e0e0; color: #424242; }
+
+  /* ===== INCIDENT CARD ===== */
+  .incident-card {
+    background: #faf8f7;
+    border: 1px solid #e8e0dd;
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+    page-break-inside: avoid;
+  }
+  .incident-card h3 {
+    margin-top: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+  .incident-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.8rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .incident-meta {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.8rem;
+  }
+  .code-ref {
+    background: #2d2d2d;
+    color: #f8f8f2;
+    padding: 0.8rem 1rem;
+    border-radius: 6px;
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 0.85rem;
+    overflow-x: auto;
+    margin: 0.5rem 0;
+    line-height: 1.5;
+  }
+  .code-inline {
+    background: #f0ece8;
+    color: #c62828;
+    padding: 0.1rem 0.4rem;
+    border-radius: 3px;
+    font-family: 'Consolas', monospace;
+    font-size: 0.9em;
+  }
+
+  /* ===== TIMELINE ===== */
+  .timeline {
+    border-left: 3px solid #dd934f;
+    padding-left: 1.5rem;
+    margin: 1.5rem 0;
+  }
+  .timeline-item {
+    position: relative;
+    margin-bottom: 1.5rem;
+  }
+  .timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -1.85rem;
+    top: 0.4rem;
+    width: 12px;
+    height: 12px;
+    background: #dd934f;
+    border-radius: 50%;
+    border: 2px solid #fefcfb;
+  }
+  .timeline-date {
+    font-weight: 700;
+    color: #4a2b2f;
+    font-size: 0.9rem;
+  }
+  .timeline-desc {
+    margin-top: 0.3rem;
+  }
+
+  /* ===== SUMMARY BOX ===== */
+  .summary-box {
+    background: linear-gradient(135deg, #4a2b2f 0%, #6b3a3f 100%);
+    color: #fefcfb;
+    border-radius: 10px;
+    padding: 1.5rem 2rem;
+    margin: 1.5rem 0;
+    page-break-inside: avoid;
+  }
+  .summary-box h3 {
+    color: #dd934f;
+    margin-top: 0;
+  }
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+  .summary-stat {
+    text-align: center;
+  }
+  .summary-stat .number {
+    font-size: 2rem;
+    font-weight: 900;
+    color: #dd934f;
+  }
+  .summary-stat .label {
+    font-size: 0.85rem;
+    opacity: 0.8;
+  }
+
+  ul, ol {
+    margin: 0.5rem 0 0.5rem 1.5rem;
+  }
+  li {
+    margin: 0.3rem 0;
+  }
+
+  /* ===== FLOW DIAGRAM ===== */
+  .flow-diagram {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    margin: 1.5rem 0;
+    padding: 1.5rem;
+    background: #faf8f7;
+    border-radius: 10px;
+    border: 1px solid #e8e0dd;
+  }
+  .flow-box {
+    padding: 0.6rem 1rem;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-align: center;
+    min-width: 100px;
+  }
+  .flow-arrow {
+    font-size: 1.3rem;
+    color: #dd934f;
+    font-weight: 900;
+  }
+  .fb-brown { background: #4a2b2f; color: #fefcfb; }
+  .fb-gold { background: #dd934f; color: #fff; }
+  .fb-light { background: #f5ebe3; color: #4a2b2f; border: 2px solid #dd934f; }
+  .fb-green { background: #4caf50; color: #fff; }
+  .fb-blue { background: #2196f3; color: #fff; }
+  .fb-red { background: #e91e63; color: #fff; }
+</style>
+</head>
+<body>
+
+<!-- ============ COVER ============ -->
+<div class="cover">
+  <div class="cover-logo">SS</div>
+  <div class="manual-number">MANUAL 6</div>
+  <h1>Reporte de Incidencias<br>y Bugs Resueltos</h1>
+  <h2>CRM SWAT Squad</h2>
+  <p class="subtitle">
+    Documento tecnico con el historial completo de bugs criticos, incidencias funcionales
+    y mejoras implementadas entre el 11 de marzo y el 14 de abril de 2026.
+  </p>
+  <p class="footer-cover">Castillo & CO &bull; Abril 2026 &bull; Confidencial</p>
+</div>
+
+<!-- ============ TOC ============ -->
+<div class="toc content">
+  <h2>Contenido</h2>
+
+  <a class="toc-item toc-section" href="#resumen">1. Resumen Ejecutivo</a>
+  <a class="toc-item toc-section" href="#criticos">2. Bugs Criticos (Fase 7 — Pre-Entrega)</a>
+  <a class="toc-item toc-sub" href="#bug-handoff">2.1 submitHandoff bypasses processHandoff (codigo muerto)</a>
+  <a class="toc-item toc-sub" href="#bug-cvr">2.2 SDR Ranking CVR siempre en 0%</a>
+  <a class="toc-item toc-sub" href="#bug-typo">2.3 Typo en status "Pase a Ventas" vs "Paso a Ventas"</a>
+  <a class="toc-item toc-sub" href="#bug-duplicados">2.4 Funciones duplicadas de handoff en App.html</a>
+  <a class="toc-item toc-section" href="#funcionales">3. Incidencias Funcionales</a>
+  <a class="toc-item toc-sub" href="#bug-search">3.1 Crash de barra de busqueda (pantalla blanca)</a>
+  <a class="toc-item toc-sub" href="#bug-sort">3.2 Crash al ordenar por empresa (localeCompare)</a>
+  <a class="toc-item toc-sub" href="#bug-bant">3.3 Comparacion BANT Si/No rompe calidad de contacto</a>
+  <a class="toc-item toc-sub" href="#bug-payment">3.4 Log fantasma en uploadPaymentProof</a>
+  <a class="toc-item toc-sub" href="#bug-pricing">3.5 Pricing SaaS multiplicacion por cero</a>
+  <a class="toc-item toc-sub" href="#bug-active">3.6 getActiveSpreadsheet falla en contexto de trigger</a>
+  <a class="toc-item toc-sub" href="#bug-toque">3.7 registrarToque columna incorrecta</a>
+  <a class="toc-item toc-section" href="#ux">4. Mejoras UX Derivadas de Incidencias</a>
+  <a class="toc-item toc-sub" href="#ux-email">4.1 Plantillas de email: confusion de auto-envio</a>
+  <a class="toc-item toc-sub" href="#ux-calidad">4.2 Badges de calidad sin color en tabla de leads</a>
+  <a class="toc-item toc-sub" href="#ux-sdr-sidebar">4.3 SDR veia Negociaciones en sidebar sin contexto</a>
+  <a class="toc-item toc-sub" href="#ux-kanban">4.4 Kanban badge mostraba conteo total vs filtrado</a>
+  <a class="toc-item toc-section" href="#sync">5. Sincronizacion con Produccion (Juan)</a>
+  <a class="toc-item toc-section" href="#features-derivadas">6. Features Implementadas como Resolucion de Gaps</a>
+  <a class="toc-item toc-section" href="#timeline">7. Linea de Tiempo Completa</a>
+  <a class="toc-item toc-section" href="#estado-actual">8. Estado Actual del Sistema</a>
+</div>
+
+<!-- ============ CONTENT ============ -->
+<div class="content">
+
+  <!-- ==================== SECCION 1 ==================== -->
+  <h1 class="section-title" id="resumen">1. Resumen Ejecutivo</h1>
+
+  <p>
+    Este documento consolida todas las incidencias, bugs y correcciones aplicadas al CRM SWAT Squad
+    durante el periodo de desarrollo comprendido entre el <strong>11 de marzo</strong> y el <strong>14 de abril de 2026</strong>.
+    El objetivo es que Juan Matute (y cualquier miembro del equipo) pueda ponerse al dia con el estado
+    tecnico del proyecto sin necesidad de revisar cada commit individualmente.
+  </p>
+
+  <div class="summary-box">
+    <h3>Metricas del Periodo</h3>
+    <div class="summary-grid">
+      <div class="summary-stat">
+        <div class="number">4</div>
+        <div class="label">Bugs Criticos</div>
+      </div>
+      <div class="summary-stat">
+        <div class="number">7</div>
+        <div class="label">Incidencias Funcionales</div>
+      </div>
+      <div class="summary-stat">
+        <div class="number">4</div>
+        <div class="label">Mejoras UX</div>
+      </div>
+      <div class="summary-stat">
+        <div class="number">5</div>
+        <div class="label">Archivos Afectados</div>
+      </div>
+      <div class="summary-stat">
+        <div class="number">100%</div>
+        <div class="label">Tasa de Resolucion</div>
+      </div>
+    </div>
+  </div>
+
+  <h2>Archivos Principales del CRM</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Archivo</th>
+        <th>Lineas (aprox)</th>
+        <th>Responsabilidad</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="badge badge-file">Codigo.js</span></td>
+        <td>~2,600</td>
+        <td>Backend: API, CRUD, handoff, calendario, email, routing</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-file">Analytics.js</span></td>
+        <td>~1,600</td>
+        <td>Motor de reportes: 11 secciones, comparativas, segmentacion</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-file">App.html</span></td>
+        <td>~2,200</td>
+        <td>Vue 3 setup(): refs, computeds, metodos, logica de UI</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-file">Index.html</span></td>
+        <td>~3,200</td>
+        <td>HTML: sidebar, 6 vistas, 5 modales, 12 secciones de reporte</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-file">Styles.html</span></td>
+        <td>~1,900</td>
+        <td>Temas dark/light, glassmorphism, kanban, tablas</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- ==================== SECCION 2 ==================== -->
+  <h1 class="section-title" id="criticos">2. Bugs Criticos (Fase 7 — Pre-Entrega)</h1>
+
+  <div class="warning">
+    Estos 4 bugs fueron descubiertos durante la auditoria de codigo previa a la entrega al cliente.
+    Todos estaban en produccion pero eran invisibles porque las funciones afectadas no se ejecutaban
+    o devolvian datos incorrectos silenciosamente.
+  </div>
+
+  <!-- BUG 2.1 -->
+  <div class="incident-card" id="bug-handoff">
+    <div class="incident-header">
+      <h3>2.1 submitHandoff bypasses processHandoff</h3>
+    </div>
+    <div class="incident-meta">
+      <span class="badge badge-critical">CRITICO</span>
+      <span class="badge badge-bug">BUG</span>
+      <span class="badge badge-file">App.html + Codigo.js</span>
+      <span class="badge badge-date">Resuelto: 14-Mar-2026</span>
+    </div>
+
+    <h4>Descripcion del Problema</h4>
+    <p>
+      El sistema tenia <strong>dos flujos de handoff completamente separados</strong>. La funcion
+      <span class="code-inline">submitHandoff()</span> en App.html llamaba directamente a
+      <span class="code-inline">updateLeadMultiple()</span>, lo cual disparaba
+      <span class="code-inline">copyLeadToDeals_()</span> via triggers de la hoja.
+    </p>
+    <p>
+      Mientras tanto, la funcion <span class="code-inline">processHandoff()</span> en Codigo.js
+      &mdash;que contenia toda la logica de routing avanzado (Round Robin, SDR_CHOICE, MANAGER_REVIEW)&mdash;
+      era <strong>codigo muerto</strong>: nunca se invocaba.
+    </p>
+
+    <div class="flow-diagram">
+      <div class="flow-box fb-red">submitHandoff() [VIEJO]</div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-box fb-light">updateLeadMultiple()</div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-box fb-light">copyLeadToDeals_() [trigger]</div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-box fb-red">SIN ROUTING</div>
+    </div>
+
+    <h4>Impacto</h4>
+    <ul>
+      <li>Round Robin no funcionaba &mdash; todos los leads iban al AE seleccionado manualmente sin validar configuracion</li>
+      <li>Las reglas de distribucion configuradas por el administrador se ignoraban por completo</li>
+      <li>No habia revision por gerente (MANAGER_REVIEW) aunque estuviera activada</li>
+    </ul>
+
+    <h4>Solucion Aplicada</h4>
+    <p>Commit <span class="code-inline">cf3a628</span>:</p>
+    <ol>
+      <li>Se eliminaron las funciones duplicadas (primer set muerto de <span class="code-inline">openHandoffModal</span>, <span class="code-inline">cancelHandoff</span>, <span class="code-inline">submitHandoff</span>)</li>
+      <li>Se reescribio <span class="code-inline">submitHandoff()</span> para que llame a <span class="code-inline">processHandoff(payload)</span> en lugar de <span class="code-inline">updateLeadMultiple()</span></li>
+      <li>El payload ahora incluye: <span class="code-inline">leadId, leadRow, aeEmail, notas, bant</span></li>
+      <li>Se preservo el pre-llenado de BANT desde <span class="code-inline">editLead</span></li>
+    </ol>
+
+    <div class="flow-diagram">
+      <div class="flow-box fb-green">submitHandoff() [NUEVO]</div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-box fb-gold">processHandoff(payload)</div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-box fb-blue">Round Robin / SDR_CHOICE / MANAGER_REVIEW</div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-box fb-green">Deal Creado + Routing OK</div>
+    </div>
+
+    <div class="tip">El handoff ahora respeta la configuracion de distribucion del administrador en todos los casos.</div>
+  </div>
+
+  <!-- BUG 2.2 -->
+  <div class="incident-card" id="bug-cvr">
+    <div class="incident-header">
+      <h3>2.2 SDR Ranking CVR siempre en 0%</h3>
+    </div>
+    <div class="incident-meta">
+      <span class="badge badge-critical">CRITICO</span>
+      <span class="badge badge-bug">BUG</span>
+      <span class="badge badge-file">Analytics.js</span>
+      <span class="badge badge-date">Resuelto: 14-Mar-2026</span>
+    </div>
+
+    <h4>Descripcion del Problema</h4>
+    <p>
+      La funcion <span class="code-inline">calculateSDRRankingReport_()</span> calculaba la tasa de conversion (CVR)
+      de cada SDR verificando <span class="code-inline">cal.status_lead</span> en la tabla
+      <span class="code-inline">fact_calificacion</span>. El problema: <strong>esa columna no existe</strong>
+      en el esquema de la base de datos.
+    </p>
+    <p>
+      Como resultado, <span class="code-inline">cal.status_lead</span> siempre era <span class="code-inline">undefined</span>,
+      la comparacion contra <span class="code-inline">'Paso a Ventas'</span> siempre era falsa,
+      y el CVR se reportaba como <strong>0% para todos los SDRs</strong>, sin importar su rendimiento real.
+    </p>
+
+    <h4>Impacto</h4>
+    <ul>
+      <li>El reporte de ranking SDR era inutil &mdash; todos aparecian con 0% de conversion</li>
+      <li>No se podia evaluar el rendimiento real de cada vendedor</li>
+      <li>El periodo comparativo (anterior) tenia el mismo bug</li>
+    </ul>
+
+    <h4>Solucion Aplicada</h4>
+    <p>Commit <span class="code-inline">1093af4</span>:</p>
+    <ol>
+      <li>Se reemplazo <span class="code-inline">cal.status_lead</span> por <span class="code-inline">lead.status === 'Paso a Ventas'</span> (tabla <span class="code-inline">fact_leads</span>)</li>
+      <li>Se aplico la misma correccion al periodo comparativo (<span class="code-inline">plead.status</span>)</li>
+      <li>El CVR ahora refleja la proporcion real de leads que pasaron a ventas por SDR</li>
+    </ol>
+
+    <div class="tip">El ranking SDR ahora muestra metricas reales de conversion para ambos periodos.</div>
+  </div>
+
+  <!-- BUG 2.3 -->
+  <div class="incident-card" id="bug-typo">
+    <div class="incident-header">
+      <h3>2.3 Typo en status: "Pase a Ventas" vs "Paso a Ventas"</h3>
+    </div>
+    <div class="incident-meta">
+      <span class="badge badge-high">ALTO</span>
+      <span class="badge badge-bug">BUG</span>
+      <span class="badge badge-file">Codigo.js</span>
+      <span class="badge badge-date">Resuelto: 14-Mar-2026</span>
+    </div>
+
+    <h4>Descripcion del Problema</h4>
+    <p>
+      La funcion <span class="code-inline">processHandoff()</span> escribia el status como
+      <span class="code-inline">'Pase a Ventas'</span> (con 'a' minuscula y conjugacion incorrecta),
+      mientras que el resto del sistema usaba <span class="code-inline">'Paso a Ventas'</span> como valor canonico.
+    </p>
+
+    <h4>Impacto</h4>
+    <ul>
+      <li>Los leads procesados por <span class="code-inline">processHandoff</span> no aparecian correctamente en filtros y reportes que buscaban "Paso a Ventas"</li>
+      <li>Inconsistencia silenciosa en los datos de la hoja de calculo</li>
+    </ul>
+
+    <h4>Solucion Aplicada</h4>
+    <p>Commit <span class="code-inline">198a28b</span>:</p>
+    <ol>
+      <li>Se corrigio el <span class="code-inline">setValue</span> en <span class="code-inline">processHandoff</span> de <span class="code-inline">'Pase a Ventas'</span> a <span class="code-inline">'Paso a Ventas'</span></li>
+      <li>Se actualizaron los strings de <span class="code-inline">logChange_()</span> en <span class="code-inline">processHandoff</span> y <span class="code-inline">copyLeadToDeals_()</span></li>
+    </ol>
+
+    <div class="tip">El status ahora es consistente en todo el sistema: siempre "Paso a Ventas".</div>
+  </div>
+
+  <!-- BUG 2.4 -->
+  <div class="incident-card" id="bug-duplicados">
+    <div class="incident-header">
+      <h3>2.4 Funciones duplicadas de handoff en App.html</h3>
+    </div>
+    <div class="incident-meta">
+      <span class="badge badge-high">ALTO</span>
+      <span class="badge badge-bug">BUG</span>
+      <span class="badge badge-file">App.html</span>
+      <span class="badge badge-date">Resuelto: 14-Mar-2026</span>
+    </div>
+
+    <h4>Descripcion del Problema</h4>
+    <p>
+      En <span class="code-inline">App.html</span> existian <strong>dos definiciones</strong> de cada una de estas funciones:
+      <span class="code-inline">openHandoffModal</span>, <span class="code-inline">cancelHandoff</span>,
+      y <span class="code-inline">submitHandoff</span>. En JavaScript, cuando se definen dos funciones con el mismo nombre
+      en el mismo scope, la <strong>segunda definicion sobreescribe a la primera</strong> silenciosamente.
+    </p>
+    <p>
+      La primera definicion (lineas ~1583-1632) era codigo muerto que nunca se ejecutaba.
+      La segunda definicion era la que realmente operaba. Esto causaba confusion al leer el codigo
+      y hacia que cualquier modificacion a la primera definicion no tuviera efecto.
+    </p>
+
+    <h4>Solucion Aplicada</h4>
+    <p>Commit <span class="code-inline">cf3a628</span>:</p>
+    <ol>
+      <li>Se elimino completamente el primer set de funciones (codigo muerto)</li>
+      <li>Se mantuvo y se mejoro el segundo set (que era el activo)</li>
+      <li>Se reescribio <span class="code-inline">submitHandoff</span> para usar <span class="code-inline">processHandoff</span> (ver bug 2.1)</li>
+    </ol>
+  </div>
+
+  <!-- ==================== SECCION 3 ==================== -->
+  <h1 class="section-title" id="funcionales">3. Incidencias Funcionales</h1>
+
+  <p>Estas incidencias afectaban la operacion diaria del CRM y fueron descubiertas durante pruebas internas o reportadas despues de la sincronizacion con produccion.</p>
+
+  <!-- BUG 3.1 -->
+  <div class="incident-card" id="bug-search">
+    <div class="incident-header">
+      <h3>3.1 Crash de barra de busqueda (pantalla blanca)</h3>
+    </div>
+    <div class="incident-meta">
+      <span class="badge badge-high">ALTO</span>
+      <span class="badge badge-bug">BUG</span>
+      <span class="badge badge-file">App.html</span>
+      <span class="badge badge-date">Resuelto: 30-Mar-2026</span>
+    </div>
+
+    <h4>Descripcion del Problema</h4>
+    <p>
+      Al escribir en la barra de busqueda, el CRM se quedaba en pantalla blanca.
+      La causa raiz era que al filtrar resultados, el numero de paginas cambiaba pero
+      <span class="code-inline">currentPage</span> se quedaba en un valor mayor al total de paginas disponibles,
+      causando que Vue intentara renderizar una pagina que no existia.
+    </p>
+    <p>
+      Adicionalmente, los filtros de busqueda intentaban llamar <span class="code-inline">.toLowerCase()</span>
+      sobre valores que podian ser numeros o booleanos (provenientes de Google Sheets), disparando un
+      <span class="code-inline">TypeError</span>.
+    </p>
+
+    <h4>Solucion Aplicada</h4>
+    <p>Commits <span class="code-inline">758e646</span> y <span class="code-inline">4a51e52</span>:</p>
+    <ol>
+      <li>Se agrego un <span class="code-inline">watcher</span> que resetea <span class="code-inline">currentPage</span> y <span class="code-inline">currentNegPage</span> a 1 cuando <span class="code-inline">searchQuery</span> cambia</li>
+      <li>Se limpia <span class="code-inline">searchQuery</span> y filtros al navegar entre vistas</li>
+      <li>Se envolvieron todos los accesos a campos en los filtros de busqueda con <span class="code-inline">String()</span> para prevenir el TypeError</li>
+    </ol>
+  </div>
+
+  <!-- BUG 3.2 -->
+  <div class="incident-card" id="bug-sort">
+    <div class="incident-header">
+      <h3>3.2 Crash al ordenar por empresa (localeCompare)</h3>
+    </div>
+    <div class="incident-meta">
+      <span class="badge badge-medium">MEDIO</span>
+      <span class="badge badge-bug">BUG</span>
+      <span class="badge badge-file">App.html</span>
+      <span class="badge badge-date">Resuelto: 31-Mar-2026</span>
+    </div>
+
+    <h4>Descripcion del Problema</h4>
+    <p>
+      Al hacer click en el header de "Empresa" para ordenar la tabla, la app crasheaba.
+      <span class="code-inline">localeCompare()</span> requiere que ambos operandos sean strings,
+      pero Google Sheets a veces devuelve celdas como numeros o booleanos.
+    </p>
+
+    <h4>Solucion Aplicada</h4>
+    <p>Commit <span class="code-inline">4a51e52</span>: Se envolvieron todas las llamadas a <span class="code-inline">localeCompare</span> en la funcion <span class="code-inline">applySorting_()</span> con <span class="code-inline">String()</span> para coercion segura de tipos.</p>
+  </div>
+
+  <!-- BUG 3.3 -->
+  <div class="incident-card" id="bug-bant">
+    <div class="incident-header">
+      <h3>3.3 Comparacion BANT Si/No rompe calidad de contacto</h3>
+    </div>
+    <div class="incident-meta">
+      <span class="badge badge-medium">MEDIO</span>
+      <span class="badge badge-bug">BUG</span>
+      <span class="badge badge-file">Codigo.js</span>
+      <span class="badge badge-date">Resuelto: 11-Mar-2026</span>
+    </div>
+
+    <h4>Descripcion del Problema</h4>
+    <p>
+      La funcion de auto-calculo de calidad de contacto sumaba puntos por cada campo BANT positivo
+      (perfil_adecuado, tiene_presupuesto, etc.). El problema: Google Sheets almacena estos valores
+      a veces como el string <span class="code-inline">"Si"</span> y a veces como el booleano <span class="code-inline">true</span>,
+      dependiendo de como se ingresaron.
+    </p>
+    <p>
+      La comparacion directa <span class="code-inline">campo === true</span> fallaba cuando el valor era
+      <span class="code-inline">"Si"</span>, y <span class="code-inline">campo === "Si"</span> fallaba cuando era <span class="code-inline">true</span>.
+    </p>
+
+    <h4>Solucion Aplicada</h4>
+    <p>Commit <span class="code-inline">fd1f33c</span>: Se implemento comparacion robusta que maneja ambos formatos:</p>
+    <div class="code-ref">
+// Antes (fallaba con mezcla de tipos):<br>
+if (campo === true) puntos++;<br><br>
+// Despues (maneja strings y booleans):<br>
+if (campo === true || campo === "Si" || campo === "S&iacute;") puntos++;
+    </div>
+  </div>
+
+  <!-- BUG 3.4 -->
+  <div class="incident-card" id="bug-payment">
+    <div class="incident-header">
+      <h3>3.4 Log fantasma en uploadPaymentProof</h3>
+    </div>
+    <div class="incident-meta">
+      <span class="badge badge-low">BAJO</span>
+      <span class="badge badge-bug">BUG</span>
+      <span class="badge badge-file">Codigo.js</span>
+      <span class="badge badge-date">Resuelto: 25-Mar-2026</span>
+    </div>
+
+    <h4>Descripcion del Problema</h4>
+    <p>
+      La funcion <span class="code-inline">uploadPaymentProof</span> llamaba a
+      <span class="code-inline">logChange_()</span> incluso cuando la columna
+      <span class="code-inline">comprobante_pago_url</span> no existia en la hoja.
+      Esto generaba entradas fantasma en el log de auditoria sin que realmente se hubiera guardado nada.
+    </p>
+
+    <h4>Solucion Aplicada</h4>
+    <p>Commit <span class="code-inline">09265cd</span>: Se movio <span class="code-inline">logChange_()</span> dentro del guard que verifica la existencia de la columna.</p>
+  </div>
+
+  <!-- BUG 3.5 -->
+  <div class="incident-card" id="bug-pricing">
+    <div class="incident-header">
+      <h3>3.5 Pricing SaaS: multiplicacion por cero</h3>
+    </div>
+    <div class="incident-meta">
+      <span class="badge badge-medium">MEDIO</span>
+      <span class="badge badge-bug">BUG</span>
+      <span class="badge badge-file">Codigo.js</span>
+      <span class="badge badge-date">Resuelto: 30-Mar-2026</span>
+    </div>
+
+    <h4>Descripcion del Problema</h4>
+    <p>
+      La formula de pricing SaaS es <span class="code-inline">ticket &times; licencias &times; 12</span>.
+      Cuando el campo de licencias estaba vacio o no se habia llenado, el valor era <span class="code-inline">0</span>
+      o <span class="code-inline">undefined</span>, causando que el monto calculado fuera siempre $0.
+      Ademas, el fallback para multi-producto no funcionaba correctamente.
+    </p>
+
+    <h4>Solucion Aplicada</h4>
+    <p>Commit <span class="code-inline">6a2ab4f</span>: Se agrego fallback que trata licencias vacias como 1, y se corrigio la logica de multi-producto para que use el primer producto valido como default.</p>
+  </div>
+
+  <!-- BUG 3.6 -->
+  <div class="incident-card" id="bug-active">
+    <div class="incident-header">
+      <h3>3.6 getActiveSpreadsheet falla en contexto de trigger</h3>
+    </div>
+    <div class="incident-meta">
+      <span class="badge badge-medium">MEDIO</span>
+      <span class="badge badge-bug">BUG</span>
+      <span class="badge badge-file">Codigo.js</span>
+      <span class="badge badge-date">Resuelto: 30-Mar-2026</span>
+    </div>
+
+    <h4>Descripcion del Problema</h4>
+    <p>
+      Las funciones <span class="code-inline">getDealProducts()</span> y <span class="code-inline">saveDealProducts()</span>
+      usaban <span class="code-inline">SpreadsheetApp.getActiveSpreadsheet()</span>.
+      Este metodo devuelve <span class="code-inline">null</span> cuando se ejecuta desde un trigger
+      (onEdit, time-driven) o desde una llamada <span class="code-inline">google.script.run</span> en ciertos contextos.
+    </p>
+
+    <h4>Solucion Aplicada</h4>
+    <p>Commit <span class="code-inline">6a2ab4f</span>: Se reemplazo por <span class="code-inline">SpreadsheetApp.openById(SHEET_ID)</span> que funciona en cualquier contexto de ejecucion.</p>
+  </div>
+
+  <!-- BUG 3.7 -->
+  <div class="incident-card" id="bug-toque">
+    <div class="incident-header">
+      <h3>3.7 registrarToque: columna incorrecta</h3>
+    </div>
+    <div class="incident-meta">
+      <span class="badge badge-medium">MEDIO</span>
+      <span class="badge badge-bug">BUG</span>
+      <span class="badge badge-file">Codigo.js</span>
+      <span class="badge badge-date">Resuelto: 30-Mar-2026</span>
+    </div>
+
+    <h4>Descripcion del Problema</h4>
+    <p>
+      La funcion <span class="code-inline">registrarToque()</span> buscaba la columna
+      <span class="code-inline">entidad_id</span> en la hoja, pero el esquema real de la tabla
+      usa <span class="code-inline">id_entidad</span>. Los toques no se registraban o se escribian en la columna equivocada.
+    </p>
+
+    <h4>Solucion Aplicada</h4>
+    <p>Commit <span class="code-inline">6a2ab4f</span>: Se corrigio el nombre de columna a <span class="code-inline">id_entidad</span>.</p>
+  </div>
+
+  <!-- ==================== SECCION 4 ==================== -->
+  <h1 class="section-title" id="ux">4. Mejoras UX Derivadas de Incidencias</h1>
+
+  <p>Estos no eran bugs per se, pero fueron mejoras directamente motivadas por confusiones o problemas de usabilidad detectados durante el testing.</p>
+
+  <!-- UX 4.1 -->
+  <div class="incident-card" id="ux-email">
+    <div class="incident-header">
+      <h3>4.1 Plantillas de email: confusion de auto-envio</h3>
+    </div>
+    <div class="incident-meta">
+      <span class="badge badge-feature">UX</span>
+      <span class="badge badge-file">App.html + Index.html</span>
+      <span class="badge badge-date">Resuelto: 30-Mar-2026</span>
+    </div>
+
+    <h4>Descripcion del Problema</h4>
+    <p>
+      Los usuarios no tenian retroalimentacion al insertar una plantilla de email en el editor Quill.
+      No estaba claro si la plantilla se habia insertado, si se habia enviado, o si habia que hacer algo mas.
+      El panel CRUD de plantillas seguia abierto despues de la insercion, generando confusion.
+    </p>
+
+    <h4>Solucion Aplicada</h4>
+    <p>Commit <span class="code-inline">758e646</span>:</p>
+    <ul>
+      <li>Se agrego toast de confirmacion al insertar una plantilla</li>
+      <li>Se cierra automaticamente el panel CRUD tras la insercion</li>
+      <li>Se verifico que no existe comportamiento de auto-envio (las plantillas solo inyectan HTML al editor)</li>
+    </ul>
+  </div>
+
+  <!-- UX 4.2 -->
+  <div class="incident-card" id="ux-calidad">
+    <div class="incident-header">
+      <h3>4.2 Badges de calidad sin color en tabla de leads</h3>
+    </div>
+    <div class="incident-meta">
+      <span class="badge badge-feature">UX</span>
+      <span class="badge badge-file">App.html + Styles.html</span>
+      <span class="badge badge-date">Resuelto: 31-Mar-2026</span>
+    </div>
+
+    <h4>Descripcion del Problema</h4>
+    <p>
+      La columna "Calidad" en la tabla de leads mostraba texto plano sin diferenciacion visual.
+      Todos los niveles se veian iguales, haciendo dificil escanear rapidamente la calidad de los leads.
+    </p>
+
+    <h4>Solucion Aplicada</h4>
+    <p>Commit <span class="code-inline">4a51e52</span>: Se implementaron badges con codigo de colores:</p>
+    <table>
+      <thead>
+        <tr><th>Calidad</th><th>Color</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Excelente</td><td style="color:#4caf50;font-weight:700;">Verde</td></tr>
+        <tr><td>Bueno</td><td style="color:#2196f3;font-weight:700;">Azul</td></tr>
+        <tr><td>Regular</td><td style="color:#ff9800;font-weight:700;">Amarillo</td></tr>
+        <tr><td>Malo</td><td style="color:#f44336;font-weight:700;">Rojo</td></tr>
+        <tr><td>No Calificado</td><td style="color:#f44336;font-weight:700;">Rojo</td></tr>
+        <tr><td>Sin Calificar</td><td style="color:#9e9e9e;font-weight:700;">Gris</td></tr>
+      </tbody>
+    </table>
+    <p>Ademas, el ordenamiento por calidad ahora usa orden semantico (Excelente &gt; Bueno &gt; Regular &gt; Malo) en lugar de alfabetico.</p>
+  </div>
+
+  <!-- UX 4.3 -->
+  <div class="incident-card" id="ux-sdr-sidebar">
+    <div class="incident-header">
+      <h3>4.3 SDR veia "Negociaciones" en sidebar sin contexto</h3>
+    </div>
+    <div class="incident-meta">
+      <span class="badge badge-feature">UX</span>
+      <span class="badge badge-file">Index.html</span>
+      <span class="badge badge-date">Resuelto: 31-Mar-2026</span>
+    </div>
+
+    <h4>Descripcion del Problema</h4>
+    <p>
+      El rol SDR tenia un enlace a "Negociaciones" en el sidebar, pero la vista de negociaciones
+      completa esta disenada para AEs y administradores. El SDR ahora tiene acceso a la info
+      de sus deals a traves de la pestana "Negociacion" dentro del modal de cada lead.
+    </p>
+
+    <h4>Solucion Aplicada</h4>
+    <p>Commit <span class="code-inline">4a51e52</span>: Se removio "Negociaciones" del sidebar del SDR. La informacion de deals se accede desde la pestana de cross-view dentro del lead.</p>
+  </div>
+
+  <!-- UX 4.4 -->
+  <div class="incident-card" id="ux-kanban">
+    <div class="incident-header">
+      <h3>4.4 Kanban badge mostraba conteo total vs filtrado</h3>
+    </div>
+    <div class="incident-meta">
+      <span class="badge badge-feature">UX</span>
+      <span class="badge badge-file">App.html</span>
+      <span class="badge badge-date">Resuelto: 30-Mar-2026</span>
+    </div>
+
+    <h4>Descripcion del Problema</h4>
+    <p>
+      El badge numerico en cada columna del kanban mostraba el conteo total de leads/deals,
+      incluso cuando habia una busqueda activa. Esto confundia al usuario porque veia
+      "15 leads" en el badge pero solo 3 cards visibles.
+    </p>
+
+    <h4>Solucion Aplicada</h4>
+    <p>Commit <span class="code-inline">758e646</span>: El badge ahora muestra el conteo filtrado cuando hay una busqueda activa.</p>
+  </div>
+
+  <!-- ==================== SECCION 5 ==================== -->
+  <h1 class="section-title" id="sync">5. Sincronizacion con Produccion (Juan)</h1>
+
+  <div class="info">
+    El 30 de marzo de 2026 se realizo una sincronizacion importante con el proyecto de produccion
+    gestionado por la cuenta contenido@swatsquad.com, que incluia optimizaciones de Juan y
+    el sistema de login.
+  </div>
+
+  <p>Commit <span class="code-inline">6a2ab4f</span> &mdash; Esta sincronizacion incorporo:</p>
+
+  <h3>Nuevo: Sistema de Login</h3>
+  <ul>
+    <li>Funcion <span class="code-inline">loginUser(email, password)</span> en Codigo.js</li>
+    <li>Funcion <span class="code-inline">getUserConfigByEmail(email)</span> para obtener configuracion del usuario</li>
+    <li>Sesion via <span class="code-inline">localStorage</span> con boton de logout</li>
+    <li>Pantalla de login antes de acceder al CRM</li>
+  </ul>
+
+  <h3>Nuevo: Scripts de Infraestructura</h3>
+  <ul>
+    <li><span class="code-inline">CrearBaseDeDatos.js</span> &mdash; Script para crear la estructura completa de la base de datos desde cero (12 tablas del Star Schema v6)</li>
+    <li><span class="code-inline">ProcesarLeadsLanding.js</span> &mdash; Procesador automatico que ingesta leads desde la landing page del cliente y los inserta en el CRM</li>
+  </ul>
+
+  <h3>Fixes Incluidos en la Sincronizacion</h3>
+  <table>
+    <thead>
+      <tr><th>Fix</th><th>Detalle</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="code-inline">getDealProducts / saveDealProducts</span></td>
+        <td>Cambiado de <span class="code-inline">getActiveSpreadsheet()</span> a <span class="code-inline">openById()</span></td>
+      </tr>
+      <tr>
+        <td>Campos _c_ y _q_</td>
+        <td>Escritura directa en vez de acumulacion (evita datos perdidos)</td>
+      </tr>
+      <tr>
+        <td><span class="code-inline">registrarToque</span></td>
+        <td>Columna corregida: <span class="code-inline">entidad_id</span> &rarr; <span class="code-inline">id_entidad</span></td>
+      </tr>
+      <tr>
+        <td>Pricing SaaS</td>
+        <td>Fallback de licencias y multi-producto</td>
+      </tr>
+      <tr>
+        <td>SortableJS</td>
+        <td>Dependencia removida (kanban usa DnD nativo)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- ==================== SECCION 6 ==================== -->
+  <h1 class="section-title" id="features-derivadas">6. Features Implementadas como Resolucion de Gaps</h1>
+
+  <p>Durante el proceso de correccion de bugs, se identificaron gaps funcionales que fueron implementados como parte del mismo esfuerzo. Estas features nacieron directamente de la resolucion de incidencias:</p>
+
+  <table>
+    <thead>
+      <tr><th>Feature</th><th>Origen</th><th>Commit</th><th>Fecha</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Sorting en tablas (leads + deals)</strong></td>
+        <td>Crash de busqueda revelo falta de ordenamiento</td>
+        <td><span class="code-inline">758e646</span></td>
+        <td>30-Mar</td>
+      </tr>
+      <tr>
+        <td><strong>Busqueda expandida</strong> (status, vendedor, notas, pais, servicio, calidad)</td>
+        <td>El fix de search revelo que solo buscaba en nombre/empresa</td>
+        <td><span class="code-inline">758e646</span></td>
+        <td>30-Mar</td>
+      </tr>
+      <tr>
+        <td><strong>Auto-calculo calidad de contacto</strong> (BANT score &rarr; Excelente/Bueno/Regular/Malo)</td>
+        <td>El fix de BANT Si/No revelo que calidad no se auto-calculaba</td>
+        <td><span class="code-inline">b5a5c2c</span></td>
+        <td>11-Mar</td>
+      </tr>
+      <tr>
+        <td><strong>Badge calidad en modal header</strong></td>
+        <td>La calidad auto-calculada necesitaba ser visible</td>
+        <td><span class="code-inline">84e0bd5</span></td>
+        <td>11-Mar</td>
+      </tr>
+      <tr>
+        <td><strong>Cross-view tabs SDR &harr; AE</strong></td>
+        <td>El fix de SDR sidebar revelo necesidad de ver datos del otro rol</td>
+        <td><span class="code-inline">3086abb</span></td>
+        <td>25-Mar</td>
+      </tr>
+      <tr>
+        <td><strong>Vista simetrica con fetch fresco</strong> (getLeadForDeal + getDealForLead)</td>
+        <td>Las cross-view tabs necesitaban datos actualizados, no cache</td>
+        <td><span class="code-inline">24b55a5</span></td>
+        <td>31-Mar</td>
+      </tr>
+      <tr>
+        <td><strong>Columnas nuevas en tablas</strong> (Fecha, Calidad, Toques, Pais, Monto, Proyeccion)</td>
+        <td>El sistema de sorting revelo que faltaban columnas importantes</td>
+        <td><span class="code-inline">758e646</span></td>
+        <td>30-Mar</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- ==================== SECCION 7 ==================== -->
+  <h1 class="section-title" id="timeline">7. Linea de Tiempo Completa</h1>
+
+  <div class="timeline">
+    <div class="timeline-item">
+      <div class="timeline-date">11 de Marzo, 2026</div>
+      <div class="timeline-desc">
+        <strong>Auto-calculo calidad de contacto + fix BANT Si/No</strong><br>
+        Se implementa calidad_contacto automatica basada en BANT score (0-5 puntos).
+        Se corrige la comparacion de campos BANT que mezclaban strings y booleans.
+        Se agrega badge de calidad en modal header.
+        <br><em>Commits: b5a5c2c, 84e0bd5, fd1f33c</em>
+      </div>
+    </div>
+
+    <div class="timeline-item">
+      <div class="timeline-date">14 de Marzo, 2026</div>
+      <div class="timeline-desc">
+        <strong>Fase 7: Bugs Criticos de Pre-Entrega (4 bugs)</strong><br>
+        Se corrige SDR Ranking CVR (0% &rarr; real), typo "Pase/Paso a Ventas",
+        se eliminan funciones duplicadas de handoff, y se reconecta submitHandoff
+        con processHandoff para activar el routing avanzado.
+        <br><em>Commits: 1093af4, 198a28b, cf3a628</em>
+      </div>
+    </div>
+
+    <div class="timeline-item">
+      <div class="timeline-date">16 de Marzo, 2026</div>
+      <div class="timeline-desc">
+        <strong>Entrega completa v2.0 + v3.0</strong><br>
+        Se consolida todo el trabajo de milestones v2.0 (fases 8-11) y v3.0 (fases 12-20)
+        incluyendo routing, pricing, fichas de deals, toques, duplicados, reportes AE,
+        presupuesto dual, plantillas y preguntas parametrizables.
+        <br><em>Commit: 275ee66</em>
+      </div>
+    </div>
+
+    <div class="timeline-item">
+      <div class="timeline-date">25 de Marzo, 2026</div>
+      <div class="timeline-desc">
+        <strong>8 features de Checkpoint 4 (Waves 1-4)</strong><br>
+        Se implementan las 8 features solicitadas por Christian en la reunion de checkpoint:
+        SDR deals read-only, reportes verticales, campos obligatorios, alertas de duplicados,
+        multi-producto pricing, "Otros" razon de perdida, upload comprobante, recompra badge.
+        Se corrige logChange_ en uploadPaymentProof.
+        <br><em>Commits: c7c5bdf, 20cac8f, 3086abb, 09265cd</em>
+      </div>
+    </div>
+
+    <div class="timeline-item">
+      <div class="timeline-date">30 de Marzo, 2026</div>
+      <div class="timeline-desc">
+        <strong>Sincronizacion con produccion + fix crashes</strong><br>
+        Se incorpora el sistema de login, scripts de infraestructura, y fixes de Juan.
+        Se resuelven los crashes de barra de busqueda y plantillas de email.
+        Se implementa sorting en tablas con columnas nuevas.
+        <br><em>Commits: 6a2ab4f, 758e646</em>
+      </div>
+    </div>
+
+    <div class="timeline-item">
+      <div class="timeline-date">31 de Marzo, 2026</div>
+      <div class="timeline-desc">
+        <strong>Fix sort crash + badges calidad + vistas simetricas</strong><br>
+        Se corrige crash de localeCompare en sorting. Se agregan badges de calidad
+        con colores a la tabla de leads. Se limpian Negociaciones del sidebar SDR.
+        Se implementa vista simetrica SDR &harr; AE con datos frescos via getLeadForDeal().
+        <br><em>Commits: 4a51e52, 24b55a5</em>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== SECCION 8 ==================== -->
+  <h1 class="section-title" id="estado-actual">8. Estado Actual del Sistema</h1>
+
+  <div class="summary-box">
+    <h3>Resumen de Salud del CRM</h3>
+    <div class="summary-grid">
+      <div class="summary-stat">
+        <div class="number">0</div>
+        <div class="label">Bugs Criticos Abiertos</div>
+      </div>
+      <div class="summary-stat">
+        <div class="number">0</div>
+        <div class="label">Incidencias Pendientes</div>
+      </div>
+      <div class="summary-stat">
+        <div class="number">8/8</div>
+        <div class="label">Features Checkpoint 4</div>
+      </div>
+      <div class="summary-stat">
+        <div class="number">15</div>
+        <div class="label">Bugs Totales Resueltos</div>
+      </div>
+    </div>
+  </div>
+
+  <h2>Funcionalidades Verificadas Post-Fix</h2>
+  <table>
+    <thead>
+      <tr><th>Area</th><th>Estado</th><th>Notas</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Handoff SDR &rarr; AE</td>
+        <td><span class="badge badge-resolved">OK</span></td>
+        <td>Routing avanzado activo (Round Robin, SDR_CHOICE, MANAGER_REVIEW)</td>
+      </tr>
+      <tr>
+        <td>SDR Ranking / CVR</td>
+        <td><span class="badge badge-resolved">OK</span></td>
+        <td>CVR real basado en lead.status, ambos periodos</td>
+      </tr>
+      <tr>
+        <td>Barra de busqueda</td>
+        <td><span class="badge badge-resolved">OK</span></td>
+        <td>Busqueda expandida, sin crash, paginacion correcta</td>
+      </tr>
+      <tr>
+        <td>Sorting de tablas</td>
+        <td><span class="badge badge-resolved">OK</span></td>
+        <td>Todos los headers clickeables, coercion String() aplicada</td>
+      </tr>
+      <tr>
+        <td>Calidad de contacto (BANT)</td>
+        <td><span class="badge badge-resolved">OK</span></td>
+        <td>Auto-calculo + badges con colores + orden semantico</td>
+      </tr>
+      <tr>
+        <td>Email templates</td>
+        <td><span class="badge badge-resolved">OK</span></td>
+        <td>Toast de confirmacion, cierre auto del panel</td>
+      </tr>
+      <tr>
+        <td>Pricing (SaaS/Fichas/Proyectos)</td>
+        <td><span class="badge badge-resolved">OK</span></td>
+        <td>Multi-producto, fallback de licencias</td>
+      </tr>
+      <tr>
+        <td>Cross-view SDR &harr; AE</td>
+        <td><span class="badge badge-resolved">OK</span></td>
+        <td>Tabs simetricos con fetch fresco de datos</td>
+      </tr>
+      <tr>
+        <td>Login system</td>
+        <td><span class="badge badge-resolved">OK</span></td>
+        <td>Email+password, localStorage, logout</td>
+      </tr>
+      <tr>
+        <td>Kanban badges</td>
+        <td><span class="badge badge-resolved">OK</span></td>
+        <td>Conteo filtrado cuando hay busqueda activa</td>
+      </tr>
+      <tr>
+        <td>Reportes verticales</td>
+        <td><span class="badge badge-resolved">OK</span></td>
+        <td>Todos los reportes de embudo en formato vertical con CVR</td>
+      </tr>
+      <tr>
+        <td>Campos obligatorios</td>
+        <td><span class="badge badge-resolved">OK</span></td>
+        <td>Validacion en save + kanban drag, asteriscos rojos</td>
+      </tr>
+      <tr>
+        <td>Alertas de duplicados</td>
+        <td><span class="badge badge-resolved">OK</span></td>
+        <td>Banner semanal con lista de duplicados</td>
+      </tr>
+      <tr>
+        <td>Upload comprobante de pago</td>
+        <td><span class="badge badge-resolved">OK</span></td>
+        <td>Drive upload + UI en deals, log corregido</td>
+      </tr>
+      <tr>
+        <td>Recompra</td>
+        <td><span class="badge badge-resolved">OK</span></td>
+        <td>Checkbox + borde morado en kanban cards y tabla</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Limitaciones Conocidas (No son bugs)</h2>
+  <ul>
+    <li><strong>Metrica SPAM:</strong> Hardcodeada a 0 &mdash; no existe columna fuente en el esquema actual. Se requiere decision del cliente sobre como clasificar spam.</li>
+    <li><strong>Auth email+contrasena:</strong> Implementado como login basico. Auth avanzado (2FA, recuperacion) diferido a v2.</li>
+    <li><strong>Import masivo CSV/Excel:</strong> Diferido a v2.</li>
+    <li><strong>Reporte de Campanas:</strong> Diferido &mdash; requiere API de FB/Google Ads con equipo de landing.</li>
+  </ul>
+
+  <div class="warning">
+    Antes de hacer cambios en el codigo, se recomienda revisar este documento para verificar que las correcciones
+    aplicadas no se reviertan accidentalmente. Especial atencion a: la coercion con <span class="code-inline">String()</span>
+    en busquedas/sorting, el uso de <span class="code-inline">openById()</span> en vez de <span class="code-inline">getActiveSpreadsheet()</span>,
+    y la conexion submitHandoff &rarr; processHandoff.
+  </div>
+
+  <br><br>
+  <p style="text-align:center;color:#999;font-size:0.85rem;">
+    Documento generado el 14 de abril de 2026 &bull; Castillo & CO &bull; CRM SWAT Squad v3.0
+  </p>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manual 5 — Reportes y Analisis</title>
+<style>
+  @page { size: A4; margin: 2cm 2.5cm; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #333; background: #fefcfb; line-height: 1.7; font-size: 11pt; }
+  .cover { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; background: linear-gradient(135deg, #4a2b2f 0%, #6b3a3f 50%, #4a2b2f 100%); color: #fefcfb; text-align: center; padding: 3rem; page-break-after: always; }
+  .cover-logo { width: 120px; height: 120px; border-radius: 50%; background: #dd934f; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; font-weight: 900; color: #4a2b2f; margin-bottom: 2rem; box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
+  .cover h1 { font-size: 2.5rem; font-weight: 800; margin-bottom: 0.5rem; }
+  .cover h2 { font-size: 1.3rem; font-weight: 400; color: #dd934f; margin-bottom: 2rem; }
+  .cover .manual-number { background: #dd934f; color: #4a2b2f; padding: 0.5rem 2rem; border-radius: 30px; font-weight: 700; font-size: 1rem; margin-bottom: 1rem; }
+  .cover .subtitle { font-size: 1.1rem; opacity: 0.85; max-width: 500px; margin-top: 1rem; }
+  .toc { page-break-after: always; padding: 3rem 0; }
+  .toc h2 { color: #4a2b2f; font-size: 1.8rem; border-bottom: 3px solid #dd934f; padding-bottom: 0.5rem; margin-bottom: 2rem; }
+  .toc-item { display: flex; justify-content: space-between; align-items: baseline; padding: 0.6rem 0; border-bottom: 1px dotted #ddd; color: #333; }
+  .toc-section { font-weight: 700; color: #4a2b2f; font-size: 1.05rem; }
+  .toc-sub { padding-left: 1.5rem; font-size: 0.95rem; }
+  .content { padding: 1rem 0; }
+  h1.section-title { color: #4a2b2f; font-size: 1.8rem; font-weight: 800; border-left: 5px solid #dd934f; padding-left: 1rem; margin: 2.5rem 0 1rem 0; page-break-before: always; }
+  h1.section-title:first-of-type { page-break-before: avoid; }
+  h2 { color: #4a2b2f; font-size: 1.3rem; font-weight: 700; margin: 2rem 0 0.8rem 0; padding-bottom: 0.3rem; border-bottom: 2px solid #dd934f; }
+  h3 { color: #6b3a3f; font-size: 1.1rem; font-weight: 600; margin: 1.5rem 0 0.5rem 0; }
+  h4 { color: #dd934f; font-size: 1rem; font-weight: 600; margin: 1rem 0 0.5rem 0; }
+  p { margin: 0.5rem 0; }
+  .tip, .warning, .info, .important { border-radius: 8px; padding: 1rem 1.2rem; margin: 1rem 0; page-break-inside: avoid; }
+  .tip { background: #f0f9e8; border-left: 4px solid #4caf50; }
+  .tip::before { content: "CONSEJO: "; font-weight: 700; color: #4caf50; }
+  .warning { background: #fff8e1; border-left: 4px solid #ff9800; }
+  .warning::before { content: "IMPORTANTE: "; font-weight: 700; color: #ff9800; }
+  .info { background: #e8f4fd; border-left: 4px solid #2196f3; }
+  .info::before { content: "NOTA: "; font-weight: 700; color: #2196f3; }
+  .important { background: #fce4ec; border-left: 4px solid #e91e63; }
+  .important::before { content: "ATENCION: "; font-weight: 700; color: #e91e63; }
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.92rem; page-break-inside: avoid; }
+  thead th { background: #4a2b2f; color: #fefcfb; padding: 0.7rem 0.8rem; text-align: left; font-weight: 600; }
+  tbody td { padding: 0.6rem 0.8rem; border-bottom: 1px solid #e8e0dd; }
+  tbody tr:nth-child(even) { background: #faf5f0; }
+  .steps { counter-reset: step; margin: 1rem 0; }
+  .step { display: flex; gap: 1rem; margin: 1rem 0; padding: 1rem; background: #faf8f7; border-radius: 8px; border: 1px solid #e8e0dd; page-break-inside: avoid; }
+  .step-number { flex-shrink: 0; width: 36px; height: 36px; background: #dd934f; color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; }
+  .step-content { flex: 1; }
+  .step-content strong { color: #4a2b2f; }
+  ul, ol { margin: 0.5rem 0 0.5rem 1.5rem; }
+  li { margin: 0.3rem 0; }
+  code { background: #f5ebe3; padding: 0.1rem 0.4rem; border-radius: 4px; font-size: 0.9em; color: #4a2b2f; }
+  .page-footer { text-align: center; font-size: 0.8rem; color: #999; padding: 2rem 0 1rem 0; border-top: 1px solid #e8e0dd; margin-top: 3rem; }
+  .highlight-box { background: linear-gradient(135deg, #4a2b2f, #6b3a3f); color: #fefcfb; padding: 1.5rem; border-radius: 10px; margin: 1.5rem 0; }
+  .highlight-box h3 { color: #dd934f; margin-top: 0; }
+  .card-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin: 1rem 0; }
+  .card { background: #faf8f7; border: 1px solid #e8e0dd; border-radius: 10px; padding: 1.2rem; page-break-inside: avoid; }
+  .card h4 { margin-top: 0; color: #4a2b2f; }
+  .card p { font-size: 0.92rem; color: #666; }
+  .delta-green { color: #4caf50; font-weight: 700; }
+  .delta-red { color: #f44336; font-weight: 700; }
+  .delta-neutral { color: #999; }
+  @media print { body { font-size: 10pt; } .cover { min-height: 100vh; } h1.section-title { page-break-before: always; } .step, table, .tip, .warning, .info, .important { page-break-inside: avoid; } }
+</style>
+</head>
+<body>
+
+<!-- COVER -->
+<div class="cover">
+  <div class="cover-logo">KPI</div>
+  <div class="manual-number">MANUAL 5 DE 5</div>
+  <h1>Reportes y Analisis</h1>
+  <h2>Metricas, Funnel, Rankings y Comparativas</h2>
+  <p class="subtitle">Guia completa para entender y utilizar todos los reportes del CRM: desde el embudo de ventas hasta los rankings de desempeno individual.</p>
+  <p style="margin-top:3rem; opacity:0.5; font-size:0.9rem;">Castillo &amp; Company &bull; 2026</p>
+</div>
+
+<!-- TOC -->
+<div class="toc">
+  <h2>Contenido de este Manual</h2>
+  <div class="toc-item toc-section">1. Como Generar un Reporte</div>
+  <div class="toc-item toc-sub">1.1 Seleccionar rango de fechas</div>
+  <div class="toc-item toc-sub">1.2 Tipos de comparativa</div>
+  <div class="toc-item toc-sub">1.3 Entender los Deltas</div>
+  <div class="toc-item toc-sub">1.4 Segmentacion (Total / Manufacturers / Individuals)</div>
+  <div class="toc-item toc-section">2. Reporte SDR (13 Secciones)</div>
+  <div class="toc-item toc-sub">2.1 Embudo General</div>
+  <div class="toc-item toc-sub">2.2 Incontactables</div>
+  <div class="toc-item toc-sub">2.3 Cross Selling</div>
+  <div class="toc-item toc-sub">2.4 Matriz de Contactabilidad</div>
+  <div class="toc-item toc-sub">2.5 Semaforo Contesto</div>
+  <div class="toc-item toc-sub">2.6 Semaforo No Contesto</div>
+  <div class="toc-item toc-sub">2.7 Sin Respuesta al 6to Toque</div>
+  <div class="toc-item toc-sub">2.8 Por que no paso a Ventas</div>
+  <div class="toc-item toc-sub">2.9 Por que perdio la venta</div>
+  <div class="toc-item toc-sub">2.10 Deals / Negociaciones</div>
+  <div class="toc-item toc-sub">2.11 Deals - Razones de Perdida</div>
+  <div class="toc-item toc-sub">2.12 Ranking SDRs</div>
+  <div class="toc-item toc-sub">2.13 Ranking Account Executives</div>
+  <div class="toc-item toc-section">3. Reporte AE Detallado (6 Secciones)</div>
+  <div class="toc-item toc-sub">3.1 Ranking AE Detallado</div>
+  <div class="toc-item toc-sub">3.2 Funnel por AE</div>
+  <div class="toc-item toc-sub">3.3 Proyeccion por AE</div>
+  <div class="toc-item toc-sub">3.4 Razones de Perdida por AE</div>
+  <div class="toc-item toc-sub">3.5 Actividad de Contacto</div>
+  <div class="toc-item toc-sub">3.6 Cross-selling y Recompras</div>
+  <div class="toc-item toc-section">4. Como Leer los Indicadores</div>
+  <div class="toc-item toc-section">5. Mejores Practicas para Reportes</div>
+</div>
+
+<!-- CONTENT -->
+<div class="content">
+
+<h1 class="section-title" style="page-break-before:avoid;">1. Como Generar un Reporte</h1>
+
+<p>La seccion de <strong>Reportes</strong> te permite analizar el rendimiento del equipo en cualquier periodo de tiempo y compararlo con periodos anteriores.</p>
+
+<h2>1.1 Seleccionar Rango de Fechas</h2>
+
+<div class="steps">
+  <div class="step">
+    <div class="step-number">1</div>
+    <div class="step-content">
+      <strong>Ve a la seccion "Reportes"</strong> en la barra lateral.
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">2</div>
+    <div class="step-content">
+      <strong>Haz clic en el selector de fechas</strong> ("Seleccionar rango de fechas..."). Se abre un calendario donde puedes seleccionar la fecha de inicio y la fecha de fin.
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">3</div>
+    <div class="step-content">
+      <strong>Selecciona el tipo de comparativa</strong> (ver seccion siguiente).
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">4</div>
+    <div class="step-content">
+      <strong>Haz clic en "Generar Reporte"</strong>. Veras una pantalla de carga mientras se procesan los datos.
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">5</div>
+    <div class="step-content">
+      <strong>El reporte se genera</strong> y puedes navegar entre las secciones usando el menu de acordeon o los botones de navegacion rapida en la parte superior.
+    </div>
+  </div>
+</div>
+
+<h2>1.2 Tipos de Comparativa</h2>
+
+<p>Cada reporte compara el periodo seleccionado contra un periodo anterior para mostrar si el equipo esta mejorando o empeorando. Hay 3 tipos de comparativa:</p>
+
+<table>
+  <thead>
+    <tr><th>Tipo</th><th>Como funciona</th><th>Ejemplo</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>vs Periodo Anterior</strong></td>
+      <td>Compara con el periodo inmediatamente anterior de la misma duracion</td>
+      <td>Si seleccionas Mar 1-15, compara con Feb 14-28 (mismos 15 dias previos)</td>
+    </tr>
+    <tr>
+      <td><strong>vs Mismo Periodo Ano Pasado (YOY)</strong></td>
+      <td>Compara con las mismas fechas exactas pero un ano atras</td>
+      <td>Si seleccionas Mar 1-15 2026, compara con Mar 1-15 2025</td>
+    </tr>
+    <tr>
+      <td><strong>Personalizado</strong></td>
+      <td>Tu eliges manualmente las fechas del periodo de comparacion</td>
+      <td>Seleccionas cualquier rango que quieras comparar</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Despues de seleccionar la comparativa, veras un badge en la barra de controles que indica el periodo de comparacion calculado (ej: "Comparando vs: 2026-02-14 — 2026-02-28").</p>
+
+<h2>1.3 Entender los Deltas</h2>
+
+<p>En todos los reportes veras <strong>indicadores de cambio (deltas)</strong> junto a cada metrica. Son la diferencia porcentual entre el periodo actual y el anterior:</p>
+
+<table>
+  <thead>
+    <tr><th>Indicador</th><th>Significado</th><th>Color</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><span class="delta-green">+25%</span></td>
+      <td>La metrica subio un 25% respecto al periodo anterior. Mejora.</td>
+      <td>Verde con flecha hacia arriba</td>
+    </tr>
+    <tr>
+      <td><span class="delta-red">-15%</span></td>
+      <td>La metrica bajo un 15% respecto al periodo anterior. Empeoramiento.</td>
+      <td>Rojo con flecha hacia abajo</td>
+    </tr>
+    <tr>
+      <td><span class="delta-neutral">0%</span></td>
+      <td>Sin cambio respecto al periodo anterior.</td>
+      <td>Gris con guion</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="warning">Cuando un delta es <strong>mayor o igual al 20%</strong> (positivo o negativo), se resalta con un tamano mas grande y un fondo de alerta. Esto indica un cambio significativo que merece atencion.</div>
+
+<h2>1.4 Segmentacion</h2>
+
+<p>La mayoria de las secciones del reporte SDR tienen un <strong>filtro de segmento</strong> que te permite ver los datos de tres formas:</p>
+
+<ul>
+  <li><strong>Total</strong>: todos los leads sin filtrar</li>
+  <li><strong>Manufacturers</strong>: solo leads donde el tipo de membresia es "Manufacturers"</li>
+  <li><strong>Individuals</strong>: solo leads donde el tipo de membresia es "Individuals"</li>
+</ul>
+
+<p>Esto te permite comparar el rendimiento por tipo de cliente.</p>
+
+<!-- SECTION 2 -->
+<h1 class="section-title">2. Reporte SDR (13 Secciones)</h1>
+
+<p>El reporte SDR analiza el rendimiento del equipo de prospeccion. Al seleccionar <strong>"Reporte SDR"</strong> en el toggle de modo, veras 13 secciones en formato de acordeon (haz clic en cada titulo para expandir/colapsar).</p>
+
+<h2>2.1 Embudo General (Sales Funnel)</h2>
+
+<p>El <strong>Embudo General</strong> es la seccion mas importante del reporte. Muestra el recorrido de los leads desde que entran al CRM hasta que se cierra la venta, como un embudo donde cada etapa tiene menos leads que la anterior.</p>
+
+<table>
+  <thead>
+    <tr><th>#</th><th>Metrica</th><th>Que significa</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>1</td><td><strong>Total Leads</strong></td><td>Total de leads que entraron en el periodo seleccionado</td></tr>
+    <tr><td>2</td><td><strong>Contactables</strong></td><td>Leads que tienen telefono O email (se puede contactar)</td></tr>
+    <tr><td>3</td><td><strong>Contactados</strong></td><td>Leads con al menos 1 interaccion registrada (el SDR lo intento contactar)</td></tr>
+    <tr><td>4</td><td><strong>Con Respuesta</strong></td><td>Leads donde al menos 1 interaccion tuvo resultado "Contesto"</td></tr>
+    <tr><td>5</td><td><strong>Dialogo Completo</strong></td><td>Leads con 2 o mas toques consecutivos donde "Contesto" (buena comunicacion)</td></tr>
+    <tr><td>6</td><td><strong>Dialogo Intermitente</strong></td><td>Leads donde contesto pero no de forma consecutiva (comunicacion irregular)</td></tr>
+    <tr><td>7</td><td><strong>Interes Genuino</strong></td><td>Leads donde el BANT "Mostro interes genuino?" = Si</td></tr>
+    <tr><td>8</td><td><strong>Descartados</strong></td><td>Leads marcados como "Perdido" (no avanzaron)</td></tr>
+    <tr><td>9</td><td><strong>Asignados a Ventas</strong></td><td>Leads que pasaron exitosamente a ventas (status = "Paso a Ventas")</td></tr>
+    <tr><td>10</td><td><strong>Carry Over</strong></td><td>Leads de periodos ANTERIORES que se asignaron a ventas DURANTE este periodo</td></tr>
+    <tr><td>11</td><td><strong>Montos de Inversion</strong></td><td>Suma de los montos de proyeccion de los deals creados ($)</td></tr>
+    <tr><td>12</td><td><strong>Deals Cerrados</strong></td><td>Deals con status "Vendido" para leads de este periodo</td></tr>
+    <tr><td>13</td><td><strong>Monto de Cierres</strong></td><td>Suma de los montos de cierre de los deals ganados ($)</td></tr>
+  </tbody>
+</table>
+
+<p>Cada fila muestra: <strong>valor actual</strong>, <strong>valor anterior</strong>, <strong>delta %</strong>, y la <strong>tasa de conversion entre etapas</strong> (CVR).</p>
+
+<div class="tip">El embudo tambien se muestra como un <strong>grafico de barras horizontales</strong> (Chart.js) para visualizar rapidamente como se va angostando el funnel.</div>
+
+<h2>2.2 Incontactables</h2>
+
+<p>Leads que no se pueden contactar por alguna razon:</p>
+<ul>
+  <li><strong>Duplicado</strong>: leads con status "Duplicado" (ya existian en el CRM)</li>
+  <li><strong>Equivocado</strong>: leads con status "Invalido" (datos incorrectos)</li>
+  <li><strong>SPAM</strong>: leads identificados como spam</li>
+</ul>
+
+<h2>2.3 Cross Selling</h2>
+
+<p>Muestra cuantos deals fueron clasificados como <strong>Cross-Sell</strong> (el cliente compro un producto diferente al que originalmente le interesaba). Segmentado por Manufacturers/Individuals.</p>
+
+<h2>2.4 Matriz de Contactabilidad</h2>
+
+<p>Una <strong>tabla cruzada (pivot)</strong> que muestra cuantos leads alcanzaron cada nivel de toque, desglosado por producto o por pais:</p>
+
+<ul>
+  <li><strong>Filas</strong>: Toque 1, Toque 2, ... Toque 10</li>
+  <li><strong>Columnas</strong>: por Producto (servicio de interes) O por Pais (segun el selector)</li>
+  <li><strong>Valores</strong>: cantidad de leads que tuvieron AL MENOS N interacciones</li>
+</ul>
+
+<p>Te permite ver, por ejemplo, cuantos leads del producto "SaaS" llegaron al toque 5 vs. cuantos del producto "Fichas".</p>
+
+<h2>2.5 Semaforo Contesto</h2>
+
+<p>Tabla tipo semaforo que muestra <strong>cuantos leads contestaron</strong> en cada combinacion de canal x numero de toque:</p>
+
+<table>
+  <thead>
+    <tr><th></th><th>Toque 1</th><th>Toque 2</th><th>Toque 3</th><th>Toque 4</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><strong>Telefono</strong></td><td>Si</td><td>Si</td><td>Si</td><td>-</td></tr>
+    <tr><td><strong>WhatsApp</strong></td><td>Si</td><td>Si</td><td>Si</td><td>-</td></tr>
+    <tr><td><strong>Correo</strong></td><td>Si</td><td>Si</td><td>Si</td><td>Si</td></tr>
+  </tbody>
+</table>
+
+<p>Cada celda muestra la cantidad de leads + delta vs periodo anterior. Te ayuda a entender <strong>por que canal y en que toque la gente responde mas</strong>.</p>
+
+<h2>2.6 Semaforo No Contesto</h2>
+
+<p>Lo contrario del anterior: muestra cuantos leads <strong>NO contestaron</strong> por canal y toque. Solo aplica para Telefono y WhatsApp (el correo no tiene concepto de "no contesto").</p>
+
+<h2>2.7 Sin Respuesta al 6to Toque</h2>
+
+<p>Metrica critica: leads que tuvieron <strong>6 o mas toques y NUNCA contestaron</strong>. Estos son leads completamente no responsivos que probablemente deben descartarse.</p>
+
+<h2>2.8 Por que No Paso a Ventas</h2>
+
+<p>Analisis de <strong>por que los leads marcados como "Perdido" no avanzaron</strong>. Se derivan de las respuestas BANT:</p>
+
+<table>
+  <thead>
+    <tr><th>Razon</th><th>Basada en</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>No era el perfil adecuado</td><td>BANT: Perfil adecuado = No</td></tr>
+    <tr><td>Sin presupuesto</td><td>BANT: Tiene presupuesto = No</td></tr>
+    <tr><td>Sin interes genuino</td><td>BANT: Mostro interes genuino = No</td></tr>
+    <tr><td>Necesita tercero para decidir</td><td>BANT: Necesita consultar = Si</td></tr>
+    <tr><td>No entendio marketing</td><td>BANT: Entendio info marketing = No</td></tr>
+    <tr><td>Otros</td><td>Perdido pero no encaja en ninguna razon BANT</td></tr>
+  </tbody>
+</table>
+
+<p>Incluye una columna de <strong>Mix %</strong> que muestra que porcentaje del total de descartados representa cada razon, con una barra visual de distribucion.</p>
+
+<h2>2.9 Por que Perdio la Venta</h2>
+
+<p>Similar al anterior pero para <strong>deals perdidos</strong> (ya estaban en el pipeline del AE). Usa el campo "Razon de Perdida" del deal. Incluye 13 razones predefinidas mas "Sin Especificar".</p>
+
+<h2>2.10 Deals / Negociaciones</h2>
+
+<p>Reporte especifico del pipeline de ventas:</p>
+
+<ul>
+  <li><strong>Velocidad de Cierre</strong>: promedio de dias desde el pase a ventas hasta el fondeo (para deals ganados)</li>
+  <li><strong>Tabla Funnel</strong>: por cada etapa (Contactado, Cotizado, En Negociacion, Demo, Firmado, Fondeo) muestra cuantos deals pasaron por ahi (Si/No) y los montos</li>
+  <li><strong>Monto de Cotizacion</strong>: suma total cotizada</li>
+  <li><strong>Monto de Cierre</strong>: suma total cerrada</li>
+</ul>
+
+<h2>2.11 Deals - Razones de Perdida</h2>
+
+<p>Tabla dedicada a las razones de perdida de deals. Para cada razon muestra: cantidad en periodo actual, cantidad en periodo anterior, y delta porcentual.</p>
+
+<h2>2.12 Ranking SDRs</h2>
+
+<p>Tabla de desempeno individual de cada SDR, ordenada por tasa de conversion (CVR):</p>
+
+<table>
+  <thead>
+    <tr><th>Columna</th><th>Que muestra</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><strong>SDR</strong></td><td>Nombre del SDR</td></tr>
+    <tr><td><strong>Total Leads</strong></td><td>Cuantos leads manejo en el periodo</td></tr>
+    <tr><td><strong>CVR Actual</strong></td><td>Tasa de conversion: % de leads que pasaron a ventas</td></tr>
+    <tr><td><strong>CVR Anterior</strong></td><td>Misma tasa para el periodo de comparacion</td></tr>
+    <tr><td><strong>Delta %</strong></td><td>Cambio en el CVR (verde = mejora, rojo = empeoramiento)</td></tr>
+  </tbody>
+</table>
+
+<h2>2.13 Ranking Account Executives</h2>
+
+<p>Tabla de desempeno de cada AE, ordenada por Win Rate:</p>
+
+<table>
+  <thead>
+    <tr><th>Columna</th><th>Que muestra</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><strong>AE</strong></td><td>Nombre del AE</td></tr>
+    <tr><td><strong>Deals</strong></td><td>Total de deals recibidos</td></tr>
+    <tr><td><strong>Ganados</strong></td><td>Deals con status "Vendido"</td></tr>
+    <tr><td><strong>Perdidos</strong></td><td>Deals con status "Perdido"</td></tr>
+    <tr><td><strong>Win Rate</strong></td><td>% de deals ganados sobre el total</td></tr>
+    <tr><td><strong>WR Anterior</strong></td><td>Win Rate del periodo anterior</td></tr>
+    <tr><td><strong>Delta %</strong></td><td>Cambio en Win Rate</td></tr>
+    <tr><td><strong>$ Cotizado</strong></td><td>Suma de montos cotizados</td></tr>
+    <tr><td><strong>$ Cierre</strong></td><td>Suma de montos cerrados</td></tr>
+    <tr><td><strong>Vel. Cierre</strong></td><td>Promedio de dias para cerrar (desde pase a ventas)</td></tr>
+  </tbody>
+</table>
+
+<!-- SECTION 3 -->
+<h1 class="section-title">3. Reporte AE Detallado (6 Secciones)</h1>
+
+<p>Al seleccionar <strong>"Reporte AE"</strong> en el toggle de modo, veras un reporte mas detallado centrado en el desempeno de cada Account Executive individualmente.</p>
+
+<h2>3.1 Ranking AE Detallado</h2>
+
+<p>Version extendida del ranking con columnas adicionales:</p>
+<ul>
+  <li>Total deals, Ganados, Perdidos</li>
+  <li>Win Rate %</li>
+  <li><strong>$ Cotizado</strong>: monto total cotizado por el AE</li>
+  <li><strong>$ Cierre</strong>: monto total cerrado</li>
+  <li><strong>$ Apartado</strong>: monto total de anticipos</li>
+  <li><strong>Ticket Promedio</strong>: monto promedio por deal ganado</li>
+  <li><strong>Velocidad de Cierre</strong>: dias promedio del pase a ventas al cierre</li>
+</ul>
+
+<h2>3.2 Funnel por AE</h2>
+
+<p>Para cada AE muestra cuantos deals pasaron por cada etapa del pipeline:</p>
+<ul>
+  <li>Contactado, Cotizado, En Negociacion, Demo, Firmado, Fondeo</li>
+</ul>
+<p>Permite comparar la actividad de pipeline entre AEs.</p>
+
+<h2>3.3 Proyeccion por AE</h2>
+
+<p>Para cada AE muestra la distribucion de sus deals por nivel de proyeccion:</p>
+<ul>
+  <li><strong>Alta</strong> (verde): deals con alta probabilidad de cierre</li>
+  <li><strong>Media</strong> (ambar): deals con probabilidad moderada</li>
+  <li><strong>Baja</strong> (rojo): deals con baja probabilidad</li>
+</ul>
+
+<h2>3.4 Razones de Perdida por AE</h2>
+
+<p>Para cada AE muestra sus <strong>top 3 razones de perdida</strong>. Ayuda a identificar patrones: si un AE pierde muchos deals por "Precio Muy Alto", quiza necesita entrenamiento en negociacion.</p>
+
+<h2>3.5 Actividad de Contacto</h2>
+
+<p>Mide que tan rapido los AEs estan contactando los deals que reciben:</p>
+<ul>
+  <li><strong>Contacto Si</strong>: deals donde el AE ya hizo al menos 1 toque</li>
+  <li><strong>Contacto No</strong>: deals donde el AE aun no ha contactado al prospecto</li>
+  <li><strong>% Contacto</strong>: porcentaje de contacto, con barra visual inline</li>
+</ul>
+
+<div class="warning">Un AE con bajo porcentaje de contacto puede estar dejando deals sin atender, lo cual impacta directamente en las ventas del equipo.</div>
+
+<h2>3.6 Cross-selling y Recompras</h2>
+
+<p>Para cada AE muestra:</p>
+<ul>
+  <li><strong>Recompras</strong>: cuantos deals son de clientes recurrentes</li>
+  <li><strong>Cross-selling</strong>: cuantos deals involucraron productos diferentes al interes original</li>
+</ul>
+
+<!-- SECTION 4 -->
+<h1 class="section-title">4. Como Leer los Indicadores</h1>
+
+<h3>Los Colores Importan</h3>
+
+<table>
+  <thead>
+    <tr><th>Color</th><th>Significado</th></tr>
+  </thead>
+  <tbody>
+    <tr><td style="background:#4caf50;color:#fff;text-align:center;border-radius:4px;font-weight:600;">Verde</td><td>Positivo, mejora, aumento. El valor subio respecto al periodo anterior.</td></tr>
+    <tr><td style="background:#f44336;color:#fff;text-align:center;border-radius:4px;font-weight:600;">Rojo</td><td>Negativo, empeoramiento, disminucion. El valor bajo respecto al periodo anterior.</td></tr>
+    <tr><td style="background:#999;color:#fff;text-align:center;border-radius:4px;font-weight:600;">Gris</td><td>Sin cambio. El valor se mantuvo igual.</td></tr>
+    <tr><td style="background:#ff9800;color:#fff;text-align:center;border-radius:4px;font-weight:600;">Ambar/Dorado</td><td>Alerta. Delta significativo (20% o mas) que requiere atencion.</td></tr>
+  </tbody>
+</table>
+
+<h3>Formulas Clave</h3>
+
+<table>
+  <thead>
+    <tr><th>Indicador</th><th>Formula</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><strong>CVR (Conversion Rate)</strong></td><td>(Leads que pasaron a ventas / Total de leads) x 100</td></tr>
+    <tr><td><strong>Win Rate</strong></td><td>(Deals ganados / Total de deals) x 100</td></tr>
+    <tr><td><strong>Delta %</strong></td><td>((Valor actual - Valor anterior) / Valor anterior) x 100</td></tr>
+    <tr><td><strong>Velocidad de Cierre</strong></td><td>Promedio de dias entre "Pase a Ventas" y "Fondeado" (solo deals ganados)</td></tr>
+    <tr><td><strong>Ticket Promedio</strong></td><td>Monto total de cierres / Numero de deals ganados</td></tr>
+    <tr><td><strong>% Contacto</strong></td><td>(Deals con toque AE / Total deals) x 100</td></tr>
+    <tr><td><strong>Mix %</strong></td><td>(Cantidad por razon / Total razones) x 100</td></tr>
+  </tbody>
+</table>
+
+<!-- SECTION 5 -->
+<h1 class="section-title">5. Mejores Practicas para Reportes</h1>
+
+<div class="card-grid">
+  <div class="card">
+    <h4>Frecuencia Recomendada</h4>
+    <p>Genera reportes <strong>semanalmente</strong> para detectar tendencias a tiempo. Usa reportes mensuales para vision macro y trimestrales para decisiones estrategicas.</p>
+  </div>
+  <div class="card">
+    <h4>Comparativa Correcta</h4>
+    <p>Usa <strong>"vs Periodo Anterior"</strong> para comparaciones de corto plazo (semanal). Usa <strong>"YOY"</strong> para comparaciones de largo plazo que eliminan estacionalidad.</p>
+  </div>
+  <div class="card">
+    <h4>Atencion a los Deltas Grandes</h4>
+    <p>Cuando un delta sea <strong>20% o mayor</strong> (resaltado con alerta), investiga la causa. Puede ser una oportunidad o un problema que necesita accion.</p>
+  </div>
+  <div class="card">
+    <h4>Usar los Segmentos</h4>
+    <p>No te quedes solo con el "Total". Filtra por <strong>Manufacturers</strong> e <strong>Individuals</strong> para entender que tipo de cliente responde mejor.</p>
+  </div>
+  <div class="card">
+    <h4>Embudo es tu Brujula</h4>
+    <p>El <strong>Embudo General</strong> te dice donde se estan cayendo los leads. Si la conversion de "Contactados" a "Con Respuesta" es baja, el problema es de contactabilidad.</p>
+  </div>
+  <div class="card">
+    <h4>Rankings con Contexto</h4>
+    <p>Los rankings muestran rendimiento individual, pero considera el <strong>volumen</strong>. Un SDR con 90% CVR pero solo 10 leads no es necesariamente mejor que uno con 60% CVR y 50 leads.</p>
+  </div>
+</div>
+
+<div class="highlight-box">
+  <h3>Resumen: Los 5 KPIs mas Importantes</h3>
+  <ul>
+    <li><strong>1. Total Leads &rarr; Asignados a Ventas</strong> (conversion SDR)</li>
+    <li><strong>2. Win Rate del AE</strong> (efectividad de cierre)</li>
+    <li><strong>3. Velocidad de Cierre</strong> (eficiencia del pipeline)</li>
+    <li><strong>4. Monto de Cierres</strong> (facturacion real)</li>
+    <li><strong>5. % Contacto AE</strong> (velocidad de atencion a deals nuevos)</li>
+  </ul>
+</div>
+
+</div><!-- /content -->
+
+<div class="page-footer">
+  CRM SWAT Squad &bull; Manual 5 de 5: Reportes y Analisis &bull; Castillo &amp; Company &copy; 2026
+</div>
+
+</body>
+</html>

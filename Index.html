@@ -59,8 +59,11 @@
     </div>
 
     <div class="app-layout" v-if="isLoggedIn && !loading">
+      <!-- ========== MOBILE OVERLAY (click to close sidebar) ========== -->
+      <div class="sidebar-overlay" v-if="!sidebarCollapsed && isMobile" @click="sidebarCollapsed = true"></div>
+
       <!-- ========== SIDEBAR ========== -->
-      <aside class="sidebar" :class="{ collapsed: sidebarCollapsed }">
+      <aside class="sidebar" :class="{ collapsed: sidebarCollapsed }" ref="sidebarEl">
         <div class="sidebar-header">
           <div class="logo" v-show="!sidebarCollapsed">
             <span class="logo-icon">⚡</span>
@@ -75,15 +78,16 @@
           <template v-for="item in navItems" :key="item.id">
             <!-- Role-based visibility: SDR sees prospectos+reportes. AE sees negociaciones+reportes. Admin/Gerente sees all. -->
             <a v-if="
-              userRole === 'ADMIN' || userRole === 'GERENTE' ||
-              (userRole === 'SDR' && ['dashboard','leads','reportes','calendar','account'].includes(item.id)) ||
-              (userRole === 'AE' && ['dashboard','negociaciones','reportes','calendar','account'].includes(item.id)) ||
-              userRole === 'GUEST'
-            " class="nav-item" :class="{ active: currentView === item.id }" @click="currentView = item.id"
+              (userRole === 'ADMIN' || userRole === 'GERENTE') ||
+              (userRole === 'SDR' && ['dashboard','leads','contactos','lista_negra','reportes','calendar','account'].includes(item.id)) ||
+              (userRole === 'AE' && ['dashboard','negociaciones','contactos','lista_negra','reportes','calendar','account'].includes(item.id)) ||
+              (userRole === 'GUEST' && item.id !== 'importar')
+            " class="nav-item" :class="{ active: currentView === item.id }" @click="currentView = item.id; if (isMobile) sidebarCollapsed = true;"
               :title="item.label">
               <span class="material-symbols-outlined nav-icon">{{ item.icon }}</span>
               <span class="nav-label" v-show="!sidebarCollapsed">{{ item.label }}</span>
-              <span class="nav-badge" v-if="item.badge && !sidebarCollapsed">{{ item.badge }}</span>
+              <span class="nav-badge" v-if="item.badge && !sidebarCollapsed"
+                :style="item.id === 'lista_negra' ? 'background:var(--accent-danger)' : ''">{{ item.badge }}</span>
             </a>
           </template>
         </nav>
@@ -107,23 +111,12 @@
         <!-- Top Bar -->
         <header class="top-bar">
           <div class="top-bar-left">
+            <button class="btn-icon mobile-menu-btn" @click="sidebarCollapsed = false" title="Abrir menú">
+              <span class="material-symbols-outlined">menu</span>
+            </button>
             <h1 class="page-title">{{ currentPageTitle }}</h1>
           </div>
           <div class="top-bar-right">
-            <!-- Clock-In / Clock-Out -->
-            <div style="display:inline-flex; align-items:center; gap:0.5rem; margin-right:0.75rem;">
-              <button v-if="!userConnected" class="btn-sm btn-primary" @click="handleClockIn" style="font-size:0.8rem;">
-                🟢 Marcar Asistencia
-              </button>
-              <template v-else>
-                <span style="font-size:0.8rem; color:var(--accent-success, #10b981); font-weight:600;">⏱ {{ clockTimer
-                  || '0h 00m' }}</span>
-                <button class="btn-sm" @click="handleClockOut" style="font-size:0.75rem; opacity:0.8;"
-                  title="Desconectarse">
-                  🔴 Salir
-                </button>
-              </template>
-            </div>
             <!-- View Mode Toggle (only on leads/negociaciones) -->
             <div v-if="currentView === 'leads' || currentView === 'negociaciones'"
               style="display:inline-flex; gap:0.25rem; margin-right:0.75rem; background: var(--bg-elevated, rgba(255,255,255,0.05)); border-radius: 8px; padding: 2px;">
@@ -168,6 +161,7 @@
                 <div class="stat-info">
                   <span class="stat-value">{{ stats.thisWeek }}</span>
                   <span class="stat-label">Esta Semana</span>
+                  <span v-if="stats.weekRange" class="stat-date-range">{{ stats.weekRange }}</span>
                 </div>
               </div>
               <div class="stat-card">
@@ -176,6 +170,7 @@
                 <div class="stat-info">
                   <span class="stat-value">{{ stats.thisMonth }}</span>
                   <span class="stat-label">Este Mes</span>
+                  <span v-if="stats.monthRange" class="stat-date-range">{{ stats.monthRange }}</span>
                 </div>
               </div>
               <div class="stat-card">
@@ -196,6 +191,19 @@
                     <div class="bar-track">
                       <div class="bar-fill"
                         :style="{ width: (count / stats.total * 100) + '%', background: getStatusColor(status) }"></div>
+                    </div>
+                    <span class="bar-value">{{ count }}</span>
+                  </div>
+                </div>
+              </div>
+              <div class="chart-card">
+                <h3 class="chart-title">Leads por Campaña</h3>
+                <div class="chart-bars">
+                  <div v-for="(count, campana) in stats.byCampana" :key="campana" class="bar-row">
+                    <span class="bar-label">{{ campana }}</span>
+                    <div class="bar-track">
+                      <div class="bar-fill" :style="{ width: (count / stats.total * 100) + '%', background: 'var(--accent-info, #3b82f6)' }">
+                      </div>
                     </div>
                     <span class="bar-value">{{ count }}</span>
                   </div>
@@ -245,6 +253,14 @@
                       style="font-size:1.1rem; vertical-align:middle; margin-right:0.25rem;">person_add</span>
                     + Crear Lead
                   </button>
+                  <button class="btn-sm" @click="toggleBulkMode" :style="bulkMode ? 'background:var(--accent-primary); color:#fff;' : ''" style="margin-right:0.75rem; display:inline-flex; align-items:center; gap:0.25rem;">
+                    <span class="material-symbols-outlined" style="font-size:1rem;">checklist</span>
+                    {{ bulkMode ? 'Cancelar' : 'Selección' }}
+                  </button>
+                  <button class="btn btn-secondary" @click="runDuplicateAnalysis" style="margin-right: 0.75rem;" title="Analizar duplicados">
+                    <span class="material-symbols-outlined" style="font-size:1rem; vertical-align:middle; margin-right:0.2rem;">content_copy</span>
+                    Duplicados
+                  </button>
                   <select v-model="filterStatus" class="filter-select">
                     <option value="">Todos los Status</option>
                     <option v-for="s in (catalogs['Status'] || [])" :key="s" :value="s">{{ s }}</option>
@@ -255,6 +271,12 @@
                 <table class="leads-table">
                   <thead>
                     <tr>
+                      <th v-if="bulkMode" style="width:36px; text-align:center;">
+                        <input type="checkbox" :checked="bulkSelected.length === paginatedLeads.length && paginatedLeads.length > 0" @change="bulkSelectAll(paginatedLeads)" style="cursor:pointer;">
+                      </th>
+                      <th class="th-sort" @click="toggleSort('id')" title="Ordenar por No. de lead" style="width:50px;">
+                        No. <span class="material-symbols-outlined sort-arrow">{{ sortIcon('id', sortBy, sortOrder) }}</span>
+                      </th>
                       <th class="th-sort" @click="toggleSort('fecha_ingreso')" title="Ordenar por fecha de ingreso">
                         Fecha <span class="material-symbols-outlined sort-arrow">{{ sortIcon('fecha_ingreso', sortBy, sortOrder) }}</span>
                       </th>
@@ -268,6 +290,9 @@
                       <th>Tel</th>
                       <th class="th-sort" @click="toggleSort('status')" title="Ordenar por status">
                         Status <span class="material-symbols-outlined sort-arrow">{{ sortIcon('status', sortBy, sortOrder) }}</span>
+                      </th>
+                      <th class="th-sort" @click="toggleSort('campaign')" title="Ordenar por campaña">
+                        Campaña <span class="material-symbols-outlined sort-arrow">{{ sortIcon('campaign', sortBy, sortOrder) }}</span>
                       </th>
                       <th class="th-sort" @click="toggleSort('calidad')" title="Ordenar por calidad">
                         Calidad <span class="material-symbols-outlined sort-arrow">{{ sortIcon('calidad', sortBy, sortOrder) }}</span>
@@ -288,7 +313,12 @@
                     </tr>
                   </thead>
                   <tbody>
-                    <tr v-for="lead in paginatedLeads" :key="lead._row" @click="openLeadDetail(lead)" class="lead-row">
+                    <tr v-for="lead in paginatedLeads" :key="lead._row" @click="bulkMode ? toggleBulkItem(lead._row) : openLeadDetail(lead)" class="lead-row"
+                      :style="isBulkSelected(lead._row) ? 'background:var(--accent-primary-soft)' : ''">
+                      <td v-if="bulkMode" @click.stop style="text-align:center;">
+                        <input type="checkbox" :checked="isBulkSelected(lead._row)" @change="toggleBulkItem(lead._row)" style="cursor:pointer;">
+                      </td>
+                      <td style="font-size:0.75rem; color:var(--text-muted); text-align:center;">{{ lead._id }}</td>
                       <td style="font-size:0.72rem; white-space:nowrap;">{{ lead['Fecha y Hora de asignación'] ? formatDate(lead['Fecha y Hora de asignación']) : '—' }}</td>
                       <td class="col-name">{{ lead._name }}</td>
                       <td>{{ lead._empresa }}</td>
@@ -296,7 +326,8 @@
                       <td>{{ lead._tel }}</td>
                       <td><span class="status-badge" :style="{ background: getStatusColor(lead._colW_Status) }">{{
                           lead._colW_Status || 'N/A' }}</span></td>
-                      <td><span class="calidad-badge" :class="'calidad-' + (lead._colX_Calidad || 'none').toLowerCase().replace(/\s+/g, '-')">{{ lead._colX_Calidad || '—' }}</span></td>
+                      <td><span v-if="lead._campaign" class="campaign-badge" :class="getCampaignClass(lead._campaign)">{{ getCampaignShort(lead._campaign) }}</span><span v-else style="color:var(--text-muted);">—</span></td>
+                      <td><span v-if="lead._esPrueba" class="calidad-badge calidad-prueba">Prueba</span><span v-else class="calidad-badge" :class="'calidad-' + (lead._colX_Calidad || 'none').toLowerCase().replace(/\s+/g, '-')">{{ lead._colX_Calidad || '—' }}</span></td>
                       <td style="text-align:center;">{{ lead['Toques de Contactación'] || lead['¿En qué toque va?'] || 0 }}</td>
                       <td>{{ lead['Pais'] || '—' }}</td>
                       <td>{{ lead['Monto Aproximado'] ? '$' + Number(lead['Monto Aproximado']).toLocaleString() : '—' }}</td>
@@ -315,11 +346,32 @@
             </template>
             <!-- KANBAN MODE (SDR) -->
             <template v-else>
+              <div class="leads-toolbar">
+                <span class="leads-count">{{ filteredLeads.length }} prospectos</span>
+                <div class="leads-filters">
+                  <button class="btn btn-primary" @click="openCreateLead()" style="margin-right: 0.75rem;">
+                    <span class="material-symbols-outlined"
+                      style="font-size:1.1rem; vertical-align:middle; margin-right:0.25rem;">person_add</span>
+                    + Crear Lead
+                  </button>
+                  <select v-model="filterStatus" class="filter-select">
+                    <option value="">Todos los Status</option>
+                    <option v-for="s in (catalogs['Status'] || [])" :key="s" :value="s">{{ s }}</option>
+                  </select>
+                </div>
+              </div>
               <div class="kanban-board" ref="kanbanBoard">
                 <div v-for="status in kanbanStatuses" :key="status" class="kanban-column" :data-status="status">
                   <div class="kanban-column-header" :style="{ borderTopColor: getStatusColor(status) }">
                     <span class="column-title">{{ status }}</span>
                     <span class="column-count">{{ getFilteredLeadsByStatus(status).length }}</span>
+                    <button v-if="status === 'Perdido' && blacklistedItems.length > 0"
+                      @click.stop="currentView = 'lista_negra'" class="btn-sm"
+                      style="font-size:0.6rem; padding:1px 6px; margin-left:auto; background:var(--accent-danger); color:#fff; opacity:0.85; border:none; cursor:pointer;"
+                      :title="blacklistedItems.length + ' contacto(s) en Lista Negra'">
+                      <span class="material-symbols-outlined" style="font-size:0.75rem; vertical-align:middle;">block</span>
+                      {{ blacklistedItems.length }}
+                    </button>
                   </div>
                   <div class="kanban-cards" :data-status="status">
                     <div v-for="lead in getFilteredLeadsByStatus(status)" :key="lead._row + '-' + (lead._source || '')"
@@ -327,10 +379,12 @@
                       @click="openLeadDetail(lead)">
                       <div class="card-header">
                         <span class="card-id">#{{ lead._id }}</span>
-                        <span class="card-calidad" :class="'calidad-' + (lead._colX_Calidad || '').toLowerCase()">{{
+                        <span v-if="lead._esPrueba" class="card-calidad calidad-prueba">Prueba</span>
+                        <span v-else class="card-calidad" :class="'calidad-' + (lead._colX_Calidad || '').toLowerCase()">{{
                           lead._colX_Calidad || '—' }}</span>
                       </div>
                       <h4 class="card-name">{{ lead._name || 'Sin nombre' }}</h4>
+                      <span v-if="lead._campaign" class="campaign-badge campaign-badge-sm" :class="getCampaignClass(lead._campaign)">{{ getCampaignShort(lead._campaign) }}</span>
                       <p class="card-empresa" v-if="lead._empresa">{{ lead._empresa }}</p>
                       <div class="card-footer">
                         <span class="card-contact" v-if="lead._tel" title="Teléfono">📞 {{ lead._tel }}</span>
@@ -351,6 +405,10 @@
               <div class="leads-toolbar">
                 <span class="leads-count">{{ filteredDeals.length }} negociaciones</span>
                 <div class="leads-filters">
+                  <button class="btn-sm" @click="toggleBulkMode" :style="bulkMode ? 'background:var(--accent-primary); color:#fff;' : ''" style="margin-right:0.5rem; display:inline-flex; align-items:center; gap:0.25rem;">
+                    <span class="material-symbols-outlined" style="font-size:1rem;">checklist</span>
+                    {{ bulkMode ? 'Cancelar' : 'Selección' }}
+                  </button>
                   <select v-model="filterDealStatus" class="filter-select">
                     <option value="">Todos los Status</option>
                     <option v-for="s in (catalogs['Status de Venta'] || [])" :key="s" :value="s">{{ s }}</option>
@@ -361,6 +419,9 @@
                 <table class="leads-table">
                   <thead>
                     <tr>
+                      <th v-if="bulkMode" style="width:36px; text-align:center;">
+                        <input type="checkbox" :checked="bulkSelected.length === paginatedDeals.length && paginatedDeals.length > 0" @change="bulkSelectAll(paginatedDeals)" style="cursor:pointer;">
+                      </th>
                       <th class="th-sort" @click="toggleDealSort('fecha_ingreso')" title="Ordenar por fecha de ingreso">
                         Fecha Ingreso <span class="material-symbols-outlined sort-arrow">{{ sortIcon('fecha_ingreso', dealSortBy, dealSortOrder) }}</span>
                       </th>
@@ -393,8 +454,12 @@
                     </tr>
                   </thead>
                   <tbody>
-                    <tr v-for="deal in paginatedDeals" :key="deal._row" @click="openLeadDetail(deal)" class="lead-row"
-                      :style="deal['¿Es recompra?'] === 'Si' ? 'border-left: 3px solid #a78bfa; background: rgba(139, 92, 246, 0.04);' : ''">
+                    <tr v-for="deal in paginatedDeals" :key="deal._row"
+                      @click="bulkMode ? toggleBulkItem(deal._row) : openLeadDetail(deal)" class="lead-row"
+                      :style="isBulkSelected(deal._row) ? 'background:var(--accent-primary-soft)' : (deal['¿Es recompra?'] === 'Si' ? 'border-left: 3px solid #a78bfa; background: rgba(139, 92, 246, 0.04);' : '')">
+                      <td v-if="bulkMode" @click.stop style="text-align:center;">
+                        <input type="checkbox" :checked="isBulkSelected(deal._row)" @change="toggleBulkItem(deal._row)" style="cursor:pointer;">
+                      </td>
                       <td style="font-size:0.72rem; white-space:nowrap;">{{ deal['Fecha y Hora de asignación'] ? formatDate(deal['Fecha y Hora de asignación']) : '—' }}</td>
                       <td class="col-name">{{ deal._name }}</td>
                       <td>{{ deal._empresa }}</td>
@@ -439,6 +504,13 @@
                   <div class="kanban-column-header" :style="{ borderTopColor: getStatusColor(status) }">
                     <span class="column-title">{{ status }}</span>
                     <span class="column-count">{{ getFilteredLeadsByStatus(status).length }}</span>
+                    <button v-if="status === 'Perdido' && blacklistedItems.length > 0"
+                      @click.stop="currentView = 'lista_negra'" class="btn-sm"
+                      style="font-size:0.6rem; padding:1px 6px; margin-left:auto; background:var(--accent-danger); color:#fff; opacity:0.85; border:none; cursor:pointer;"
+                      :title="blacklistedItems.length + ' contacto(s) en Lista Negra'">
+                      <span class="material-symbols-outlined" style="font-size:0.75rem; vertical-align:middle;">block</span>
+                      {{ blacklistedItems.length }}
+                    </button>
                   </div>
                   <div class="kanban-cards" :data-status="status">
                     <div v-for="deal in getFilteredLeadsByStatus(status)" :key="deal._row + '-' + (deal._source || '')"
@@ -447,7 +519,8 @@
                       @click="openLeadDetail(deal)">
                       <div class="card-header">
                         <span class="card-id">#{{ deal._id }}</span>
-                        <span class="card-calidad" :class="'calidad-' + (deal._colX_Calidad || '').toLowerCase()">{{
+                        <span v-if="deal._esPrueba" class="card-calidad calidad-prueba">Prueba</span>
+                        <span v-else class="card-calidad" :class="'calidad-' + (deal._colX_Calidad || '').toLowerCase()">{{
                           deal._colX_Calidad || '—' }}</span>
                       </div>
                       <h4 class="card-name">{{ deal._name || 'Sin nombre' }}</h4>
@@ -480,6 +553,253 @@
           <div v-if="currentView === 'calendar'" class="view calendar-view">
             <div id="fullcalendar-container"
               style="background: var(--bg-primary); border-radius: 12px; padding: 1rem; min-height: 600px;"></div>
+          </div>
+
+          <!-- ========== CONTACTOS VIEW ========== -->
+          <div v-if="currentView === 'contactos'" class="view leads-view">
+            <div class="leads-toolbar">
+              <span class="leads-count" style="display:flex; align-items:center; gap:0.75rem;">
+                {{ filteredContacts.length }} contactos
+                <button class="btn-sm btn-primary" @click="openCreateContactModal"
+                  style="display:inline-flex; align-items:center; gap:0.3rem; font-size:0.78rem;">
+                  <span class="material-symbols-outlined" style="font-size:1rem;">person_add</span> Nuevo Contacto
+                </button>
+              </span>
+              <div class="leads-filters" style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+                <button class="btn-sm" @click="toggleBulkMode" :style="bulkMode ? 'background:var(--accent-primary); color:#fff;' : ''" style="display:inline-flex; align-items:center; gap:0.25rem;">
+                  <span class="material-symbols-outlined" style="font-size:1rem;">checklist</span>
+                  {{ bulkMode ? 'Cancelar' : 'Selección' }}
+                </button>
+                <select v-model="contactFilterPais" class="filter-select" style="min-width:130px;">
+                  <option value="">Todos los paises</option>
+                  <option v-for="p in contactCountries" :key="p" :value="p">{{ p }}</option>
+                </select>
+                <select v-model="contactFilterEstado" class="filter-select">
+                  <option value="">Todo estado</option>
+                  <option value="activo">Activo</option>
+                  <option value="prueba">Prueba</option>
+                  <option value="lista_negra">Lista Negra</option>
+                </select>
+                <select v-model="contactFilterLeads" class="filter-select">
+                  <option value="">Leads: Todos</option>
+                  <option value="2+">2+ Leads</option>
+                  <option value="3+">3+ Leads</option>
+                </select>
+                <select v-model="contactFilterDeals" class="filter-select">
+                  <option value="">Deals: Todos</option>
+                  <option value="1+">1+ Deal</option>
+                  <option value="2+">2+ Deals</option>
+                </select>
+                <input type="text" v-model="contactSearch" class="filter-select"
+                  placeholder="Buscar contacto..." style="min-width:220px; padding:0.4rem 0.75rem;">
+              </div>
+            </div>
+            <div v-if="!contactsLoaded" style="text-align:center; padding:3rem; color:var(--text-muted);">
+              Cargando contactos...
+            </div>
+            <div v-else-if="filteredContacts.length === 0" style="text-align:center; padding:3rem; color:var(--text-muted);">
+              <span class="material-symbols-outlined" style="font-size:3rem; opacity:0.3; display:block; margin-bottom:0.5rem;">contacts</span>
+              No se encontraron contactos.
+            </div>
+            <div v-else class="leads-table-wrapper">
+              <table class="leads-table">
+                <thead>
+                  <tr>
+                    <th v-if="bulkMode" style="width:36px; text-align:center;">
+                      <input type="checkbox" :checked="bulkSelected.length === paginatedContacts.length && paginatedContacts.length > 0" @change="bulkSelectAll(paginatedContacts)" style="cursor:pointer;">
+                    </th>
+                    <th class="th-sort" style="width:50px;" @click="toggleContactSort('id')">ID <span class="material-symbols-outlined sort-arrow">{{ sortIcon('id', contactSortBy, contactSortOrder) }}</span></th>
+                    <th class="th-sort" @click="toggleContactSort('nombre')">Nombre <span class="material-symbols-outlined sort-arrow">{{ sortIcon('nombre', contactSortBy, contactSortOrder) }}</span></th>
+                    <th class="th-sort" @click="toggleContactSort('apellido')">Apellido <span class="material-symbols-outlined sort-arrow">{{ sortIcon('apellido', contactSortBy, contactSortOrder) }}</span></th>
+                    <th class="th-sort" @click="toggleContactSort('empresa')">Empresa <span class="material-symbols-outlined sort-arrow">{{ sortIcon('empresa', contactSortBy, contactSortOrder) }}</span></th>
+                    <th class="th-sort" @click="toggleContactSort('email')">Email <span class="material-symbols-outlined sort-arrow">{{ sortIcon('email', contactSortBy, contactSortOrder) }}</span></th>
+                    <th>Tel</th>
+                    <th class="th-sort" @click="toggleContactSort('pais')">Pais <span class="material-symbols-outlined sort-arrow">{{ sortIcon('pais', contactSortBy, contactSortOrder) }}</span></th>
+                    <th class="th-sort" style="text-align:center;" @click="toggleContactSort('leads')">Leads <span class="material-symbols-outlined sort-arrow">{{ sortIcon('leads', contactSortBy, contactSortOrder) }}</span></th>
+                    <th class="th-sort" style="text-align:center;" @click="toggleContactSort('deals')">Deals <span class="material-symbols-outlined sort-arrow">{{ sortIcon('deals', contactSortBy, contactSortOrder) }}</span></th>
+                    <th class="th-sort" @click="toggleContactSort('estado')">Estado <span class="material-symbols-outlined sort-arrow">{{ sortIcon('estado', contactSortBy, contactSortOrder) }}</span></th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="c in paginatedContacts" :key="c._row" class="lead-row"
+                    @click="bulkMode ? toggleBulkItem(c._row) : openContactDetail(c)"
+                    :style="isBulkSelected(c._row) ? 'background:var(--accent-primary-soft)' : ''">
+                    <td v-if="bulkMode" @click.stop style="text-align:center;">
+                      <input type="checkbox" :checked="isBulkSelected(c._row)" @change="toggleBulkItem(c._row)" style="cursor:pointer;">
+                    </td>
+                    <td style="font-size:0.75rem; color:var(--text-muted); text-align:center;">{{ c.id_contacto }}</td>
+                    <td class="col-name">{{ c.nombre || '—' }}</td>
+                    <td>{{ c.apellido || '—' }}</td>
+                    <td>{{ c.empresa || '—' }}</td>
+                    <td>{{ c.email || '—' }}</td>
+                    <td>{{ c.telefono_1 || '—' }}</td>
+                    <td>{{ c.pais || '—' }}</td>
+                    <td style="text-align:center;">
+                      <span style="font-size:0.75rem; padding:2px 8px; border-radius:8px; font-weight:600; background:rgba(99,102,241,0.15); color:#6366f1;">{{ c._leadCount }}</span>
+                    </td>
+                    <td style="text-align:center;">
+                      <span style="font-size:0.75rem; padding:2px 8px; border-radius:8px; font-weight:600; background:rgba(245,166,35,0.15); color:#f5a623;">{{ c._dealCount }}</span>
+                    </td>
+                    <td>
+                      <span v-if="c.lista_negra" style="color:var(--accent-danger); font-size:0.75rem; font-weight:600; display:inline-flex; align-items:center; gap:2px;">
+                        <span class="material-symbols-outlined" style="font-size:0.85rem;">block</span> Lista Negra
+                      </span>
+                      <span v-else-if="c.es_prueba" style="color:#f59e0b; font-size:0.75rem; font-weight:600; display:inline-flex; align-items:center; gap:2px;">
+                        🧪 Prueba
+                      </span>
+                      <span v-else style="color:var(--accent-success); font-size:0.75rem; font-weight:600;">Activo</span>
+                    </td>
+                    <td @click.stop><button class="btn-sm btn-primary" @click="openContactDetail(c)">Ver</button></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="pagination" v-if="totalContactPages > 1">
+              <button class="btn-sm" :disabled="contactPage === 1" @click="contactPage--">← Anterior</button>
+              <span class="page-info">Pagina {{ contactPage }} de {{ totalContactPages }}</span>
+              <button class="btn-sm" :disabled="contactPage === totalContactPages" @click="contactPage++">Siguiente →</button>
+            </div>
+          </div>
+
+          <!-- ========== CONTACT DETAIL MODAL ========== -->
+          <div v-if="contactDetailModal.show" class="modal-overlay" @click.self="closeContactModal">
+            <div class="modal-panel" style="max-width:650px;">
+              <div class="modal-header">
+                <div>
+                  <h2 class="modal-title">Contacto #{{ contactDetailModal.contact.id_contacto }} — {{ contactDetailModal.contact.nombre }} {{ contactDetailModal.contact.apellido }}</h2>
+                  <span v-if="contactDetailModal.contact.lista_negra"
+                    style="background:rgba(239,68,68,0.2); color:var(--accent-danger); font-size:0.75rem; padding:3px 10px; border-radius:1rem; font-weight:700; display:inline-flex; align-items:center; gap:3px;">
+                    <span class="material-symbols-outlined" style="font-size:0.85rem;">block</span> Lista Negra
+                  </span>
+                </div>
+                <button class="btn-icon" @click="closeContactModal"><span class="material-symbols-outlined">close</span></button>
+              </div>
+              <div class="modal-body" style="padding:1.5rem;">
+                <h4 style="margin:0 0 1rem; font-size:0.9rem; color:var(--text-secondary);">Informacion de Contacto</h4>
+                <div class="form-grid">
+                  <div class="form-group"><label>Nombre</label><input type="text" v-model="contactDetailModal.contact.nombre" class="form-input"></div>
+                  <div class="form-group"><label>Apellido</label><input type="text" v-model="contactDetailModal.contact.apellido" class="form-input"></div>
+                  <div class="form-group"><label>Email</label><input type="text" v-model="contactDetailModal.contact.email" class="form-input"></div>
+                  <div class="form-group"><label>Telefono</label><input type="text" v-model="contactDetailModal.contact.telefono_1" class="form-input"></div>
+                  <div class="form-group"><label>Telefono 2</label><input type="text" v-model="contactDetailModal.contact.telefono_2" class="form-input"></div>
+                  <div class="form-group"><label>Empresa</label><input type="text" v-model="contactDetailModal.contact.empresa" class="form-input"></div>
+                  <div class="form-group"><label>Area / Cargo</label><input type="text" v-model="contactDetailModal.contact.area" class="form-input"></div>
+                  <div class="form-group"><label>Pais</label><input type="text" v-model="contactDetailModal.contact.pais" class="form-input"></div>
+                  <div class="form-group"><label>Ciudad</label><input type="text" v-model="contactDetailModal.contact.ciudad" class="form-input"></div>
+                  <div class="form-group"><label>Empleados</label><input type="text" v-model="contactDetailModal.contact.empleados" class="form-input"></div>
+                  <div class="form-group"><label>Nivel</label><input type="text" v-model="contactDetailModal.contact.nivel" class="form-input"></div>
+                  <div class="form-group"><label>Fecha Creacion</label><input type="text" :value="contactDetailModal.contact.fecha_creacion" class="form-input" disabled></div>
+                </div>
+                <!-- Related Leads -->
+                <div v-if="contactDetailModal.related" style="margin-top:1.5rem;">
+                  <h4 style="margin:0 0 0.5rem; font-size:0.9rem; color:var(--text-secondary);">Leads Asociados ({{ contactDetailModal.related.leads.length }})</h4>
+                  <div v-if="contactDetailModal.related.leads.length === 0" style="color:var(--text-muted); font-size:0.82rem;">Sin leads</div>
+                  <div v-else style="display:flex; flex-direction:column; gap:0.4rem;">
+                    <div v-for="rl in contactDetailModal.related.leads" :key="rl.id_lead"
+                      style="display:flex; align-items:center; gap:0.75rem; padding:0.4rem 0.6rem; background:var(--bg-elevated); border-radius:0.375rem; font-size:0.82rem; cursor:pointer;"
+                      @click="closeContactModal(); $nextTick(() => { var l = leads.find(x => String(x._id) === String(rl.id_lead)); if(l) openLeadDetail(l); })">
+                      <span style="font-weight:600; color:var(--accent-primary);">#{{ rl.id_lead }}</span>
+                      <span class="status-badge" :style="{ background: getStatusColor(rl.status), fontSize:'0.7rem', padding:'2px 8px' }">{{ rl.status }}</span>
+                      <span style="color:var(--text-muted);">{{ rl.fecha_ingreso }}</span>
+                    </div>
+                  </div>
+                  <!-- Related Deals -->
+                  <h4 style="margin:1rem 0 0.5rem; font-size:0.9rem; color:var(--text-secondary);">Deals Asociados ({{ contactDetailModal.related.deals.length }})</h4>
+                  <div v-if="contactDetailModal.related.deals.length === 0" style="color:var(--text-muted); font-size:0.82rem;">Sin deals</div>
+                  <div v-else style="display:flex; flex-direction:column; gap:0.4rem;">
+                    <div v-for="rd in contactDetailModal.related.deals" :key="rd.id_deal"
+                      style="display:flex; align-items:center; gap:0.75rem; padding:0.4rem 0.6rem; background:var(--bg-elevated); border-radius:0.375rem; font-size:0.82rem; cursor:pointer;"
+                      @click="closeContactModal(); $nextTick(() => { var d = deals.find(x => String(x._id) === String(rd.id_deal)); if(d) openLeadDetail(d); })">
+                      <span style="font-weight:600; color:var(--accent-warning);">#{{ rd.id_deal }}</span>
+                      <span class="status-badge" :style="{ background: getStatusColor(rd.status_venta), fontSize:'0.7rem', padding:'2px 8px' }">{{ rd.status_venta }}</span>
+                      <span style="color:var(--text-muted);">{{ rd.fecha_pase }}</span>
+                    </div>
+                  </div>
+                </div>
+                <div v-else-if="contactDetailModal.loading" style="text-align:center; padding:1rem; color:var(--text-muted);">Cargando relaciones...</div>
+              </div>
+              <div class="modal-footer" style="justify-content:space-between;">
+                <button class="btn btn-primary" @click="openCreateLeadFromContact(contactDetailModal.contact)"
+                  style="display:inline-flex; align-items:center; gap:0.3rem; font-size:0.82rem;">
+                  <span class="material-symbols-outlined" style="font-size:1.1rem;">add_circle</span> Nuevo Lead
+                </button>
+                <div style="display:flex; gap:0.5rem;">
+                  <button class="btn btn-secondary" @click="closeContactModal">Cancelar</button>
+                  <button class="btn btn-success" @click="saveContactChanges" :disabled="contactDetailModal.saving">
+                    {{ contactDetailModal.saving ? 'Guardando...' : 'Guardar Contacto' }}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ========== LISTA NEGRA VIEW (Contactos blacklisteados) ========== -->
+          <div v-if="currentView === 'lista_negra'" class="view leads-view">
+            <div class="leads-toolbar">
+              <span class="leads-count" style="display:flex; align-items:center; gap:0.5rem;">
+                <span class="material-symbols-outlined" style="font-size:1.3rem; color:var(--accent-danger);">block</span>
+                {{ blacklistedItems.length }} contacto{{ blacklistedItems.length !== 1 ? 's' : '' }} en Lista Negra
+              </span>
+              <div class="leads-filters">
+                <input type="text" v-model="blacklistSearch" class="filter-select"
+                  placeholder="Buscar contacto..." style="min-width:220px; padding:0.4rem 0.75rem;">
+              </div>
+            </div>
+            <div v-if="blacklistedItems.length === 0"
+              style="text-align:center; padding:4rem 2rem; color:var(--text-muted);">
+              <span class="material-symbols-outlined" style="font-size:3.5rem; opacity:0.3; display:block; margin-bottom:1rem;">verified_user</span>
+              <p style="font-size:1rem; margin:0;">No hay contactos en la Lista Negra</p>
+              <p style="font-size:0.82rem; margin-top:0.5rem; opacity:0.7;">Los contactos enviados a Lista Negra desde el pipeline apareceran aqui.</p>
+            </div>
+            <div v-else class="leads-table-wrapper">
+              <table class="leads-table">
+                <thead>
+                  <tr>
+                    <th class="th-sort" @click="toggleBlacklistSort('nombre')">Contacto <span class="material-symbols-outlined sort-arrow">{{ sortIcon('nombre', blacklistSortBy, blacklistSortOrder) }}</span></th>
+                    <th class="th-sort" @click="toggleBlacklistSort('empresa')">Empresa <span class="material-symbols-outlined sort-arrow">{{ sortIcon('empresa', blacklistSortBy, blacklistSortOrder) }}</span></th>
+                    <th class="th-sort" @click="toggleBlacklistSort('email')">Email <span class="material-symbols-outlined sort-arrow">{{ sortIcon('email', blacklistSortBy, blacklistSortOrder) }}</span></th>
+                    <th>Tel</th>
+                    <th class="th-sort" style="text-align:center;" @click="toggleBlacklistSort('leads')">Leads <span class="material-symbols-outlined sort-arrow">{{ sortIcon('leads', blacklistSortBy, blacklistSortOrder) }}</span></th>
+                    <th class="th-sort" style="text-align:center;" @click="toggleBlacklistSort('deals')">Deals <span class="material-symbols-outlined sort-arrow">{{ sortIcon('deals', blacklistSortBy, blacklistSortOrder) }}</span></th>
+                    <th>Motivo</th>
+                    <th class="th-sort" @click="toggleBlacklistSort('fecha')">Fecha <span class="material-symbols-outlined sort-arrow">{{ sortIcon('fecha', blacklistSortBy, blacklistSortOrder) }}</span></th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="item in filteredBlacklist" :key="item._id_contacto" class="lead-row"
+                    @click="openBlacklistContactDetail(item)">
+                    <td class="col-name" style="display:flex; align-items:center; gap:0.4rem;">
+                      <span class="material-symbols-outlined" style="font-size:1rem; color:var(--accent-danger); opacity:0.7;">block</span>
+                      {{ item._name || 'Sin nombre' }}
+                    </td>
+                    <td>{{ item._empresa || '—' }}</td>
+                    <td>{{ item._email || '—' }}</td>
+                    <td>{{ item._tel || '—' }}</td>
+                    <td style="text-align:center;">
+                      <span style="font-size:0.75rem; padding:2px 8px; border-radius:8px; font-weight:600; background:rgba(99,102,241,0.15); color:#6366f1;">
+                        {{ item.leadCount }}
+                      </span>
+                    </td>
+                    <td style="text-align:center;">
+                      <span style="font-size:0.75rem; padding:2px 8px; border-radius:8px; font-weight:600; background:rgba(245,166,35,0.15); color:#f5a623;">
+                        {{ item.dealCount }}
+                      </span>
+                    </td>
+                    <td style="max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:0.82rem; color:var(--text-secondary);">
+                      {{ item['motivo_lista_negra'] || '—' }}
+                    </td>
+                    <td style="font-size:0.75rem; white-space:nowrap;">
+                      {{ item['fecha_lista_negra'] ? formatDate(item['fecha_lista_negra']) : '—' }}
+                    </td>
+                    <td @click.stop>
+                      <button class="btn-sm" style="background:var(--accent-success); color:#fff;" @click="removeFromListaNegra(item)" title="Sacar de Lista Negra">Restaurar</button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
 
           <!-- REPORTES (ADMIN) -->
@@ -1920,47 +2240,6 @@
               </div>
             </div>
 
-            <!-- ═══ Attendance History (Admin/Gerente Only) ═══ -->
-            <div v-if="userRole === 'ADMIN' || userRole === 'GERENTE'" class="config-editor" style="margin-top: 1.5rem;">
-              <div class="config-editor-header" style="display:flex; align-items:center; justify-content:space-between;">
-                <h3>📋 Historial de Asistencia</h3>
-                <button class="btn-sm btn-primary" @click="loadAttendanceHistory" :disabled="loadingAttendance" style="font-size:0.75rem;">
-                  {{ loadingAttendance ? 'Cargando...' : 'Cargar Últimos 30 Días' }}
-                </button>
-              </div>
-              <div style="padding: 1rem;">
-                <div v-if="attendanceHistory.length === 0 && !loadingAttendance" style="text-align:center; padding:1.5rem; color:var(--text-muted); font-size:0.85rem;">
-                  Haz clic en "Cargar" para ver el historial de entradas y salidas.
-                </div>
-                <div v-else-if="loadingAttendance" style="text-align:center; padding:1.5rem; color:var(--text-muted);">
-                  Cargando...
-                </div>
-                <table v-else class="report-table" style="font-size:0.8rem;">
-                  <thead>
-                    <tr>
-                      <th>Nombre</th>
-                      <th>Email</th>
-                      <th>Tipo</th>
-                      <th>Fecha y Hora</th>
-                      <th>Duración</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="(entry, idx) in attendanceHistory" :key="idx">
-                      <td style="font-weight:600;">{{ entry.nombre || '—' }}</td>
-                      <td style="font-size:0.75rem;">{{ entry.email }}</td>
-                      <td>
-                        <span :style="entry.tipo === 'entrada' ? 'color:var(--accent-success); font-weight:600;' : 'color:var(--accent-danger); font-weight:600;'">
-                          {{ entry.tipo === 'entrada' ? '🟢 Entrada' : '🔴 Salida' }}
-                        </span>
-                      </td>
-                      <td>{{ entry.fecha_hora ? new Date(entry.fecha_hora).toLocaleString('es-MX') : '—' }}</td>
-                      <td>{{ entry.duracion_sesion || '—' }}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
 
           </div>
 
@@ -2078,12 +2357,215 @@
               </div>
             </div>
           </div>
+
+          <!-- IMPORTAR LEADS -->
+          <div v-if="currentView === 'importar'" class="view import-view">
+            <!-- Step indicators -->
+            <div class="import-steps">
+              <div class="import-step" :class="{ active: importStep === 1, done: importStep > 1 }">
+                <span class="step-num">1</span><span class="step-label">Preparar</span>
+              </div>
+              <div class="import-step-line" :class="{ done: importStep > 1 }"></div>
+              <div class="import-step" :class="{ active: importStep === 2, done: importStep > 2 }">
+                <span class="step-num">2</span><span class="step-label">Mapear</span>
+              </div>
+              <div class="import-step-line" :class="{ done: importStep > 2 }"></div>
+              <div class="import-step" :class="{ active: importStep === 3, done: importStep > 3 }">
+                <span class="step-num">3</span><span class="step-label">Revisar</span>
+              </div>
+              <div class="import-step-line" :class="{ done: importStep > 3 }"></div>
+              <div class="import-step" :class="{ active: importStep === 4 }">
+                <span class="step-num">4</span><span class="step-label">Resultado</span>
+              </div>
+            </div>
+
+            <!-- Step 1: Prepare -->
+            <div v-if="importStep === 1" class="import-panel">
+              <div class="import-panel-header">
+                <span class="material-symbols-outlined" style="font-size:2.5rem; color:var(--accent-primary);">upload_file</span>
+                <h3>Importar Leads</h3>
+                <p style="color:var(--text-secondary);">Importa leads desde cualquier hoja de cálculo (CSV, Excel, Google Sheets)</p>
+              </div>
+              <div class="import-instructions">
+                <div class="import-instruction-step">
+                  <span class="instruction-num">1</span>
+                  <div><strong>Crea la hoja temporal</strong>
+                    <p>Se creará una pestaña <code>_importar_temporal</code> en el Google Sheet del CRM.</p></div>
+                </div>
+                <div class="import-instruction-step">
+                  <span class="instruction-num">2</span>
+                  <div><strong>Pega tus datos</strong>
+                    <p>Abre la pestaña y pega tus datos. La primera fila debe ser la cabecera con los nombres de columna.</p></div>
+                </div>
+                <div class="import-instruction-step">
+                  <span class="instruction-num">3</span>
+                  <div><strong>Analiza y mapea</strong>
+                    <p>El sistema detectará las columnas y sugerirá campos del CRM automáticamente.</p></div>
+                </div>
+              </div>
+              <div style="display:flex; gap:0.75rem; justify-content:center; flex-wrap:wrap; margin-top:1.5rem;">
+                <button class="btn btn-primary" @click="importInitSheet" :disabled="importLoading">
+                  <span class="material-symbols-outlined" style="font-size:18px; vertical-align:middle;">add_circle</span>
+                  {{ importSheetReady ? 'Hoja lista' : 'Crear hoja temporal' }}
+                </button>
+                <button class="btn btn-success" @click="importAnalyze" :disabled="importLoading || !importSheetReady">
+                  <span class="material-symbols-outlined" style="font-size:18px; vertical-align:middle;">search</span>
+                  Analizar datos
+                </button>
+              </div>
+              <p v-if="importLoading" style="text-align:center; margin-top:1rem; color:var(--text-secondary);">
+                <span class="spinner-sm"></span> Procesando...
+              </p>
+            </div>
+
+            <!-- Step 2: Map columns -->
+            <div v-if="importStep === 2" class="import-panel">
+              <div class="import-panel-header">
+                <h3>Mapeo de Columnas</h3>
+                <p style="color:var(--text-secondary);">{{ importData.totalRows }} filas detectadas. Asigna cada columna al campo CRM correspondiente.</p>
+              </div>
+              <div class="import-table-wrapper">
+                <table class="import-table">
+                  <thead>
+                    <tr>
+                      <th style="width:22%">Columna Original</th>
+                      <th style="width:22%">Muestra</th>
+                      <th style="width:38%">Campo CRM</th>
+                      <th style="width:18%">Match</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(sug, idx) in importMappings" :key="idx"
+                        :class="{ 'mapping-skip': !sug.target, 'mapping-pipe': sug.csvHeader === '|' }">
+                      <td class="mapping-csv-col">{{ sug.csvHeader || '(vacío)' }}</td>
+                      <td class="mapping-sample">{{ importData.sampleData && importData.sampleData[0] ? (importData.sampleData[0][sug.csvIndex] || '').substring(0,40) : '' }}</td>
+                      <td>
+                        <select v-if="sug.csvHeader && sug.csvHeader !== '|'" class="form-input mapping-select"
+                                v-model="sug.target" @change="sug.confidence = sug.target ? 100 : 0">
+                          <option value="">-- No importar --</option>
+                          <optgroup label="Contacto">
+                            <option v-for="f in importFieldsByTable('contacto')" :key="f.key" :value="f.key">{{ f.label }}</option>
+                          </optgroup>
+                          <optgroup label="Lead">
+                            <option v-for="f in importFieldsByTable('lead')" :key="f.key" :value="f.key">{{ f.label }}</option>
+                          </optgroup>
+                          <optgroup label="Campaña">
+                            <option v-for="f in importFieldsByTable('campana')" :key="f.key" :value="f.key">{{ f.label }}</option>
+                          </optgroup>
+                          <optgroup label="Calificación BANT">
+                            <option v-for="f in importFieldsByTable('calificacion')" :key="f.key" :value="f.key">{{ f.label }}</option>
+                          </optgroup>
+                          <optgroup label="Especial">
+                            <option value="lead._notas_extra">Agregar a Notas</option>
+                          </optgroup>
+                        </select>
+                        <span v-else style="color:var(--text-muted);">—</span>
+                      </td>
+                      <td>
+                        <span v-if="sug.confidence >= 80" class="match-badge match-high">Auto</span>
+                        <span v-else-if="sug.confidence >= 50" class="match-badge match-medium">Parcial</span>
+                        <span v-else-if="sug.target" class="match-badge match-manual">Manual</span>
+                        <span v-else class="match-badge match-skip">Skip</span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div style="display:flex; gap:0.75rem; justify-content:center; margin-top:1.5rem;">
+                <button class="btn btn-secondary" @click="importStep = 1">Volver</button>
+                <button class="btn btn-success" @click="importPreview" :disabled="importLoading || !importHasMappings">
+                  <span class="material-symbols-outlined" style="font-size:18px; vertical-align:middle;">visibility</span>
+                  Vista previa
+                </button>
+              </div>
+              <p v-if="importLoading" style="text-align:center; margin-top:1rem; color:var(--text-secondary);">
+                <span class="spinner-sm"></span> Generando vista previa...
+              </p>
+            </div>
+
+            <!-- Step 3: Preview -->
+            <div v-if="importStep === 3" class="import-panel">
+              <div class="import-panel-header">
+                <h3>Vista Previa</h3>
+                <p style="color:var(--text-secondary);">{{ importPreviewData.stats ? importPreviewData.stats.note : '' }}</p>
+              </div>
+              <div class="import-table-wrapper">
+                <table class="import-table">
+                  <thead>
+                    <tr><th v-for="(h, hi) in importPreviewData.headers" :key="hi">{{ h }}</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(row, ri) in importPreviewData.rows" :key="ri">
+                      <td v-for="(cell, ci) in row" :key="ci" :title="cell">{{ (cell || '').substring(0, 50) }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="import-stats-bar">
+                <div class="import-stat">
+                  <span class="material-symbols-outlined" style="color:var(--accent-info);">database</span>
+                  <span>{{ importData.totalRows }} filas totales a importar</span>
+                </div>
+              </div>
+              <div style="display:flex; gap:0.75rem; justify-content:center; margin-top:1.5rem;">
+                <button class="btn btn-secondary" @click="importStep = 2">Volver al mapeo</button>
+                <button class="btn btn-success" @click="importExecute" :disabled="importLoading">
+                  <span class="material-symbols-outlined" style="font-size:18px; vertical-align:middle;">cloud_upload</span>
+                  {{ importLoading ? 'Importando...' : 'Importar ' + importData.totalRows + ' leads' }}
+                </button>
+              </div>
+              <p v-if="importLoading" style="text-align:center; margin-top:1rem; color:var(--text-secondary);">
+                <span class="spinner-sm"></span> Importando leads... esto puede tomar unos segundos.
+              </p>
+            </div>
+
+            <!-- Step 4: Results -->
+            <div v-if="importStep === 4" class="import-panel">
+              <div class="import-panel-header">
+                <span class="material-symbols-outlined" style="font-size:3rem; color:var(--accent-success);">task_alt</span>
+                <h3>Importación Completada</h3>
+              </div>
+              <div class="import-results-grid">
+                <div class="import-result-card">
+                  <span class="result-number">{{ importResult.imported }}</span>
+                  <span class="result-label">Leads importados</span>
+                </div>
+                <div class="import-result-card">
+                  <span class="result-number">{{ importResult.contacts }}</span>
+                  <span class="result-label">Contactos creados</span>
+                </div>
+                <div class="import-result-card">
+                  <span class="result-number">{{ importResult.campaigns }}</span>
+                  <span class="result-label">Campañas creadas</span>
+                </div>
+                <div class="import-result-card">
+                  <span class="result-number">{{ importResult.qualifications }}</span>
+                  <span class="result-label">Calificaciones BANT</span>
+                </div>
+                <div class="import-result-card" v-if="importResult.skipped > 0">
+                  <span class="result-number" style="color:var(--accent-warning);">{{ importResult.skipped }}</span>
+                  <span class="result-label">Omitidos (sin email/tel)</span>
+                </div>
+              </div>
+              <div style="display:flex; gap:0.75rem; justify-content:center; margin-top:2rem; flex-wrap:wrap;">
+                <button class="btn btn-secondary" @click="importCleanup">
+                  <span class="material-symbols-outlined" style="font-size:18px; vertical-align:middle;">delete_sweep</span>
+                  Limpiar hoja temporal
+                </button>
+                <button class="btn btn-primary" @click="currentView = 'leads'; refreshData();">
+                  <span class="material-symbols-outlined" style="font-size:18px; vertical-align:middle;">list_alt</span>
+                  Ir a Prospectos
+                </button>
+                <button class="btn btn-secondary" @click="importReset">Nueva importación</button>
+              </div>
+            </div>
+          </div>
         </div>
       </main>
     </div>
 
     <!-- ========== LEAD DETAIL MODAL ========== -->
-    <div class="modal-overlay" v-if="showLeadModal" @click.self="closeLeadModal">
+    <div class="modal-overlay" v-if="showLeadModal" @click.self="safeCloseLeadModal">
       <div class="modal-panel">
         <div class="modal-header">
           <div>
@@ -2095,16 +2577,42 @@
             </h2>
             <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap; margin-top:4px;">
               <span class="status-badge" :style="{ background: getStatusColor(editLead['Status']) }">{{ editLead['Status'] }}</span>
-              <span v-if="editLead['Calidad de Contacto']"
+              <span v-if="editLead['es_prueba'] === 'TRUE'"
+                class="card-calidad calidad-prueba"
+                style="font-size:0.75rem; padding:3px 10px; font-weight:600;">
+                🧪 Prueba
+              </span>
+              <span v-else-if="editLead['Calidad de Contacto']"
                 class="card-calidad"
                 :class="'calidad-' + (editLead['Calidad de Contacto'] || '').toLowerCase().replace(' ', '-')"
                 style="font-size:0.75rem; padding:3px 10px; font-weight:600;">
                 ⭐ {{ editLead['Calidad de Contacto'] }}
               </span>
+              <!-- Prueba toggle switch -->
+              <label style="display:inline-flex; align-items:center; gap:0.4rem; cursor:pointer; font-size:0.75rem; user-select:none;"
+                :title="editLead['es_prueba'] === 'TRUE' ? 'Desmarcar como prueba' : 'Marcar como prueba'"
+                @click.prevent="togglePrueba()">
+                <span :style="{
+                  position:'relative', width:'32px', height:'18px', display:'inline-block', borderRadius:'9px', transition:'all 0.2s',
+                  background: editLead['es_prueba'] === 'TRUE' ? 'var(--accent-warning)' : 'var(--bg-hover)', border:'1px solid var(--border)'
+                }">
+                  <span :style="{
+                    position:'absolute', top:'2px', width:'12px', height:'12px', borderRadius:'50%', transition:'all 0.2s',
+                    background: editLead['es_prueba'] === 'TRUE' ? '#fff' : 'var(--text-muted)',
+                    left: editLead['es_prueba'] === 'TRUE' ? '17px' : '3px'
+                  }"></span>
+                </span>
+                <span :style="{ color: editLead['es_prueba'] === 'TRUE' ? 'var(--accent-warning)' : 'var(--text-muted)', fontWeight: editLead['es_prueba'] === 'TRUE' ? '600' : '400' }">Prueba</span>
+              </label>
               <!-- Phase 21: Duplicate badge -->
               <span v-if="leadDuplicates.length > 0"
                 style="background: rgba(239,68,68,0.15); color: var(--accent-danger); font-size:0.75rem; padding:3px 10px; border-radius:1rem; font-weight:600;">
                 {{ leadDuplicates.length }} duplicado{{ leadDuplicates.length > 1 ? 's' : '' }}
+              </span>
+              <!-- Lista Negra badge -->
+              <span v-if="selectedLead._listaNegra"
+                style="background: rgba(239,68,68,0.2); color: var(--accent-danger); font-size:0.75rem; padding:3px 10px; border-radius:1rem; font-weight:700; display:inline-flex; align-items:center; gap:3px;">
+                <span class="material-symbols-outlined" style="font-size:0.85rem;">block</span> Lista Negra
               </span>
               <!-- Phase 21: Link to original lead -->
               <span v-if="selectedLead._leadOriginalId"
@@ -2114,7 +2622,7 @@
               </span>
             </div>
           </div>
-          <button class="btn-icon" @click="closeLeadModal"><span class="material-symbols-outlined">close</span></button>
+          <button class="btn-icon" @click="safeCloseLeadModal"><span class="material-symbols-outlined">close</span></button>
         </div>
         <!-- Email Compose Quick Action (only when viewing existing lead/deal) -->
         <div v-if="!isCreating && (editLead['Email'])"
@@ -2187,6 +2695,25 @@
                 </details>
               </div>
 
+              <!-- ═══ Contact Linker (only when creating a lead) ═══ -->
+              <div v-if="isCreating && creationType === 'lead'" style="grid-column:1/-1; margin-bottom:0.5rem;">
+                <div v-if="linkedContact" style="display:flex; align-items:center; gap:0.75rem; padding:0.75rem 1rem; background:var(--accent-success-soft); border:1px solid var(--accent-success); border-radius:var(--radius-md);">
+                  <span class="material-symbols-outlined" style="color:var(--accent-success); font-size:1.3rem;">link</span>
+                  <div style="flex:1;">
+                    <span style="font-weight:600; font-size:0.88rem; color:var(--text-primary);">Enlazado a: {{ linkedContact.nombre }} {{ linkedContact.apellido }}</span>
+                    <span style="font-size:0.78rem; color:var(--text-secondary); display:block;">{{ linkedContact.email }} · {{ linkedContact.empresa || '—' }}</span>
+                  </div>
+                  <button class="btn-sm" @click="unlinkContact" style="font-size:0.75rem;" title="Desenlazar contacto">
+                    <span class="material-symbols-outlined" style="font-size:1rem;">link_off</span>
+                  </button>
+                </div>
+                <button v-else class="btn-sm" @click="openContactPicker"
+                  style="display:inline-flex; align-items:center; gap:0.4rem; padding:0.5rem 1rem; border:1px dashed var(--accent-primary); color:var(--accent-primary); background:var(--accent-primary-soft); border-radius:var(--radius-md); font-weight:500;">
+                  <span class="material-symbols-outlined" style="font-size:1.1rem;">person_search</span>
+                  Enlazar a Contacto Existente
+                </button>
+              </div>
+
               <!-- ═══ Dynamic Field Renderer ═══ -->
               <template v-for="section in leadSections" :key="section.name">
                 <div class="form-divider" style="grid-column: 1 / -1; margin-top: 1rem;"></div>
@@ -2215,7 +2742,12 @@
                   <div v-else-if="field.tipo_input === 'calidad_badge'" class="form-group">
                     <label>{{ field.campo_label }} <span style="font-size:0.7rem; color:var(--text-muted); font-weight:400;">(auto-calculado del BANT)</span></label>
                     <div style="padding: 6px 0;">
-                      <span v-if="editLead[field.campo_key]"
+                      <span v-if="editLead['es_prueba'] === 'TRUE'"
+                        class="card-calidad calidad-prueba"
+                        style="font-size:0.85rem; padding:4px 12px; font-weight:600;">
+                        🧪 Prueba
+                      </span>
+                      <span v-else-if="editLead[field.campo_key]"
                         class="card-calidad"
                         :class="'calidad-' + (editLead[field.campo_key] || '').toLowerCase().replace(' ', '-')"
                         style="font-size:0.85rem; padding:4px 12px; font-weight:600;">
@@ -2369,7 +2901,7 @@
                     </select>
                   </div>
 
-                  <!-- ══ GENERIC: Select from catalog ══ -->
+                  <!-- ══ GENERIC: Select from catalog (+ Otro for loss reason) ══ -->
                   <div v-else-if="field.tipo_input === 'select'" class="form-group" :style="field.ancho === 'full' ? 'grid-column: 1 / -1' : ''">
                     <label>{{ field.campo_label }}<span v-if="field.requerido" style="color:var(--accent-danger);margin-left:2px;">*</span></label>
                     <select v-model="editLead[field.campo_key]" class="form-select"
@@ -2377,6 +2909,23 @@
                       <option value="">— Seleccionar —</option>
                       <option v-for="opt in getFieldOptions(field)" :key="opt" :value="opt">{{ opt }}</option>
                     </select>
+                    <!-- Otro: only for loss reason fields -->
+                    <template v-if="field.campo_key === 'Razón de pérdida' || field.campo_key === '¿Por qué perdimos la venta?'">
+                      <div style="margin-top: 0.4rem;">
+                        <button type="button" @click="lossReasonOtroOpen = !lossReasonOtroOpen"
+                          :style="lossReasonOtroOpen
+                            ? 'background:var(--accent-primary); color:#fff; border:1px solid var(--accent-primary);'
+                            : 'background:transparent; color:var(--text-secondary); border:1px solid var(--border-color);'"
+                          style="padding: 0.35rem 0.75rem; border-radius: 0.5rem; font-size: 0.78rem; cursor: pointer;">
+                          Otro
+                        </button>
+                      </div>
+                      <div v-if="lossReasonOtroOpen" style="margin-top: 0.4rem;">
+                        <label style="font-size:0.75rem; color:var(--text-muted); margin-bottom:2px;">Otra razón</label>
+                        <input type="text" v-model="editLead['Razón Pérdida Otra']" class="form-input"
+                          placeholder="Especifique la razón..." />
+                      </div>
+                    </template>
                   </div>
 
                   <!-- ══ GENERIC: Textarea ══ -->
@@ -2414,7 +2963,7 @@
                   <div v-else class="form-group" :style="field.ancho === 'full' ? 'grid-column: 1 / -1' : ''">
                     <label>{{ field.campo_label }}<span v-if="field.requerido" style="color:var(--accent-danger);margin-left:2px;">*</span></label>
                     <input type="text" v-model="editLead[field.campo_key]" class="form-input"
-                      :disabled="isDealFullReadOnly || field.solo_lectura || (field.solo_lectura !== false && isReadOnlySdrFields)" />
+                      :disabled="isDealFullReadOnly || field.solo_lectura || (field.solo_lectura !== false && isReadOnlySdrFields) || isFieldLocked(field.campo_key)" />
                   </div>
 
                 </template>
@@ -2503,18 +3052,30 @@
                     </div>
                   </div>
 
-                  <!-- ══ SPECIAL: Loss Reason (select + Otros free text) ══ -->
+                  <!-- ══ SPECIAL: Loss Reason (select + "Otro" button + free text) ══ -->
                   <div v-else-if="field.tipo_input === 'loss_reason'" class="form-group" style="grid-column: 1 / -1;">
                     <label>{{ field.campo_label }}<span v-if="field.requerido" style="color:var(--accent-danger);margin-left:2px;">*</span></label>
-                    <select v-if="getFieldOptions(field).length" v-model="editLead[field.campo_key]" class="form-select">
-                      <option value="">— Seleccionar —</option>
-                      <option v-for="s in getFieldOptions(field)" :key="s" :value="s">{{ s }}</option>
-                    </select>
-                    <textarea v-else v-model="editLead[field.campo_key]" class="notes-textarea" rows="2"
-                      placeholder="Razón de pérdida de la venta..."></textarea>
-                    <input v-if="editLead[field.campo_key] === 'Otros'" type="text"
-                      v-model="editLead['Razón Pérdida Otra']" class="form-input" style="margin-top: 0.4rem;"
-                      placeholder="Especifique la razón..." />
+                    <div style="display: flex; gap: 0.5rem; align-items: stretch;">
+                      <div style="flex: 1;">
+                        <select v-if="getFieldOptions(field).length" v-model="editLead[field.campo_key]" class="form-select" style="width:100%;">
+                          <option value="">— Seleccionar —</option>
+                          <option v-for="s in getFieldOptions(field)" :key="s" :value="s">{{ s }}</option>
+                        </select>
+                        <textarea v-else v-model="editLead[field.campo_key]" class="notes-textarea" rows="2"
+                          placeholder="Razón de pérdida de la venta..."></textarea>
+                      </div>
+                      <button type="button" @click="lossReasonOtroOpen = !lossReasonOtroOpen"
+                        :style="lossReasonOtroOpen
+                          ? 'background:var(--accent-primary); color:#fff; border:1px solid var(--accent-primary);'
+                          : 'background:transparent; color:var(--text-secondary); border:1px solid var(--border-color);'"
+                        style="padding: 0.4rem 0.75rem; border-radius: 0.5rem; font-size: 0.8rem; cursor: pointer; white-space: nowrap; align-self: center;">
+                        Otro
+                      </button>
+                    </div>
+                    <div v-if="lossReasonOtroOpen" style="margin-top: 0.4rem;">
+                      <input type="text" v-model="editLead['Razón Pérdida Otra']" class="form-input"
+                        placeholder="Especifique la razón..." />
+                    </div>
                   </div>
 
                   <!-- ══ SPECIAL: Pricing Display (read-only global) ══ -->
@@ -2592,18 +3153,30 @@
                     </div>
                   </div>
 
-                  <!-- ══ SPECIAL: Loss Reason — Deal (select + Otros free text) ══ -->
+                  <!-- ══ SPECIAL: Loss Reason — Deal (select + "Otro" button + free text) ══ -->
                   <div v-else-if="field.tipo_input === 'loss_reason'" class="form-group" style="grid-column: 1 / -1;">
                     <label>{{ field.campo_label }}<span v-if="field.requerido" style="color:var(--accent-danger);margin-left:2px;">*</span></label>
-                    <select v-if="getFieldOptions(field).length" v-model="editLead[field.campo_key]" class="form-select">
-                      <option value="">— Seleccionar —</option>
-                      <option v-for="s in getFieldOptions(field)" :key="s" :value="s">{{ s }}</option>
-                    </select>
-                    <textarea v-else v-model="editLead[field.campo_key]" class="notes-textarea" rows="2"
-                      placeholder="Razón de pérdida..."></textarea>
-                    <input v-if="editLead[field.campo_key] === 'Otros'" type="text"
-                      v-model="editLead['Razón Pérdida Otra']" class="form-input" style="margin-top: 0.4rem;"
-                      placeholder="Especifique la razón..." />
+                    <div style="display: flex; gap: 0.5rem; align-items: stretch;">
+                      <div style="flex: 1;">
+                        <select v-if="getFieldOptions(field).length" v-model="editLead[field.campo_key]" class="form-select" style="width:100%;">
+                          <option value="">— Seleccionar —</option>
+                          <option v-for="s in getFieldOptions(field)" :key="s" :value="s">{{ s }}</option>
+                        </select>
+                        <textarea v-else v-model="editLead[field.campo_key]" class="notes-textarea" rows="2"
+                          placeholder="Razón de pérdida..."></textarea>
+                      </div>
+                      <button type="button" @click="lossReasonOtroOpen = !lossReasonOtroOpen"
+                        :style="lossReasonOtroOpen
+                          ? 'background:var(--accent-primary); color:#fff; border:1px solid var(--accent-primary);'
+                          : 'background:transparent; color:var(--text-secondary); border:1px solid var(--border-color);'"
+                        style="padding: 0.4rem 0.75rem; border-radius: 0.5rem; font-size: 0.8rem; cursor: pointer; white-space: nowrap; align-self: center;">
+                        Otro
+                      </button>
+                    </div>
+                    <div v-if="lossReasonOtroOpen" style="margin-top: 0.4rem;">
+                      <input type="text" v-model="editLead['Razón Pérdida Otra']" class="form-input"
+                        placeholder="Especifique la razón..." />
+                    </div>
                   </div>
 
                   <!-- ══ SPECIAL: Notes Readonly ══ -->
@@ -2635,13 +3208,30 @@
                     </select>
                   </div>
 
-                  <!-- ══ GENERIC: Select from catalog ══ -->
+                  <!-- ══ GENERIC: Select from catalog (+ Otro for loss reason) ══ -->
                   <div v-else-if="field.tipo_input === 'select'" class="form-group" :style="field.ancho === 'full' ? 'grid-column: 1 / -1' : ''">
                     <label>{{ field.campo_label }}<span v-if="field.requerido" style="color:var(--accent-danger);margin-left:2px;">*</span></label>
                     <select v-model="editLead[field.campo_key]" class="form-select">
                       <option value="">— Seleccionar —</option>
                       <option v-for="opt in getFieldOptions(field)" :key="opt" :value="opt">{{ opt }}</option>
                     </select>
+                    <!-- Otro: only for loss reason fields -->
+                    <template v-if="field.campo_key === 'Razón de pérdida' || field.campo_key === '¿Por qué perdimos la venta?'">
+                      <div style="margin-top: 0.4rem;">
+                        <button type="button" @click="lossReasonOtroOpen = !lossReasonOtroOpen"
+                          :style="lossReasonOtroOpen
+                            ? 'background:var(--accent-primary); color:#fff; border:1px solid var(--accent-primary);'
+                            : 'background:transparent; color:var(--text-secondary); border:1px solid var(--border-color);'"
+                          style="padding: 0.35rem 0.75rem; border-radius: 0.5rem; font-size: 0.78rem; cursor: pointer;">
+                          Otro
+                        </button>
+                      </div>
+                      <div v-if="lossReasonOtroOpen" style="margin-top: 0.4rem;">
+                        <label style="font-size:0.75rem; color:var(--text-muted); margin-bottom:2px;">Otra razón</label>
+                        <input type="text" v-model="editLead['Razón Pérdida Otra']" class="form-input"
+                          placeholder="Especifique la razón..." />
+                      </div>
+                    </template>
                   </div>
 
                   <!-- ══ GENERIC: Textarea ══ -->
@@ -2731,7 +3321,7 @@
                 </div>
                 <div class="form-group">
                   <label style="font-size:0.75rem; color:var(--text-muted);">Razón de Pérdida</label>
-                  <div class="form-input" style="opacity:0.8;" disabled>{{ crossViewDeal.razon_perdida || '—' }}</div>
+                  <div class="form-input" style="opacity:0.8;" disabled>{{ crossViewDeal.razon_perdida || '—' }}<span v-if="crossViewDeal.razon_perdida_otra" style="color:var(--text-muted);"> — {{ crossViewDeal.razon_perdida_otra }}</span></div>
                 </div>
               </div>
 
@@ -2890,7 +3480,7 @@
                 </div>
                 <div class="form-group">
                   <label style="font-size:0.75rem; color:var(--text-muted);">Razón de Pérdida (SDR)</label>
-                  <div class="form-input" style="opacity:0.8;" disabled>{{ crossViewLead.razon_perdida || '—' }}</div>
+                  <div class="form-input" style="opacity:0.8;" disabled>{{ crossViewLead.razon_perdida || '—' }}<span v-if="crossViewLead.razon_perdida_otra" style="color:var(--text-muted);"> — {{ crossViewLead.razon_perdida_otra }}</span></div>
                 </div>
               </div>
 
@@ -3317,7 +3907,7 @@
         </div>
 
         <div class="modal-footer">
-          <button class="btn btn-secondary" @click="closeLeadModal">{{ isDealFullReadOnly ? 'Cerrar' : 'Cancelar' }}</button>
+          <button class="btn btn-secondary" @click="safeCloseLeadModal">{{ isDealFullReadOnly ? 'Cerrar' : 'Cancelar' }}</button>
           <!-- SDR read-only banner -->
           <span v-if="isDealFullReadOnly" style="font-size:0.8rem; color:var(--text-muted); display:flex; align-items:center; gap:0.3rem;">
             <span class="material-symbols-outlined" style="font-size:1rem;">visibility</span> Solo lectura
@@ -3329,10 +3919,23 @@
               style="font-size:1rem; vertical-align:middle; margin-right:0.2rem;">swap_horiz</span>
             Pase a Ventas
           </button>
+          <!-- Lista Negra: Enviar (solo cuando status es Perdido y NO está ya en lista negra) -->
+          <button v-if="!isCreating && !isDealFullReadOnly && !selectedLead._listaNegra &&
+            ((selectedLead._colW_Status === 'Perdido') || (selectedLead['Status de Venta'] === 'Perdido'))"
+            class="btn" style="background: var(--accent-danger, #ff6b6b); color: #fff;" @click="openListaNegraModal">
+            <span class="material-symbols-outlined" style="font-size:1rem; vertical-align:middle; margin-right:0.2rem;">block</span>
+            Lista Negra
+          </button>
+          <!-- Lista Negra: Sacar (cuando YA está en lista negra) -->
+          <button v-if="!isCreating && selectedLead._listaNegra"
+            class="btn" style="background: var(--text-muted); color: #fff;" @click="removeFromListaNegra(selectedLead)">
+            <span class="material-symbols-outlined" style="font-size:1rem; vertical-align:middle; margin-right:0.2rem;">undo</span>
+            Sacar de Lista Negra
+          </button>
           <button v-if="isCreating && !isDealFullReadOnly" class="btn btn-success" @click="submitCreation" :disabled="saving">
             {{ saving ? 'Creando...' : (creationType === 'deal' ? '✨ Crear Deal' : '✨ Crear Lead') }}
           </button>
-          <button v-else-if="!isDealFullReadOnly" class="btn btn-success" @click="saveLeadChanges" :disabled="saving">
+          <button v-else-if="!isDealFullReadOnly" class="btn btn-success" @click="promptSaveChanges" :disabled="saving">
             {{ saving ? 'Guardando...' : '💾 Guardar Cambios' }}
           </button>
         </div>
@@ -3612,6 +4215,24 @@
             <span class="material-symbols-outlined"
               style="font-size:1rem; vertical-align:middle; margin-right:0.2rem;">save</span>
             Guardar Cambios
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== LINK URL MICRO-MODAL ========== -->
+    <div class="modal-overlay" v-if="showLinkModal" @click.self="linkModalCancel" style="z-index:2100;">
+      <div class="link-modal-box">
+        <div class="link-modal-header">
+          <span class="material-symbols-outlined" style="color:var(--accent-primary); font-size:20px;">link</span>
+          <span>Insertar enlace</span>
+        </div>
+        <input id="link-modal-input" type="url" class="form-input" v-model="linkModalUrl"
+               placeholder="https://ejemplo.com" @keydown.enter="linkModalConfirm" @keydown.esc="linkModalCancel">
+        <div class="link-modal-actions">
+          <button class="btn btn-secondary" @click="linkModalCancel" style="font-size:0.85rem;">Cancelar</button>
+          <button class="btn btn-primary" @click="linkModalConfirm" style="font-size:0.85rem;">
+            <span class="material-symbols-outlined" style="font-size:16px; vertical-align:middle;">check</span> Insertar
           </button>
         </div>
       </div>
@@ -3981,6 +4602,457 @@
           <button class="btn btn-success" @click="sendEmail"
             :disabled="sendingEmail || !emailForm.to || !emailForm.subject || emailAttachmentSizeMB > 20">
             {{ sendingEmail ? 'Enviando...' : '📧 Enviar Correo' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ Custom Confirm Modal (replaces native confirm()) ══ -->
+    <div v-if="confirmModal.show" style="position:fixed; inset:0; z-index:99999; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.5); backdrop-filter:blur(2px);"
+      @click.self="confirmModalCancel">
+      <div style="background:var(--bg-card, #1e1e2e); border:1px solid var(--border-color, #333); border-radius:1rem; padding:1.5rem 2rem; max-width:420px; width:90%; box-shadow:0 8px 32px rgba(0,0,0,0.4);">
+        <p style="color:var(--text-primary, #fff); font-size:0.9rem; line-height:1.5; margin:0 0 1.25rem 0; white-space:pre-line;">{{ confirmModal.message }}</p>
+        <div style="display:flex; gap:0.75rem; justify-content:flex-end;">
+          <button @click="confirmModalCancel" style="padding:0.5rem 1.2rem; border-radius:0.5rem; border:1px solid var(--border-color, #444); background:transparent; color:var(--text-secondary, #aaa); cursor:pointer; font-size:0.85rem;">
+            Cancelar
+          </button>
+          <button @click="confirmModalAccept" style="padding:0.5rem 1.2rem; border-radius:0.5rem; border:none; background:var(--accent-primary, #6c63ff); color:#fff; cursor:pointer; font-size:0.85rem; font-weight:600;">
+            Confirmar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== BULK ACTION BAR ========== -->
+    <transition name="fade">
+    <div v-if="bulkMode && bulkSelected.length > 0"
+      style="position:fixed; bottom:0; left:0; right:0; z-index:999; background:var(--bg-card); border-top:2px solid var(--accent-primary); padding:0.75rem 1.5rem; display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap; box-shadow:0 -4px 20px rgba(0,0,0,0.3); backdrop-filter:blur(8px);">
+      <span style="font-weight:700; font-size:0.88rem; color:var(--accent-primary); white-space:nowrap;">
+        {{ bulkSelected.length }} seleccionado{{ bulkSelected.length > 1 ? 's' : '' }}
+      </span>
+      <div style="width:1px; height:24px; background:var(--border);"></div>
+
+      <!-- LEADS actions -->
+      <template v-if="currentView === 'leads'">
+        <select @change="if($event.target.value) { bulkApplyAction('Status', $event.target.value, 'Status'); $event.target.value=''; }"
+          class="filter-select" style="font-size:0.78rem; padding:0.25rem 0.4rem;">
+          <option value="">Status...</option>
+          <option v-for="s in (catalogs['Status'] || [])" :key="s" :value="s">{{ s }}</option>
+        </select>
+        <select @change="if($event.target.value) { bulkApplyAction('Vendedor asignado (SDR)', $event.target.value, 'Vendedor SDR'); $event.target.value=''; }"
+          class="filter-select" style="font-size:0.78rem; padding:0.25rem 0.4rem;">
+          <option value="">SDR...</option>
+          <option v-for="v in sdrList" :key="v.id_vendedor" :value="v.id_vendedor">{{ v.nombre }}</option>
+        </select>
+        <select @change="if($event.target.value) { bulkApplyAction('Tipo de Seguimiento', $event.target.value, 'Tipo Seguimiento'); $event.target.value=''; }"
+          class="filter-select" style="font-size:0.78rem; padding:0.25rem 0.4rem;">
+          <option value="">Seguimiento...</option>
+          <option v-for="s in (catalogs['Tipo de Seguimiento'] || [])" :key="s" :value="s">{{ s }}</option>
+        </select>
+        <select @change="if($event.target.value) { bulkApplyAction('Status del Seguimiento', $event.target.value, 'Status Seguimiento'); $event.target.value=''; }"
+          class="filter-select" style="font-size:0.78rem; padding:0.25rem 0.4rem;">
+          <option value="">St. Seguimiento...</option>
+          <option v-for="s in (catalogs['Status del Seguimiento'] || [])" :key="s" :value="s">{{ s }}</option>
+        </select>
+        <select @change="if($event.target.value) { bulkApplyAction('Razón de pérdida', $event.target.value, 'Razón Pérdida'); $event.target.value=''; }"
+          class="filter-select" style="font-size:0.78rem; padding:0.25rem 0.4rem;">
+          <option value="">Razón pérdida...</option>
+          <option v-for="s in (catalogs['Razón de pérdida'] || [])" :key="s" :value="s">{{ s }}</option>
+        </select>
+        <select @change="if($event.target.value) { bulkApplyAction('¿Es recompra?', $event.target.value, 'Recompra'); $event.target.value=''; }"
+          class="filter-select" style="font-size:0.78rem; padding:0.25rem 0.4rem;">
+          <option value="">Recompra...</option>
+          <option value="Si">Si</option>
+          <option value="No">No</option>
+        </select>
+        <button class="btn-sm" @click="bulkApplyAction('es_prueba', 'TRUE', 'Marcar Prueba')" style="font-size:0.75rem; display:inline-flex; align-items:center; gap:0.2rem; background:rgba(245,158,11,0.15); color:#f59e0b; border-color:rgba(245,158,11,0.3);">
+          🧪 Prueba
+        </button>
+        <button class="btn-sm" @click="bulkApplyAction('es_prueba', '', 'Quitar Prueba')" style="font-size:0.75rem;">
+          Quitar Prueba
+        </button>
+      </template>
+
+      <!-- DEALS actions -->
+      <template v-if="currentView === 'negociaciones'">
+        <select @change="if($event.target.value) { bulkApplyAction('Status de Venta', $event.target.value, 'Status Venta'); $event.target.value=''; }"
+          class="filter-select" style="font-size:0.78rem; padding:0.25rem 0.4rem;">
+          <option value="">Status Venta...</option>
+          <option v-for="s in (catalogs['Status de Venta'] || [])" :key="s" :value="s">{{ s }}</option>
+        </select>
+        <select @change="if($event.target.value) { bulkApplyAction('Vendedor Asignado para Seguimiento', $event.target.value, 'AE'); $event.target.value=''; }"
+          class="filter-select" style="font-size:0.78rem; padding:0.25rem 0.4rem;">
+          <option value="">AE...</option>
+          <option v-for="v in aeList" :key="v.id_vendedor" :value="v.id_vendedor">{{ v.nombre }}</option>
+        </select>
+        <select @change="if($event.target.value) { bulkApplyAction('Proyeccion', $event.target.value, 'Proyección'); $event.target.value=''; }"
+          class="filter-select" style="font-size:0.78rem; padding:0.25rem 0.4rem;">
+          <option value="">Proyección...</option>
+          <option value="Alta">Alta</option>
+          <option value="Media">Media</option>
+          <option value="Baja">Baja</option>
+        </select>
+        <select @change="if($event.target.value) { bulkApplyAction('¿Es recompra?', $event.target.value, 'Recompra'); $event.target.value=''; }"
+          class="filter-select" style="font-size:0.78rem; padding:0.25rem 0.4rem;">
+          <option value="">Recompra...</option>
+          <option value="Si">Si</option>
+          <option value="No">No</option>
+        </select>
+        <select @change="if($event.target.value) { bulkApplyAction('¿Es cliente activo?', $event.target.value, 'Cliente Activo'); $event.target.value=''; }"
+          class="filter-select" style="font-size:0.78rem; padding:0.25rem 0.4rem;">
+          <option value="">Cliente activo...</option>
+          <option value="Si">Si</option>
+          <option value="No">No</option>
+        </select>
+        <select @change="if($event.target.value) { bulkApplyAction('Cross Selling?', $event.target.value, 'Cross Selling'); $event.target.value=''; }"
+          class="filter-select" style="font-size:0.78rem; padding:0.25rem 0.4rem;">
+          <option value="">Cross Sell...</option>
+          <option value="Si">Si</option>
+          <option value="No">No</option>
+        </select>
+        <select @change="if($event.target.value) { bulkApplyAction('¿Por qué perdimos la venta?', $event.target.value, 'Razón Pérdida'); $event.target.value=''; }"
+          class="filter-select" style="font-size:0.78rem; padding:0.25rem 0.4rem;">
+          <option value="">Razón pérdida...</option>
+          <option v-for="s in (catalogs['¿Por qué perdimos la venta?'] || [])" :key="s" :value="s">{{ s }}</option>
+        </select>
+        <select @change="if($event.target.value) { bulkApplyAction('Descuento', $event.target.value, 'Descuento'); $event.target.value=''; }"
+          class="filter-select" style="font-size:0.78rem; padding:0.25rem 0.4rem;">
+          <option value="">Descuento...</option>
+          <option v-for="s in (catalogs['Descuento'] || [])" :key="s" :value="s">{{ s }}</option>
+        </select>
+        <select @change="if($event.target.value) { bulkApplyAction('Renovación', $event.target.value, 'Renovación'); $event.target.value=''; }"
+          class="filter-select" style="font-size:0.78rem; padding:0.25rem 0.4rem;">
+          <option value="">Renovación...</option>
+          <option v-for="s in (catalogs['Renovación'] || [])" :key="s" :value="s">{{ s }}</option>
+        </select>
+        <button class="btn-sm" @click="bulkApplyAction('es_prueba', 'TRUE', 'Marcar Prueba')" style="font-size:0.75rem; background:rgba(245,158,11,0.15); color:#f59e0b; border-color:rgba(245,158,11,0.3);">
+          🧪 Prueba
+        </button>
+        <button class="btn-sm" @click="bulkApplyAction('es_prueba', '', 'Quitar Prueba')" style="font-size:0.75rem;">
+          Quitar Prueba
+        </button>
+      </template>
+
+      <!-- CONTACTS actions -->
+      <template v-if="currentView === 'contactos'">
+        <button class="btn-sm" @click="bulkApplyAction('es_prueba', 'TRUE', 'Marcar Prueba')" style="font-size:0.75rem; background:rgba(245,158,11,0.15); color:#f59e0b; border-color:rgba(245,158,11,0.3);">
+          🧪 Prueba
+        </button>
+        <button class="btn-sm" @click="bulkApplyAction('es_prueba', '', 'Quitar Prueba')" style="font-size:0.75rem;">
+          Quitar Prueba
+        </button>
+        <select @change="if($event.target.value) { bulkApplyAction('pais', $event.target.value, 'País'); $event.target.value=''; }"
+          class="filter-select" style="font-size:0.78rem; padding:0.25rem 0.4rem;">
+          <option value="">País...</option>
+          <option v-for="p in contactCountries" :key="p" :value="p">{{ p }}</option>
+        </select>
+        <select @change="if($event.target.value) { bulkApplyAction('nivel', $event.target.value, 'Nivel'); $event.target.value=''; }"
+          class="filter-select" style="font-size:0.78rem; padding:0.25rem 0.4rem;">
+          <option value="">Nivel...</option>
+          <option value="Director General">Director General</option>
+          <option value="Director">Director</option>
+          <option value="Gerente">Gerente</option>
+          <option value="Coordinador">Coordinador</option>
+          <option value="Analista">Analista</option>
+          <option value="Otro">Otro</option>
+        </select>
+      </template>
+
+      <!-- BLACKLIST actions -->
+      <template v-if="currentView === 'lista_negra'">
+        <span style="font-size:0.82rem; color:var(--text-secondary);">Usa el botón "Restaurar" individual para cada contacto</span>
+      </template>
+
+      <div style="flex:1;"></div>
+      <button class="btn-sm" @click="bulkSelected = []; bulkMode = false;" style="font-size:0.78rem; display:inline-flex; align-items:center; gap:0.2rem;">
+        <span class="material-symbols-outlined" style="font-size:1rem;">close</span> Deseleccionar
+      </button>
+      <div v-if="bulkProcessing" class="spinner-sm" style="margin-left:0.5rem;"></div>
+    </div>
+    </transition>
+
+    <!-- ========== CONTACT PICKER MODAL ========== -->
+    <div v-if="contactPickerOpen" style="position:fixed; inset:0; z-index:99998; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.55); backdrop-filter:blur(3px);"
+      @click.self="contactPickerOpen = false">
+      <div style="background:var(--bg-card); border:1px solid var(--border); border-radius:1rem; padding:1.5rem; max-width:850px; width:95%; max-height:85vh; display:flex; flex-direction:column; box-shadow:0 8px 32px rgba(0,0,0,0.5);">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem;">
+          <h3 style="margin:0; font-size:1.05rem; color:var(--text-primary); display:flex; align-items:center; gap:0.5rem;">
+            <span class="material-symbols-outlined" style="font-size:1.4rem; color:var(--accent-primary);">person_search</span>
+            Seleccionar Contacto
+          </h3>
+          <button class="btn-icon" @click="contactPickerOpen = false"><span class="material-symbols-outlined">close</span></button>
+        </div>
+        <input type="text" v-model="contactPickerSearch" class="form-input" placeholder="Buscar por nombre, email, empresa, telefono..."
+          style="margin-bottom:1rem; width:100%;">
+        <div style="overflow-y:auto; flex:1; border:1px solid var(--border); border-radius:var(--radius-md);">
+          <table class="leads-table" style="font-size:0.82rem;">
+            <thead>
+              <tr>
+                <th style="width:40px;">ID</th>
+                <th>Nombre</th>
+                <th>Apellido</th>
+                <th>Empresa</th>
+                <th>Email</th>
+                <th>Tel</th>
+                <th>Pais</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="c in contactPickerFiltered" :key="c._row" class="lead-row" @click="selectContactForLead(c)"
+                style="cursor:pointer;">
+                <td style="color:var(--text-muted); font-size:0.75rem;">{{ c.id_contacto }}</td>
+                <td class="col-name">{{ c.nombre || '—' }}</td>
+                <td>{{ c.apellido || '—' }}</td>
+                <td>{{ c.empresa || '—' }}</td>
+                <td>{{ c.email || '—' }}</td>
+                <td>{{ c.telefono_1 || '—' }}</td>
+                <td>{{ c.pais || '—' }}</td>
+              </tr>
+              <tr v-if="contactPickerFiltered.length === 0">
+                <td colspan="7" style="text-align:center; padding:2rem; color:var(--text-muted);">No se encontraron contactos</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div style="text-align:right; margin-top:0.75rem;">
+          <span style="font-size:0.78rem; color:var(--text-muted);">{{ contactPickerFiltered.length }} contactos disponibles</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== CREATE CONTACT MODAL ========== -->
+    <div v-if="createContactModal.show" style="position:fixed; inset:0; z-index:99998; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.55); backdrop-filter:blur(3px);"
+      @click.self="createContactModal.show = false">
+      <div style="background:var(--bg-card); border:1px solid var(--border); border-radius:1rem; padding:1.75rem 2rem; max-width:550px; width:95%; box-shadow:0 8px 32px rgba(0,0,0,0.5);">
+        <div style="display:flex; align-items:center; gap:0.6rem; margin-bottom:1.25rem;">
+          <span class="material-symbols-outlined" style="font-size:1.4rem; color:var(--accent-success);">person_add</span>
+          <h3 style="margin:0; color:var(--text-primary); font-size:1.05rem;">Nuevo Contacto</h3>
+        </div>
+        <div class="form-grid">
+          <div class="form-group"><label>Nombre <span style="color:var(--accent-danger);">*</span></label><input type="text" v-model="createContactModal.data.nombre" class="form-input"></div>
+          <div class="form-group"><label>Apellido</label><input type="text" v-model="createContactModal.data.apellido" class="form-input"></div>
+          <div class="form-group"><label>Email</label><input type="text" v-model="createContactModal.data.email" class="form-input"></div>
+          <div class="form-group"><label>Telefono</label><input type="text" v-model="createContactModal.data.telefono_1" class="form-input"></div>
+          <div class="form-group"><label>Telefono 2</label><input type="text" v-model="createContactModal.data.telefono_2" class="form-input"></div>
+          <div class="form-group"><label>Empresa</label><input type="text" v-model="createContactModal.data.empresa" class="form-input"></div>
+          <div class="form-group"><label>Area / Cargo</label><input type="text" v-model="createContactModal.data.area" class="form-input"></div>
+          <div class="form-group"><label>Pais</label><input type="text" v-model="createContactModal.data.pais" class="form-input"></div>
+          <div class="form-group"><label>Ciudad</label><input type="text" v-model="createContactModal.data.ciudad" class="form-input"></div>
+          <div class="form-group"><label>Empleados</label><input type="text" v-model="createContactModal.data.empleados" class="form-input"></div>
+          <div class="form-group"><label>Nivel</label><input type="text" v-model="createContactModal.data.nivel" class="form-input"></div>
+          <div class="form-group" style="grid-column:1/-1; display:flex; align-items:center; gap:0.6rem; padding-top:0.5rem;">
+            <label @click="createContactModal.data.es_prueba = !createContactModal.data.es_prueba"
+              style="display:inline-flex; align-items:center; gap:0.5rem; cursor:pointer; font-size:0.85rem; user-select:none;">
+              <span :style="{
+                position:'relative', width:'36px', height:'20px', display:'inline-block', borderRadius:'10px', transition:'all 0.2s',
+                background: createContactModal.data.es_prueba ? 'var(--accent-warning)' : 'var(--bg-hover)', border:'1px solid var(--border)'
+              }">
+                <span :style="{
+                  position:'absolute', top:'3px', width:'14px', height:'14px', borderRadius:'50%', transition:'all 0.2s',
+                  background: createContactModal.data.es_prueba ? '#fff' : 'var(--text-muted)',
+                  left: createContactModal.data.es_prueba ? '19px' : '3px'
+                }"></span>
+              </span>
+              <span :style="{ color: createContactModal.data.es_prueba ? 'var(--accent-warning)' : 'var(--text-secondary)', fontWeight: createContactModal.data.es_prueba ? '600' : '400' }">
+                Marcar como Prueba
+              </span>
+            </label>
+          </div>
+        </div>
+        <div style="display:flex; gap:0.75rem; justify-content:flex-end; margin-top:1.25rem; padding-top:1rem; border-top:1px solid var(--border);">
+          <button class="btn btn-secondary" @click="createContactModal.show = false" :disabled="createContactModal.saving">Cancelar</button>
+          <button class="btn btn-success" @click="submitCreateContact" :disabled="createContactModal.saving">
+            {{ createContactModal.saving ? 'Creando...' : 'Crear Contacto' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== LISTA NEGRA CONFIRMATION MODAL ========== -->
+    <div v-if="listaNegraModal.show" style="position:fixed; inset:0; z-index:99999; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.55); backdrop-filter:blur(3px);"
+      @click.self="cancelListaNegra">
+      <div style="background:var(--bg-card, #1e1e2e); border:1px solid rgba(239,68,68,0.3); border-radius:1rem; padding:1.75rem 2rem; max-width:480px; width:92%; box-shadow:0 8px 32px rgba(0,0,0,0.5);">
+        <div style="display:flex; align-items:center; gap:0.6rem; margin-bottom:1rem;">
+          <span class="material-symbols-outlined" style="font-size:1.6rem; color:var(--accent-danger, #ff6b6b);">block</span>
+          <h3 style="margin:0; color:var(--text-primary, #fff); font-size:1.05rem;">Enviar a Lista Negra</h3>
+        </div>
+        <p style="color:var(--text-secondary, #aaa); font-size:0.85rem; line-height:1.5; margin:0 0 1rem 0;">
+          Este perfil sera removido de las vistas principales del pipeline y almacenado en el repertorio de Lista Negra.
+          Su historial y datos se preservan intactos para reportaje y analisis.
+        </p>
+        <label style="color:var(--text-primary, #fff); font-size:0.82rem; font-weight:600; display:block; margin-bottom:0.4rem;">
+          Motivo <span style="color:var(--text-muted); font-weight:400;">(opcional)</span>
+        </label>
+        <textarea v-model="listaNegraModal.motivo" rows="3"
+          style="width:100%; background:var(--input-bg); color:var(--text-primary); border:1px solid var(--border); border-radius:0.5rem; padding:0.6rem 0.8rem; font-size:0.85rem; resize:vertical; font-family:inherit;"
+          placeholder="Ej: El contacto pidio explicitamente no ser contactado de nuevo..."></textarea>
+        <div style="display:flex; gap:0.75rem; justify-content:flex-end; margin-top:1.25rem;">
+          <button @click="cancelListaNegra" :disabled="listaNegraModal.loading"
+            style="padding:0.5rem 1.2rem; border-radius:0.5rem; border:1px solid var(--border, #444); background:transparent; color:var(--text-secondary, #aaa); cursor:pointer; font-size:0.85rem;">
+            Cancelar
+          </button>
+          <button @click="confirmListaNegra" :disabled="listaNegraModal.loading"
+            style="padding:0.5rem 1.4rem; border-radius:0.5rem; border:none; background:var(--accent-danger, #ff6b6b); color:#fff; cursor:pointer; font-size:0.85rem; font-weight:600;">
+            {{ listaNegraModal.loading ? 'Procesando...' : 'Confirmar Lista Negra' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== DUPLICATE ANALYSIS MODAL ========== -->
+    <div v-if="duplicatesModal.show" style="position:fixed; inset:0; z-index:99998; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.55); backdrop-filter:blur(3px);"
+      @click.self="duplicatesModal.show = false">
+      <div style="background:var(--bg-card, #1e1e2e); border:1px solid var(--border-color, #333); border-radius:1rem; padding:1.5rem 2rem; max-width:950px; width:95%; max-height:85vh; overflow-y:auto; box-shadow:0 8px 32px rgba(0,0,0,0.5);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+          <h3 style="margin:0; color:var(--text-primary); font-size:1.05rem; display:flex; align-items:center; gap:0.5rem;">
+            <span class="material-symbols-outlined" style="font-size:1.4rem; color:var(--accent-warning);">content_copy</span>
+            Analisis de Duplicados — {{ duplicatesModal.total }} grupo{{ duplicatesModal.total !== 1 ? 's' : '' }}
+          </h3>
+          <button class="btn-icon" @click="duplicatesModal.show = false"><span class="material-symbols-outlined">close</span></button>
+        </div>
+
+        <!-- ── Phantom Cleanup Panel ── -->
+        <div v-if="!duplicatesModal.loading && phantomCleanup.totalFound > 0 && !phantomCleanup.done"
+          style="margin-bottom:1rem; padding:0.85rem 1rem; border-radius:0.6rem; background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3);">
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:0.75rem; flex-wrap:wrap;">
+            <div style="display:flex; align-items:center; gap:0.5rem; min-width:0;">
+              <span class="material-symbols-outlined" style="font-size:1.3rem; color:var(--accent-danger, #ef4444); flex-shrink:0;">warning</span>
+              <div>
+                <div style="font-weight:600; font-size:0.85rem; color:var(--text-primary);">
+                  {{ phantomCleanup.totalFound }} lead{{ phantomCleanup.totalFound !== 1 ? 's' : '' }} fantasma detectado{{ phantomCleanup.totalFound !== 1 ? 's' : '' }}
+                </div>
+                <div style="font-size:0.73rem; color:var(--text-muted); margin-top:0.15rem;">
+                  Leads duplicados generados por reprocesamiento del formulario. Solo se eliminan leads con status "Duplicado" que comparten contacto y fecha exacta.
+                </div>
+              </div>
+            </div>
+            <button v-if="!phantomCleanup.confirming"
+              @click="phantomCleanup.confirming = true"
+              style="flex-shrink:0; padding:0.45rem 1rem; border-radius:0.4rem; border:1px solid rgba(239,68,68,0.5); background:rgba(239,68,68,0.15); color:var(--accent-danger, #ef4444); cursor:pointer; font-size:0.8rem; font-weight:600; transition:all 0.15s;">
+              <span class="material-symbols-outlined" style="font-size:0.95rem; vertical-align:middle; margin-right:0.2rem;">delete_sweep</span>
+              Limpiar Fantasmas
+            </button>
+          </div>
+          <!-- Confirmation sub-panel -->
+          <div v-if="phantomCleanup.confirming" style="margin-top:0.75rem; padding:0.75rem; border-radius:0.5rem; background:rgba(0,0,0,0.2); border:1px solid var(--border);">
+            <div style="font-size:0.78rem; color:var(--text-secondary); margin-bottom:0.5rem;">
+              <strong>Vista previa</strong> — Se eliminarán {{ phantomCleanup.totalFound }} leads fantasma y sus filas de calificación asociadas:
+            </div>
+            <div style="max-height:140px; overflow-y:auto; margin-bottom:0.6rem;">
+              <div v-for="ph in phantomCleanup.phantoms" :key="ph.id_lead"
+                style="display:flex; justify-content:space-between; align-items:center; padding:0.3rem 0.5rem; font-size:0.72rem; border-bottom:1px solid var(--border);">
+                <div style="min-width:0;">
+                  <span style="color:var(--text-muted);">#{{ ph.id_lead }}</span>
+                  <span style="margin-left:0.3rem; font-weight:500;">{{ ph.nombre || ph.email || '—' }}</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:0.5rem; flex-shrink:0;">
+                  <span style="font-size:0.65rem; color:var(--text-muted);">{{ ph.fecha_ingreso ? formatDate(ph.fecha_ingreso) : '' }}</span>
+                  <span style="font-size:0.6rem; padding:1px 5px; border-radius:3px; background:rgba(99,102,241,0.15); color:#6366f1;">conserva #{{ ph.keeper_id }}</span>
+                </div>
+              </div>
+              <div v-if="phantomCleanup.totalFound > 50" style="text-align:center; padding:0.3rem; font-size:0.7rem; color:var(--text-muted);">
+                ...y {{ phantomCleanup.totalFound - 50 }} más
+              </div>
+            </div>
+            <div style="display:flex; gap:0.5rem; justify-content:flex-end;">
+              <button @click="phantomCleanup.confirming = false"
+                style="padding:0.4rem 0.9rem; border-radius:0.35rem; border:1px solid var(--border); background:transparent; color:var(--text-secondary); cursor:pointer; font-size:0.78rem;">
+                Cancelar
+              </button>
+              <button @click="executePhantomCleanup" :disabled="phantomCleanup.executing"
+                style="padding:0.4rem 0.9rem; border-radius:0.35rem; border:none; background:var(--accent-danger, #ef4444); color:#fff; cursor:pointer; font-size:0.78rem; font-weight:600;">
+                <span v-if="phantomCleanup.executing" style="display:inline-block; width:0.8rem; height:0.8rem; border:2px solid rgba(255,255,255,0.3); border-top-color:#fff; border-radius:50%; animation:spin 0.6s linear infinite; vertical-align:middle; margin-right:0.3rem;"></span>
+                {{ phantomCleanup.executing ? 'Eliminando...' : 'Confirmar Eliminación' }}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Phantom cleanup success message -->
+        <div v-if="phantomCleanup.done"
+          style="margin-bottom:1rem; padding:0.75rem 1rem; border-radius:0.6rem; background:rgba(0,214,143,0.1); border:1px solid rgba(0,214,143,0.3); display:flex; align-items:center; gap:0.5rem;">
+          <span class="material-symbols-outlined" style="font-size:1.2rem; color:var(--accent-success, #00d68f);">check_circle</span>
+          <span style="font-size:0.82rem; color:var(--text-primary);">
+            <strong>{{ phantomCleanup.totalCleaned }}</strong> lead{{ phantomCleanup.totalCleaned !== 1 ? 's' : '' }} fantasma eliminado{{ phantomCleanup.totalCleaned !== 1 ? 's' : '' }} correctamente.
+          </span>
+        </div>
+
+        <!-- Scanning phantoms spinner (while analysis results are visible) -->
+        <div v-if="phantomCleanup.scanning && !duplicatesModal.loading"
+          style="margin-bottom:0.75rem; padding:0.5rem 1rem; border-radius:0.5rem; background:rgba(99,102,241,0.08); border:1px solid rgba(99,102,241,0.2); display:flex; align-items:center; gap:0.5rem; font-size:0.78rem; color:var(--text-muted);">
+          <div style="display:inline-block; width:0.9rem; height:0.9rem; border:2px solid var(--border); border-top-color:var(--accent-primary); border-radius:50%; animation:spin 0.8s linear infinite;"></div>
+          Escaneando leads fantasma...
+        </div>
+
+        <div v-if="duplicatesModal.loading" style="text-align:center; padding:3rem; color:var(--text-muted);">
+          <div style="display:inline-block; width:2rem; height:2rem; border:3px solid var(--border); border-top-color:var(--accent-primary); border-radius:50%; animation:spin 0.8s linear infinite;"></div>
+          <p style="margin-top:1rem;">Analizando contactos duplicados...</p>
+        </div>
+
+        <div v-else-if="duplicatesModal.groups.length === 0 && !phantomCleanup.done" style="text-align:center; padding:3rem; color:var(--text-muted);">
+          <span class="material-symbols-outlined" style="font-size:3rem; opacity:0.3; display:block; margin-bottom:0.5rem;">check_circle</span>
+          <p>No se encontraron contactos duplicados.</p>
+        </div>
+
+        <div v-else-if="duplicatesModal.groups.length > 0">
+          <div v-for="(group, gi) in duplicatesModal.groups" :key="gi"
+            style="margin-bottom:1.25rem; border:1px solid var(--border); border-radius:0.75rem; padding:1rem;">
+            <div style="font-size:0.72rem; color:var(--text-muted); margin-bottom:0.6rem; font-weight:600; text-transform:uppercase; letter-spacing:0.5px;">
+              Grupo {{ gi + 1 }} — {{ group.length }} contactos duplicados
+            </div>
+            <!-- Cards left-to-right: oldest → newest -->
+            <div style="display:flex; gap:0.75rem; overflow-x:auto; padding-bottom:0.25rem;">
+              <div v-for="(contact, ci) in group" :key="contact.id_contacto"
+                style="flex:0 0 220px; background:var(--bg-elevated, rgba(255,255,255,0.04)); border:1px solid var(--border); border-radius:0.5rem; padding:0.75rem; position:relative;">
+                <span v-if="ci === 0"
+                  style="position:absolute; top:6px; right:6px; font-size:0.58rem; background:var(--accent-success); color:#fff; padding:1px 6px; border-radius:4px; font-weight:700;">
+                  Original
+                </span>
+                <span v-if="contact.lista_negra === 'TRUE'"
+                  style="position:absolute; top:6px; left:6px; font-size:0.58rem; background:var(--accent-danger); color:#fff; padding:1px 6px; border-radius:4px; font-weight:700;">
+                  Lista Negra
+                </span>
+                <div style="font-weight:600; font-size:0.85rem; margin-top:0.4rem;">{{ contact.nombre }} {{ contact.apellido }}</div>
+                <div style="font-size:0.75rem; color:var(--text-secondary); margin-top:0.15rem;">{{ contact.email }}</div>
+                <div style="font-size:0.75rem; color:var(--text-secondary);">{{ contact.telefono_1 }}</div>
+                <div v-if="contact.empresa" style="font-size:0.72rem; color:var(--text-muted); margin-top:0.15rem;">{{ contact.empresa }}</div>
+                <div style="display:flex; gap:0.5rem; margin-top:0.4rem; font-size:0.7rem;">
+                  <span style="padding:1px 6px; border-radius:6px; background:rgba(99,102,241,0.15); color:#6366f1; font-weight:600;">{{ contact.leads.length }} leads</span>
+                  <span style="padding:1px 6px; border-radius:6px; background:rgba(245,166,35,0.15); color:#f5a623; font-weight:600;">{{ contact.deals.length }} deals</span>
+                </div>
+                <div style="font-size:0.65rem; color:var(--text-muted); margin-top:0.3rem;">
+                  Creado: {{ contact.fecha_creacion ? formatDate(contact.fecha_creacion) : '—' }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== SAVE CONFIRMATION MODAL ========== -->
+    <div v-if="saveConfirmModal.show" style="position:fixed; inset:0; z-index:99999; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.5); backdrop-filter:blur(2px);"
+      @click.self="saveConfirmCancel">
+      <div style="background:var(--bg-card, #1e1e2e); border:1px solid var(--border-color, #333); border-radius:1rem; padding:1.5rem 2rem; max-width:440px; width:92%; box-shadow:0 8px 32px rgba(0,0,0,0.4);">
+        <div style="display:flex; align-items:center; gap:0.6rem; margin-bottom:0.75rem;">
+          <span class="material-symbols-outlined" style="font-size:1.4rem; color:var(--accent-success, #00d68f);">save</span>
+          <h3 style="margin:0; color:var(--text-primary, #fff); font-size:1rem;">Guardar Cambios</h3>
+        </div>
+        <p style="color:var(--text-secondary, #aaa); font-size:0.85rem; line-height:1.5; margin:0 0 1.25rem 0;">
+          ¿Deseas guardar los cambios realizados en esta ficha?
+        </p>
+        <div style="display:flex; gap:0.6rem; justify-content:flex-end; flex-wrap:wrap;">
+          <button @click="saveConfirmCancel"
+            style="padding:0.5rem 1.1rem; border-radius:0.5rem; border:1px solid var(--border-color, #444); background:transparent; color:var(--text-secondary, #aaa); cursor:pointer; font-size:0.84rem;">
+            Cancelar
+          </button>
+          <button @click="saveConfirmSave"
+            style="padding:0.5rem 1.1rem; border-radius:0.5rem; border:none; background:var(--accent-primary, #6c63ff); color:#fff; cursor:pointer; font-size:0.84rem; font-weight:600;">
+            Guardar
+          </button>
+          <button @click="saveConfirmSaveAndExit"
+            style="padding:0.5rem 1.1rem; border-radius:0.5rem; border:none; background:var(--accent-success, #00d68f); color:#fff; cursor:pointer; font-size:0.84rem; font-weight:600;">
+            Guardar y Salir
           </button>
         </div>
       </div>

@@ -4,7 +4,8 @@
  *************************************************************/
 
 // ============ CONFIG ============
-var SHEET_ID = '18GJ_Zz97k9F3r2VbyeNQNgRKuEc6LAV1Vyp7XprKrg0';
+var CRM_VERSION = '2.1.0-fix-type-conversion';
+var SHEET_ID = '1rpgt1XJikbDpYDI1IVCBzBJgSTzafxtFvdAgsmxr0k4';
 
 // Tablas normalizadas
 var T_CONTACTOS = 'dim_contactos';
@@ -21,7 +22,7 @@ var T_CATALOGS = 'cat_opciones';
 var T_LOG = 'log_transacciones';
 var T_USERS = 'config_users';
 var T_PLANTILLAS = 'config_plantillas_notas';
-var T_ASISTENCIA = 'log_asistencia';
+
 
 // Phase 3B: System columns excluded from frontend editing
 var SYSTEM_COLS = {
@@ -49,23 +50,31 @@ var CATEGORY_MAP = {
 
 /**
  * Lee una hoja completa como array de objetos {header: value}.
+ * IMPORTANT: Reads header row (row 1) and data rows (row 2+) SEPARATELY
+ * to avoid uncatchable type-conversion errors when number-formatted columns
+ * contain text headers in multi-row reads.
  */
 function readTable_(sheetName) {
   var ss = SpreadsheetApp.openById(SHEET_ID);
   var sheet = ss.getSheetByName(sheetName);
   if (!sheet) return [];
-  var data = sheet.getDataRange().getValues();
-  if (data.length < 2) return [];
-  var headers = data[0];
+  var lastRow = sheet.getLastRow();
+  var lastCol = sheet.getLastColumn();
+  if (lastRow < 2 || lastCol < 1) return [];
+
+  // Read header row ALONE (single-row reads work on formatted columns)
+  var headers = sheet.getRange(1, 1, 1, lastCol).getDisplayValues()[0];
+
+  // Read data rows SEPARATELY (row 2 onward — no header text to convert)
+  var dataRows = sheet.getRange(2, 1, lastRow - 1, lastCol).getDisplayValues();
+
   var results = [];
-  for (var i = 1; i < data.length; i++) {
-    var obj = { _row: i + 1 };
+  for (var i = 0; i < dataRows.length; i++) {
+    var obj = { _row: i + 2 };
     for (var j = 0; j < headers.length; j++) {
       var key = String(headers[j] || '').trim().toLowerCase();
       if (key) {
-        var val = data[i][j];
-        if (val instanceof Date) val = val.toISOString();
-        obj[key] = val;
+        obj[key] = dataRows[i][j];
       }
     }
     results.push(obj);
@@ -88,10 +97,29 @@ function indexBy_(rows, key) {
 }
 
 /**
+ * Safe bulk read: reads header (row 1) and data (row 2+) SEPARATELY.
+ * Multi-row reads that include headers in number-formatted columns throw
+ * uncatchable "No se puede convertir X en int" errors in GAS.
+ * Returns 2D array identical to getDataRange().getDisplayValues() but safe.
+ */
+function safeReadAll_(sheet) {
+  var lastRow = sheet.getLastRow();
+  var lastCol = sheet.getLastColumn();
+  if (lastRow < 1 || lastCol < 1) return [];
+  var headers = sheet.getRange(1, 1, 1, lastCol).getDisplayValues()[0];
+  if (lastRow < 2) return [headers];
+  var dataRows = sheet.getRange(2, 1, lastRow - 1, lastCol).getDisplayValues();
+  var result = [headers];
+  for (var i = 0; i < dataRows.length; i++) result.push(dataRows[i]);
+  return result;
+}
+
+/**
  * Retorna {header: colIndex_1based} para una hoja.
  */
 function getColumnMap_(sheet) {
-  var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  var range = sheet.getRange(1, 1, 1, sheet.getLastColumn());
+  var headers = range.getDisplayValues()[0];
   var map = {};
   for (var i = 0; i < headers.length; i++) {
     var h = String(headers[i]).trim().toLowerCase();
@@ -102,33 +130,67 @@ function getColumnMap_(sheet) {
 
 /**
  * Genera el siguiente ID auto-incremental para una hoja.
+ * CRITICAL: Reads header (row 1) and data (row 2+) SEPARATELY.
+ * Multi-row reads that include headers in number-formatted columns
+ * throw uncatchable "No se puede convertir X en int" errors in GAS.
  */
 function getNextId_(sheet, idColName) {
-  var colMap = getColumnMap_(sheet);
-  var idCol = colMap[idColName];
-  if (!idCol) return new Date().getTime();
+  var target = String(idColName).trim().toLowerCase();
   var lastRow = sheet.getLastRow();
   if (lastRow < 2) return 1;
-  var ids = sheet.getRange(2, idCol, lastRow - 1, 1).getValues().flat().filter(String);
-  if (ids.length === 0) return 1;
-  var maxId = Math.max.apply(null, ids.map(Number).filter(function (n) { return !isNaN(n); }));
-  return maxId + 1;
+
+  // Use safeReadAll_ (multi-column read) — CONFIRMED working by diagnosticTest().
+  // Single-column reads on number-formatted columns throw uncatchable errors in GAS.
+  var data = safeReadAll_(sheet);
+  if (!data || data.length < 2) return 1;
+
+  // Find ID column in header row
+  var idCol = -1;
+  for (var h = 0; h < data[0].length; h++) {
+    if (String(data[0][h]).trim().toLowerCase() === target) { idCol = h; break; }
+  }
+  if (idCol === -1) return 1;
+
+  // Scan data rows for max ID
+  var maxId = 0;
+  for (var r = 1; r < data.length; r++) {
+    var raw = String(data[r][idCol] || '').trim();
+    if (!raw) continue;
+    var n = parseFloat(raw);
+    if (!isNaN(n) && isFinite(n) && n > maxId) maxId = n;
+  }
+
+  var nextId = Math.floor(maxId) + 1;
+  try {
+    PropertiesService.getScriptProperties().setProperty(
+      'seq_' + sheet.getName() + '_' + target, String(nextId));
+  } catch (ignore) {}
+  return nextId;
 }
 
 /**
- * Busca la primera fila vacía en una hoja.
+ * Busca la primera fila después de la última con datos reales.
+ * CRITICAL: Reads ONLY data rows (row 2+), never includes header in bulk read.
  */
 function getFirstEmptyRow_(sh, idColName) {
+  var target = String(idColName || 'id_lead').trim().toLowerCase();
   var lastRow = sh.getLastRow();
-  if (lastRow === 0) return 1;
-  var colMap = getColumnMap_(sh);
-  var idCol = colMap[idColName || 'id_lead'] || 1;
-  var values = sh.getRange(1, idCol, lastRow, 1).getValues();
-  for (var i = lastRow - 1; i >= 0; i--) {
-    var cell = values[i][0];
-    if (cell !== null && cell !== undefined && String(cell).trim() !== '') {
-      return i + 2;
-    }
+  if (lastRow <= 1) return 2;
+
+  // Use safeReadAll_ (multi-column read) to avoid single-column format errors
+  var data = safeReadAll_(sh);
+  if (!data || data.length <= 1) return 2;
+
+  // Find the ID column
+  var idCol = 0;
+  for (var h = 0; h < data[0].length; h++) {
+    if (String(data[0][h]).trim().toLowerCase() === target) { idCol = h; break; }
+  }
+
+  // Scan backward to find last row with actual data in ID column
+  for (var i = data.length - 1; i >= 1; i--) {
+    var cell = String(data[i][idCol] || '').trim();
+    if (cell !== '') return (i + 1) + 1; // i+1 = sheet row (0-indexed), +1 = next row
   }
   return 2;
 }
@@ -143,7 +205,7 @@ function getFirstEmptyRow_(sh, idColName) {
  */
 function calcBANTScore_(calSheet, idLead) {
   var calColMap = getColumnMap_(calSheet);
-  var calData = calSheet.getDataRange().getValues();
+  var calData; calData = safeReadAll_(calSheet);
   var calIdLeadCol = calColMap['id_lead'] || 2;
 
   var calif = null;
@@ -264,11 +326,91 @@ function formatHtmlPercentage(val) {
 }
 
 /**
+ * Migración: mueve lista_negra de fact_leads/fact_deals a dim_contactos.
+ * Idempotente — solo ejecuta una vez. Detecta si ya migró.
+ */
+function migrateListaNegraToContacto_() {
+  var ss = SpreadsheetApp.openById(SHEET_ID);
+  var newCols = ['lista_negra', 'fecha_lista_negra', 'motivo_lista_negra'];
+
+  // Step 1: Add columns to dim_contactos if missing
+  var cSheet = ss.getSheetByName(T_CONTACTOS);
+  if (!cSheet) return;
+  var cHeaders = cSheet.getRange(1, 1, 1, cSheet.getLastColumn()).getValues()[0].map(String);
+  var alreadyMigrated = cHeaders.indexOf('lista_negra') !== -1;
+  if (!alreadyMigrated) {
+    newCols.forEach(function (col) {
+      var nextCol = cSheet.getLastColumn() + 1;
+      cSheet.getRange(1, nextCol).setValue(col);
+    });
+    // Reload headers after adding
+    cHeaders = cSheet.getRange(1, 1, 1, cSheet.getLastColumn()).getValues()[0].map(String);
+  }
+
+  // Step 2: Migrate existing data from fact_leads/fact_deals → dim_contactos (one-time)
+  var props = PropertiesService.getScriptProperties();
+  if (props.getProperty('lista_negra_migrated') === 'true') return;
+
+  var cColMap = {};
+  for (var ci = 0; ci < cHeaders.length; ci++) cColMap[cHeaders[ci].trim().toLowerCase()] = ci + 1;
+
+  [T_LEADS, T_DEALS].forEach(function (tName) {
+    var fSheet = ss.getSheetByName(tName);
+    if (!fSheet || fSheet.getLastRow() < 2) return;
+    var fHeaders = fSheet.getRange(1, 1, 1, fSheet.getLastColumn()).getValues()[0].map(String);
+    var fColMap = {};
+    for (var fi = 0; fi < fHeaders.length; fi++) fColMap[fHeaders[fi].trim().toLowerCase()] = fi + 1;
+    if (!fColMap['lista_negra'] || !fColMap['id_contacto']) return;
+
+    var data = fSheet.getRange(2, 1, fSheet.getLastRow() - 1, fSheet.getLastColumn()).getValues();
+    // Read all dim_contactos to build index
+    var cData = cSheet.getLastRow() >= 2
+      ? cSheet.getRange(2, 1, cSheet.getLastRow() - 1, cSheet.getLastColumn()).getValues() : [];
+    var cRowByContacto = {};
+    var idContactoCol = cColMap['id_contacto'];
+    for (var cr = 0; cr < cData.length; cr++) {
+      cRowByContacto[String(cData[cr][idContactoCol - 1])] = cr + 2;
+    }
+
+    for (var r = 0; r < data.length; r++) {
+      var val = String(data[r][fColMap['lista_negra'] - 1] || '').toUpperCase();
+      if (val !== 'TRUE') continue;
+      var idC = String(data[r][fColMap['id_contacto'] - 1] || '');
+      var cRow = cRowByContacto[idC];
+      if (!cRow) continue;
+      // Only write if contact not already blacklisted
+      var existing = cSheet.getRange(cRow, cColMap['lista_negra']).getValue();
+      if (String(existing).toUpperCase() === 'TRUE') continue;
+      cSheet.getRange(cRow, cColMap['lista_negra']).setValue('TRUE');
+      if (fColMap['fecha_lista_negra'] && cColMap['fecha_lista_negra'])
+        cSheet.getRange(cRow, cColMap['fecha_lista_negra']).setValue(data[r][fColMap['fecha_lista_negra'] - 1] || '');
+      if (fColMap['motivo_lista_negra'] && cColMap['motivo_lista_negra'])
+        cSheet.getRange(cRow, cColMap['motivo_lista_negra']).setValue(data[r][fColMap['motivo_lista_negra'] - 1] || '');
+    }
+
+    // Clear lista_negra values from fact table
+    if (fColMap['lista_negra']) {
+      for (var cr2 = 0; cr2 < data.length; cr2++) {
+        if (String(data[cr2][fColMap['lista_negra'] - 1] || '').toUpperCase() === 'TRUE') {
+          fSheet.getRange(cr2 + 2, fColMap['lista_negra']).setValue('');
+          if (fColMap['fecha_lista_negra']) fSheet.getRange(cr2 + 2, fColMap['fecha_lista_negra']).setValue('');
+          if (fColMap['motivo_lista_negra']) fSheet.getRange(cr2 + 2, fColMap['motivo_lista_negra']).setValue('');
+        }
+      }
+    }
+  });
+  props.setProperty('lista_negra_migrated', 'true');
+}
+
+/**
  * Retorna leads y deals como JSON. Hace JOINs server-side
  * y devuelve objetos con las mismas claves que el frontend espera.
  */
 function getLeads() {
   try {
+    // Auto-migrate lista_negra to dim_contactos if needed
+    try { migrateListaNegraToContacto_(); } catch (mig) { Logger.log('Migration skip: ' + mig.message); }
+
     var ss = SpreadsheetApp.openById(SHEET_ID);
 
     // Read dimension tables
@@ -365,6 +507,7 @@ function getLeads() {
         _colX_Calidad: fl.calidad_contacto || '',
         _colY_Toques: '',
         _colAQ_Vendedor: vendedor.nombre || '',
+        _campaign: campana.campaign || '',
         _colAS_Notas: fl.notas || '',
         // Direct fields the frontend reads
         'ID': fl.id_lead,
@@ -410,7 +553,15 @@ function getLeads() {
         'fbclid': contacto.fbclid || '',
         // Phase 21: Duplicate FK link
         'Lead Original': fl.id_lead_original || '',
-        _leadOriginalId: fl.id_lead_original || ''
+        _leadOriginalId: fl.id_lead_original || '',
+        // Lista Negra (sourced from dim_contactos)
+        _listaNegra: contacto.lista_negra === true || contacto.lista_negra === 'TRUE' || contacto.lista_negra === 'true',
+        'lista_negra': contacto.lista_negra || '',
+        'fecha_lista_negra': contacto.fecha_lista_negra || '',
+        'motivo_lista_negra': contacto.motivo_lista_negra || '',
+        // Prueba flag
+        _esPrueba: fl.es_prueba === true || fl.es_prueba === 'TRUE' || fl.es_prueba === 'true',
+        'es_prueba': fl.es_prueba || ''
       };
 
       // Pricing fields — from global config (Phase 8: Pricing Global)
@@ -595,7 +746,15 @@ function getLeads() {
         _id_lead: fd.id_lead,
         _id_contacto: fd.id_contacto,
         _id_vendedor_ae: fd.id_vendedor_ae,
-        _id_producto: fd.id_producto
+        _id_producto: fd.id_producto,
+        // Lista Negra (sourced from dim_contactos via dc)
+        _listaNegra: dc.lista_negra === true || dc.lista_negra === 'TRUE' || dc.lista_negra === 'true',
+        'lista_negra': dc.lista_negra || '',
+        'fecha_lista_negra': dc.fecha_lista_negra || '',
+        'motivo_lista_negra': dc.motivo_lista_negra || '',
+        // Prueba flag
+        _esPrueba: fd.es_prueba === true || fd.es_prueba === 'TRUE' || fd.es_prueba === 'true',
+        'es_prueba': fd.es_prueba || ''
       };
 
       // ── SDR Qualification Fields (read-only for AE, synced via id_lead FK) ──
@@ -804,7 +963,7 @@ function getSchema(forceRefresh) {
     var sheet = ss.getSheetByName(tableMap[alias]);
     if (!sheet || sheet.getLastColumn() === 0) { schema[alias] = []; colFormats[alias] = {}; continue; }
     var lastCol = sheet.getLastColumn();
-    var headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+    var headers = sheet.getRange(1, 1, 1, lastCol).getDisplayValues()[0];
     // Read number formats from row 2 (first data row) to detect column types
     var formats = [];
     if (sheet.getLastRow() >= 2) {
@@ -887,7 +1046,7 @@ function updateCatalog(headerName, values) {
     if (CATEGORY_MAP[k] === headerName) { dbCategory = k; break; }
   }
 
-  var data = sheet.getDataRange().getValues();
+  var data; data = safeReadAll_(sheet);
   var headers = data[0];
   var catCol = -1, valCol = -1, ordenCol = -1, activoCol = -1, idCol = -1;
   for (var h = 0; h < headers.length; h++) {
@@ -912,7 +1071,7 @@ function updateCatalog(headerName, values) {
 
   // Get next ID
   var maxId = 0;
-  var refreshData = sheet.getDataRange().getValues();
+  var refreshData; refreshData = safeReadAll_(sheet);
   for (var x = 1; x < refreshData.length; x++) {
     var num = parseInt(refreshData[x][idCol], 10);
     if (!isNaN(num) && num > maxId) maxId = num;
@@ -933,6 +1092,12 @@ function updateCatalog(headerName, values) {
 
   CacheService.getScriptCache().remove('catalogs_data');
   return { updated: true, column: headerName, count: values.length };
+}
+
+/** Limpia el caché de catálogos para forzar recarga desde cat_opciones. */
+function clearCatalogsCache() {
+  CacheService.getScriptCache().remove('catalogs_data');
+  return { cleared: true };
 }
 
 // ============ API: PRICING (from dim_productos) ============
@@ -997,7 +1162,7 @@ function saveDealProducts(idDeal, lineas) {
       sheet.getRange(1, 1, 1, 7).setValues([['id_linea', 'id_deal', 'nombre_producto', 'cantidad', 'precio_unitario', 'descuento_pct', 'subtotal']]);
     }
     // Delete existing lines for this deal
-    var data = sheet.getDataRange().getValues();
+    var data; data = safeReadAll_(sheet);
     var colMap = {};
     for (var c = 0; c < data[0].length; c++) colMap[String(data[0][c]).trim()] = c;
     var idDealCol = colMap['id_deal'];
@@ -1091,16 +1256,14 @@ function getUserConfig() {
           nombre: String(row.nombre || email),
           rol: String(row.rol || 'GUEST').toUpperCase(),
           sheetId: SHEET_ID,
-          isConnected: row.conectado === true || row.conectado === 'TRUE' || row.conectado === 1,
-          clockInTime: row.ultimo_clockin ? String(row.ultimo_clockin) : null,
           _row: row._row
         };
       }
     }
-    return { email: email, nombre: email, rol: 'GUEST', sheetId: SHEET_ID, isConnected: false, clockInTime: null };
+    return { email: email, nombre: email, rol: 'GUEST', sheetId: SHEET_ID };
   } catch (err) {
     Logger.log('getUserConfig error: ' + err.message);
-    return { email: '', nombre: 'Error', rol: 'GUEST', sheetId: SHEET_ID, isConnected: false, clockInTime: null, error: err.message };
+    return { email: '', nombre: 'Error', rol: 'GUEST', sheetId: SHEET_ID, error: err.message };
   }
 }
 
@@ -1131,8 +1294,6 @@ function loginUser(email, password) {
             nombre: String(row.nombre || email),
             rol: String(row.rol || 'GUEST').toUpperCase(),
             sheetId: SHEET_ID,
-            isConnected: row.conectado === true || row.conectado === 'TRUE' || row.conectado === 1,
-            clockInTime: row.ultimo_clockin ? String(row.ultimo_clockin) : null,
             _row: row._row
           }
         };
@@ -1151,151 +1312,28 @@ function loginUser(email, password) {
  */
 function getUserConfigByEmail(email) {
   try {
-    if (!email) return { email: '', nombre: 'Error', rol: 'GUEST', sheetId: SHEET_ID, isConnected: false, clockInTime: null };
+    if (!email) return { email: '', nombre: 'Error', rol: 'GUEST', sheetId: SHEET_ID };
 
     var rows = readTable_(T_USERS);
     for (var i = 0; i < rows.length; i++) {
       var row = rows[i];
       if (String(row.email || '').trim().toLowerCase() === email.trim().toLowerCase()) {
         var isActive = row.activo === true || row.activo === 'TRUE' || row.activo === 1 || row.activo === 'true';
-        if (!isActive) return { email: email, nombre: 'Desactivado', rol: 'GUEST', sheetId: SHEET_ID, isConnected: false, clockInTime: null, inactive: true };
+        if (!isActive) return { email: email, nombre: 'Desactivado', rol: 'GUEST', sheetId: SHEET_ID, inactive: true };
 
         return {
           email: String(row.email || '').trim(),
           nombre: String(row.nombre || email),
           rol: String(row.rol || 'GUEST').toUpperCase(),
           sheetId: SHEET_ID,
-          isConnected: row.conectado === true || row.conectado === 'TRUE' || row.conectado === 1,
-          clockInTime: row.ultimo_clockin ? String(row.ultimo_clockin) : null,
           _row: row._row
         };
       }
     }
-    return { email: email, nombre: email, rol: 'GUEST', sheetId: SHEET_ID, isConnected: false, clockInTime: null };
+    return { email: email, nombre: email, rol: 'GUEST', sheetId: SHEET_ID };
   } catch (err) {
     Logger.log('getUserConfigByEmail error: ' + err.message);
-    return { email: '', nombre: 'Error', rol: 'GUEST', sheetId: SHEET_ID, isConnected: false, clockInTime: null, error: err.message };
-  }
-}
-
-function clockIn() {
-  try {
-    var email = Session.getActiveUser().getEmail();
-    var ss = SpreadsheetApp.openById(SHEET_ID);
-    var sheet = ss.getSheetByName(T_USERS);
-    if (!sheet) return { status: 'error', message: 'config_users not found' };
-
-    var colMap = getColumnMap_(sheet);
-    var data = sheet.getDataRange().getValues();
-    var emailCol = colMap['email'] || 1;
-    var connCol = colMap['conectado'];
-    var clockCol = colMap['ultimo_clockin'];
-    var nombreCol = colMap['nombre'];
-
-    for (var i = 1; i < data.length; i++) {
-      if (String(data[i][emailCol - 1] || '').trim().toLowerCase() === email.toLowerCase()) {
-        var now = new Date();
-        var nombre = nombreCol ? String(data[i][nombreCol - 1] || '') : '';
-        if (connCol) sheet.getRange(i + 1, connCol).setValue(true);
-        if (clockCol) sheet.getRange(i + 1, clockCol).setValue(now);
-        logAttendance_(ss, email, nombre, 'entrada', now);
-        return { status: 'success', clockInTime: now.toISOString() };
-      }
-    }
-    return { status: 'error', message: 'Usuario no encontrado' };
-  } catch (err) {
-    return { status: 'error', message: err.message };
-  }
-}
-
-function clockOut() {
-  try {
-    var email = Session.getActiveUser().getEmail();
-    var ss = SpreadsheetApp.openById(SHEET_ID);
-    var sheet = ss.getSheetByName(T_USERS);
-    if (!sheet) return { status: 'error', message: 'config_users not found' };
-
-    var colMap = getColumnMap_(sheet);
-    var data = sheet.getDataRange().getValues();
-    var emailCol = colMap['email'] || 1;
-    var connCol = colMap['conectado'];
-    var clockCol = colMap['ultimo_clockin'];
-    var nombreCol = colMap['nombre'];
-
-    for (var i = 1; i < data.length; i++) {
-      if (String(data[i][emailCol - 1] || '').trim().toLowerCase() === email.toLowerCase()) {
-        var now = new Date();
-        var nombre = nombreCol ? String(data[i][nombreCol - 1] || '') : '';
-        var clockInTime = clockCol ? sheet.getRange(i + 1, clockCol).getValue() : null;
-        var duracion = '';
-        if (clockInTime) {
-          var diffMs = now.getTime() - new Date(clockInTime).getTime();
-          var hrs = Math.floor(diffMs / 3600000);
-          var mins = Math.floor((diffMs % 3600000) / 60000);
-          duracion = hrs + 'h ' + (mins < 10 ? '0' : '') + mins + 'm';
-        }
-        if (connCol) sheet.getRange(i + 1, connCol).setValue(false);
-        if (clockCol) sheet.getRange(i + 1, clockCol).setValue('');
-        logAttendance_(ss, email, nombre, 'salida', now, duracion);
-        return { status: 'success' };
-      }
-    }
-    return { status: 'error', message: 'Usuario no encontrado' };
-  } catch (err) {
-    return { status: 'error', message: err.message };
-  }
-}
-
-/**
- * Appends attendance event to log_asistencia sheet.
- */
-function logAttendance_(ss, email, nombre, tipo, fecha, duracion) {
-  try {
-    var logSheet = ss.getSheetByName(T_ASISTENCIA);
-    if (!logSheet) {
-      logSheet = ss.insertSheet(T_ASISTENCIA);
-      logSheet.appendRow(['id_registro', 'email', 'nombre', 'tipo', 'fecha_hora', 'duracion_sesion']);
-    }
-    var lastRow = Math.max(logSheet.getLastRow(), 1);
-    var nextId = lastRow; // simple auto-increment
-    logSheet.appendRow([nextId, email, nombre, tipo, fecha, duracion || '']);
-  } catch (e) {
-    Logger.log('logAttendance_ ERROR: ' + e.message);
-  }
-}
-
-/**
- * Returns attendance history for Admin/Gerente view.
- * @param {number} days — How many days back to fetch (default 30)
- * @return {Array} Array of { email, nombre, tipo, fecha_hora, duracion_sesion }
- */
-function getAttendanceHistory(days) {
-  try {
-    days = parseInt(days) || 30;
-    var cutoff = new Date();
-    cutoff.setDate(cutoff.getDate() - days);
-
-    var ss = SpreadsheetApp.openById(SHEET_ID);
-    var sheet = ss.getSheetByName(T_ASISTENCIA);
-    if (!sheet) return [];
-
-    var data = sheet.getDataRange().getValues();
-    var results = [];
-    for (var i = 1; i < data.length; i++) {
-      var fecha = new Date(data[i][4]);
-      if (isNaN(fecha.getTime()) || fecha < cutoff) continue;
-      results.push({
-        email: String(data[i][1] || ''),
-        nombre: String(data[i][2] || ''),
-        tipo: String(data[i][3] || ''),
-        fecha_hora: data[i][4],
-        duracion_sesion: String(data[i][5] || '')
-      });
-    }
-    return results.reverse(); // most recent first
-  } catch (e) {
-    Logger.log('getAttendanceHistory ERROR: ' + e.message);
-    return [];
+    return { email: '', nombre: 'Error', rol: 'GUEST', sheetId: SHEET_ID, error: err.message };
   }
 }
 
@@ -1336,7 +1374,7 @@ function updateRoundRobinOrder(orderedEmails) {
     var colMap = getColumnMap_(sheet);
     if (!colMap['orden_round_robin']) return { status: 'error', message: 'Falta columna Orden_Round_Robin' };
 
-    var data = sheet.getDataRange().getValues();
+    var data; data = safeReadAll_(sheet);
     var emailColIdx = (colMap['email'] || 1) - 1;
     var orderColIdx = colMap['orden_round_robin']; // is 1-based logic usually
 
@@ -1436,7 +1474,13 @@ var LEAD_FIELD_MAP = {
   'Link': '_DIM_CONTACTO_link',
   'fbclid': '_DIM_CONTACTO_fbclid',
   // Phase 21: Duplicate FK link
-  'Lead Original': 'id_lead_original'
+  'Lead Original': 'id_lead_original',
+  // Prueba flag (in fact_leads)
+  'es_prueba': 'es_prueba',
+  // Lista Negra (routed to dim_contactos)
+  'lista_negra': '_DIM_CONTACTO_lista_negra',
+  'fecha_lista_negra': '_DIM_CONTACTO_fecha_lista_negra',
+  'motivo_lista_negra': '_DIM_CONTACTO_motivo_lista_negra'
 };
 
 var DEAL_FIELD_MAP = {
@@ -1489,12 +1533,19 @@ var DEAL_FIELD_MAP = {
   'Renovación': 'renovacion',
   'Soporte de pago': 'soporte_pago',
   'Comprobante de Pago URL': 'comprobante_pago_url',
-  'Deal Code': 'deal_code'
+  'Deal Code': 'deal_code',
+  // Prueba flag (in fact_deals)
+  'es_prueba': 'es_prueba',
+  // Lista Negra (routed to dim_contactos)
+  'lista_negra': '_DIM_CONTACTO_lista_negra',
+  'fecha_lista_negra': '_DIM_CONTACTO_fecha_lista_negra',
+  'motivo_lista_negra': '_DIM_CONTACTO_motivo_lista_negra'
 };
 
-function updateLeadField(rowNumber, colIdentifier, newValue, isDeal) {
+function updateLeadField(rowNumber, colIdentifier, newValue, isDeal, callerEmail) {
   var lock = LockService.getScriptLock();
   var result = { updated: false, triggers: [] };
+  var _user = callerEmail || Session.getActiveUser().getEmail() || 'API';
   try {
     lock.waitLock(10000);
     var ss = SpreadsheetApp.openById(SHEET_ID);
@@ -1517,7 +1568,7 @@ function updateLeadField(rowNumber, colIdentifier, newValue, isDeal) {
       if (idContacto) {
         var contactSheet = ss.getSheetByName(T_CONTACTOS);
         var contactColMap = getColumnMap_(contactSheet);
-        var contactData = contactSheet.getDataRange().getValues();
+        var contactData; contactData = safeReadAll_(contactSheet);
         var contactIdCol = contactColMap['id_contacto'] || 1;
         for (var ci = 1; ci < contactData.length; ci++) {
           if (String(contactData[ci][contactIdCol - 1]) === String(idContacto)) {
@@ -1526,7 +1577,7 @@ function updateLeadField(rowNumber, colIdentifier, newValue, isDeal) {
               var oldVal = contactSheet.getRange(ci + 1, targetCol).getValue();
               contactSheet.getRange(ci + 1, targetCol).setValue(newValue);
               logChange_(isDeal ? 'Deal' : 'Lead', sheet.getRange(rowNumber, colMap[isDeal ? 'id_deal' : 'id_lead'] || 1).getValue(),
-                Session.getActiveUser().getEmail() || 'API', fieldName, oldVal, newValue);
+                _user, fieldName, oldVal, newValue);
             }
             break;
           }
@@ -1539,7 +1590,7 @@ function updateLeadField(rowNumber, colIdentifier, newValue, isDeal) {
       var calSheet = ss.getSheetByName(T_CALIFICACION);
       if (calSheet) {
         var calColMap = getColumnMap_(calSheet);
-        var calData = calSheet.getDataRange().getValues();
+        var calData; calData = safeReadAll_(calSheet);
         var idLeadCol = colMap['id_lead'] || 1;
         var idLead = sheet.getRange(rowNumber, idLeadCol).getValue();
         var calIdLeadCol = calColMap['id_lead'] || 2;
@@ -1551,7 +1602,7 @@ function updateLeadField(rowNumber, colIdentifier, newValue, isDeal) {
             if (calTargetCol) {
               var oldCalVal = calSheet.getRange(calIdx + 1, calTargetCol).getValue();
               calSheet.getRange(calIdx + 1, calTargetCol).setValue(newValue);
-              logChange_('Lead', idLead, Session.getActiveUser().getEmail() || 'API', fieldName, oldCalVal, newValue);
+              logChange_('Lead', idLead, _user, fieldName, oldCalVal, newValue);
             }
             calRowFound = true;
             // NO break — update ALL duplicates for consistency
@@ -1571,7 +1622,7 @@ function updateLeadField(rowNumber, colIdentifier, newValue, isDeal) {
             newCalRow[calColMap['fecha_calificacion'] - 1] = new Date().toISOString();
           }
           calSheet.appendRow(newCalRow);
-          logChange_('Lead', idLead, Session.getActiveUser().getEmail() || 'API', fieldName, '', newValue);
+          logChange_('Lead', idLead, _user, fieldName, '', newValue);
         }
         result.updated = true;
 
@@ -1581,7 +1632,7 @@ function updateLeadField(rowNumber, colIdentifier, newValue, isDeal) {
         var leadsSheet = ss.getSheetByName(T_LEADS);
         if (leadsSheet) {
           var leadsColMap = getColumnMap_(leadsSheet);
-          var leadsData = leadsSheet.getDataRange().getValues();
+          var leadsData; leadsData = safeReadAll_(leadsSheet);
           var leadsIdCol = leadsColMap['id_lead'] || 1;
           var calidadCol = leadsColMap['calidad_contacto'];
           if (calidadCol) {
@@ -1606,7 +1657,7 @@ function updateLeadField(rowNumber, colIdentifier, newValue, isDeal) {
         sheet.getRange(rowNumber, factCol).setValue(newValue);
         result.updated = true;
         logChange_(isDeal ? 'Deal' : 'Lead', entityId,
-          Session.getActiveUser().getEmail() || 'API', fieldName, oldValue, newValue);
+          _user, fieldName, oldValue, newValue);
 
         // Run triggers
         if (!isDeal) {
@@ -1622,7 +1673,7 @@ function updateLeadField(rowNumber, colIdentifier, newValue, isDeal) {
         var dcSheet = ss.getSheetByName(T_CONTACTOS);
         if (dcSheet) {
           var dcColMap = getColumnMap_(dcSheet);
-          var dcData = dcSheet.getDataRange().getValues();
+          var dcData; dcData = safeReadAll_(dcSheet);
           var dcIdCol = dcColMap['id_contacto'] || 1;
           for (var dci = 1; dci < dcData.length; dci++) {
             if (String(dcData[dci][dcIdCol - 1]) === String(dcIdContacto)) {
@@ -1642,7 +1693,7 @@ function updateLeadField(rowNumber, colIdentifier, newValue, isDeal) {
       var dqCalSheet = ss.getSheetByName(T_CALIFICACION);
       if (dqCalSheet) {
         var dqColMap = getColumnMap_(dqCalSheet);
-        var dqData = dqCalSheet.getDataRange().getValues();
+        var dqData; dqData = safeReadAll_(dqCalSheet);
         var dqIdLeadCol = colMap['id_lead'] || 1;
         var dqIdLead = sheet.getRange(rowNumber, dqIdLeadCol).getValue();
         var dqCalIdCol = dqColMap['id_lead'] || 2;
@@ -1669,7 +1720,7 @@ function updateLeadField(rowNumber, colIdentifier, newValue, isDeal) {
         sheet.getRange(rowNumber, directCol).setValue(newValue);
         result.updated = true;
         logChange_(isDeal ? 'Deal' : 'Lead', entityId2,
-          Session.getActiveUser().getEmail() || 'API', fieldName, oldVal2, newValue);
+          _user, fieldName, oldVal2, newValue);
         if (!isDeal) {
           result.triggers = processLeadTriggers_(ss, sheet, rowNumber, fieldName, newValue, colMap, entityId2);
         }
@@ -1683,7 +1734,7 @@ function updateLeadField(rowNumber, colIdentifier, newValue, isDeal) {
   return result;
 }
 
-function updateLeadMultiple(rowNumber, updates, isDeal) {
+function updateLeadMultiple(rowNumber, updates, isDeal, callerEmail) {
   var lock = LockService.getScriptLock();
   var result = { updated: false, triggers: [] };
   try {
@@ -1698,7 +1749,7 @@ function updateLeadMultiple(rowNumber, updates, isDeal) {
     var idColName = isDeal ? 'id_deal' : 'id_lead';
     var idCol = colMap[idColName] || 1;
     var entityId = sheet.getRange(rowNumber, idCol).getValue();
-    var user = Session.getActiveUser().getEmail() || 'API';
+    var user = callerEmail || Session.getActiveUser().getEmail() || 'API';
     var entidad = isDeal ? 'Deal' : 'Lead';
 
     // Collect updates for dimensional tables
@@ -1743,7 +1794,7 @@ function updateLeadMultiple(rowNumber, updates, isDeal) {
     if (idContacto && Object.keys(contactUpdates).length > 0) {
       var contactSheet = ss.getSheetByName(T_CONTACTOS);
       var contactColMap = getColumnMap_(contactSheet);
-      var contactData = contactSheet.getDataRange().getValues();
+      var contactData; contactData = safeReadAll_(contactSheet);
       var cIdCol = contactColMap['id_contacto'] || 1;
       for (var ci = 1; ci < contactData.length; ci++) {
         if (String(contactData[ci][cIdCol - 1]) === String(idContacto)) {
@@ -1765,7 +1816,7 @@ function updateLeadMultiple(rowNumber, updates, isDeal) {
       var calSheet = ss.getSheetByName(T_CALIFICACION);
       if (calSheet) {
         var calColMap = getColumnMap_(calSheet);
-        var calData = calSheet.getDataRange().getValues();
+        var calData; calData = safeReadAll_(calSheet);
         var calRowFound = false;
         var idLead = sheet.getRange(rowNumber, colMap['id_lead'] || 1).getValue();
         if (idLead) {
@@ -1814,7 +1865,7 @@ function updateLeadMultiple(rowNumber, updates, isDeal) {
           var leadsSheet2 = ss.getSheetByName(T_LEADS);
           if (leadsSheet2) {
             var leadsColMap2 = getColumnMap_(leadsSheet2);
-            var leadsData2 = leadsSheet2.getDataRange().getValues();
+            var leadsData2 = safeReadAll_(leadsSheet2);
             var leadsIdCol2 = leadsColMap2['id_lead'] || 1;
             var calidadCol2 = leadsColMap2['calidad_contacto'];
             if (calidadCol2) {
@@ -1870,7 +1921,8 @@ function registrarToque(idEntidad, tipoEntidad, idVendedor, rolVendedor, numeroT
     var entidadCol = colMap['id_entidad'];
     var toqueCol = colMap['numero_toque'];
     if (entidadCol && toqueCol) {
-      var data = sheet.getDataRange().getValues();
+      var data;
+      data = safeReadAll_(sheet);
       var maxToque = 0;
       for (var r = 1; r < data.length; r++) {
         if (String(data[r][entidadCol - 1]) === String(idEntidad)) {
@@ -1885,7 +1937,46 @@ function registrarToque(idEntidad, tipoEntidad, idVendedor, rolVendedor, numeroT
 
     var nextId = getNextId_(sheet, 'id_registro_toque');
     var fechaToque = new Date().toISOString();
-    sheet.appendRow([nextId, idEntidad, tipoEntidad, idVendedor, rolVendedor, numeroToque, fechaToque, canal || '']);
+    sheet.appendRow([nextId, idEntidad, tipoEntidad, idVendedor, rolVendedor, numeroToque, fechaToque, canal || '', '']);
+
+    // Write-back: Update numero_toques and fecha_ultimo_contacto in the source sheet
+    try {
+      if (tipoEntidad === 'Deal') {
+        var wbSheet = ss.getSheetByName(T_DEALS);
+        if (wbSheet) {
+          var wbColMap = getColumnMap_(wbSheet);
+          var wbIdCol = wbColMap['id_deal'];
+          var wbNtCol = wbColMap['numero_toque_ae'];
+          if (wbIdCol && wbNtCol) {
+            var wbData; wbData = safeReadAll_(wbSheet);
+            for (var wr = 1; wr < wbData.length; wr++) {
+              if (String(wbData[wr][wbIdCol - 1]) === String(idEntidad)) {
+                wbSheet.getRange(wr + 1, wbNtCol).setValue(numeroToque);
+                break;
+              }
+            }
+          }
+        }
+      } else {
+        var wbSheet2 = ss.getSheetByName(T_LEADS);
+        if (wbSheet2) {
+          var wbColMap2 = getColumnMap_(wbSheet2);
+          var wbIdCol2 = wbColMap2['id_lead'];
+          var wbNtCol2 = wbColMap2['numero_toques'];
+          var wbFucCol2 = wbColMap2['fecha_ultimo_contacto'];
+          if (wbIdCol2) {
+            var wbData2 = safeReadAll_(wbSheet2);
+            for (var wr2 = 1; wr2 < wbData2.length; wr2++) {
+              if (String(wbData2[wr2][wbIdCol2 - 1]) === String(idEntidad)) {
+                if (wbNtCol2) wbSheet2.getRange(wr2 + 1, wbNtCol2).setValue(numeroToque);
+                if (wbFucCol2) wbSheet2.getRange(wr2 + 1, wbFucCol2).setValue(fechaToque);
+                break;
+              }
+            }
+          }
+        }
+      }
+    } catch (wbErr) { Logger.log('registrarToque write-back: ' + wbErr.message); }
 
     // Phase v3.2: Cache-write ventas_contacto_cliente when AE records first toque
     if (String(rolVendedor).toUpperCase() === 'AE') {
@@ -1893,7 +1984,7 @@ function registrarToque(idEntidad, tipoEntidad, idVendedor, rolVendedor, numeroT
         var dealsSheet = ss.getSheetByName(T_DEALS);
         if (dealsSheet) {
           var dColMap = getColumnMap_(dealsSheet);
-          var dData = dealsSheet.getDataRange().getValues();
+          var dData; dData = safeReadAll_(dealsSheet);
           var idCol = dColMap['id_deal'];
           var vcCol = dColMap['ventas_contacto_cliente'];
           if (idCol && vcCol) {
@@ -1971,7 +2062,7 @@ function copyLeadToDeals_(ss, leadsSheet, row, leadsColMap, leadId) {
   if (idLeadCol) {
     var lastRow = dealsSheet.getLastRow();
     if (lastRow > 1) {
-      var existingIds = dealsSheet.getRange(2, idLeadCol, lastRow - 1, 1).getValues();
+      var existingIds = dealsSheet.getRange(2, idLeadCol, lastRow - 1, 1).getDisplayValues();
       for (var e = 0; e < existingIds.length; e++) {
         if (String(existingIds[e][0]) === String(leadId)) {
           // ── Soft-Update: Reactivate existing Deal instead of creating duplicate ──
@@ -2027,7 +2118,7 @@ function copyLeadToDeals_(ss, leadsSheet, row, leadsColMap, leadId) {
 
   // Build new deal row
   var nextDealId = getNextId_(dealsSheet, 'id_deal');
-  var headers = dealsSheet.getRange(1, 1, 1, dealsSheet.getLastColumn()).getValues()[0];
+  var headers = dealsSheet.getRange(1, 1, 1, dealsSheet.getLastColumn()).getDisplayValues()[0];
   var newRow = new Array(headers.length).fill('');
 
   var colSet = function (name, val) {
@@ -2047,8 +2138,9 @@ function copyLeadToDeals_(ss, leadsSheet, row, leadsColMap, leadId) {
   colSet('fuente_origen', leadServicio);        // Preserve service interest as origin
 
   var insertRow = getFirstEmptyRow_(dealsSheet, 'id_deal');
-  dealsSheet.getRange(insertRow, 1, 1, newRow.length).setValues([newRow]);
-
+  var dealInsertTarget = dealsSheet.getRange(insertRow, 1, 1, newRow.length);
+  dealInsertTarget.clearFormat();
+  dealInsertTarget.setValues([newRow]);
 
   var user = Session.getActiveUser().getEmail() || 'System';
   logChange_('Lead', leadId, user, 'Paso a Ventas', '', 'Deal creado');
@@ -2080,7 +2172,7 @@ function saveCustomResponses(idLead, responses) {
     var colMap = getColumnMap_(calSheet);
     var respCol = colMap['respuestas_custom'];
     if (!respCol) return { status: 'error', message: 'Columna respuestas_custom no encontrada' };
-    var data = calSheet.getDataRange().getValues();
+    var data; data = safeReadAll_(calSheet);
     var idCol = colMap['id_lead'] || 2;
     var found = false;
     for (var i = 1; i < data.length; i++) {
@@ -2097,12 +2189,60 @@ function saveCustomResponses(idLead, responses) {
 }
 
 // ============ DUP-01: Duplicate Lead Detection ============
-function checkDuplicateLeads(email, telefono) {
+
+/**
+ * Busca un contacto existente por email, teléfono, o nombre+apellido.
+ * Reutilizable desde checkDuplicateLeads, createNewLeadOrDeal y procesarLeadsLanding.
+ * @param {Array} contactos — array de objetos de readTable_(T_CONTACTOS)
+ * @param {string} email
+ * @param {string} phone
+ * @param {string} nombre
+ * @param {string} apellido
+ * @returns {{ found: boolean, contacto: object|null, matchType: string }}
+ */
+function findExistingContact_(contactos, email, phone, nombre, apellido) {
+  var emailNorm = String(email || '').trim().toLowerCase();
+  var telNorm = String(phone || '').replace(/\D/g, '');
+  var nombreNorm = String(nombre || '').trim().toLowerCase();
+  var apellidoNorm = String(apellido || '').trim().toLowerCase();
+
+  for (var i = 0; i < contactos.length; i++) {
+    var c = contactos[i];
+    var rEmail = String(c.email || '').trim().toLowerCase();
+    var rTel1 = String(c.telefono_1 || '').replace(/\D/g, '');
+    var rTel2 = String(c.telefono_2 || '').replace(/\D/g, '');
+    var rNombre = String(c.nombre || '').trim().toLowerCase();
+    var rApellido = String(c.apellido || '').trim().toLowerCase();
+
+    if (emailNorm && rEmail && emailNorm === rEmail)
+      return { found: true, contacto: c, matchType: 'Email' };
+    if (telNorm && telNorm.length >= 7 && (telNorm === rTel1 || telNorm === rTel2))
+      return { found: true, contacto: c, matchType: 'Teléfono' };
+    if (nombreNorm && apellidoNorm && rNombre && rApellido && nombreNorm === rNombre && apellidoNorm === rApellido)
+      return { found: true, contacto: c, matchType: 'Nombre+Apellido' };
+  }
+  return { found: false, contacto: null, matchType: '' };
+}
+
+/**
+ * Encuentra el primer lead no-duplicado para un contacto (para id_lead_original).
+ */
+function findFirstLeadForContact_(leads, idContacto) {
+  var cid = String(idContacto);
+  for (var i = 0; i < leads.length; i++) {
+    if (String(leads[i].id_contacto) === cid && leads[i].status !== 'Duplicado') return leads[i].id_lead;
+  }
+  // Fallback: any lead
+  for (var j = 0; j < leads.length; j++) {
+    if (String(leads[j].id_contacto) === cid) return leads[j].id_lead;
+  }
+  return '';
+}
+
+function checkDuplicateLeads(email, telefono, nombre, apellido) {
   try {
-    // Phase 21 FIX: Read from dim_contactos (where email/phone live) and join to fact_leads
     var contactos = readTable_(T_CONTACTOS);
     var leads = readTable_(T_LEADS);
-    // Build contacto→lead index (one contacto can have multiple leads, take the first active)
     var contactoLeadIdx = {};
     for (var li = 0; li < leads.length; li++) {
       var ld = leads[li];
@@ -2113,25 +2253,34 @@ function checkDuplicateLeads(email, telefono) {
     var matches = [];
     var emailNorm = String(email || '').trim().toLowerCase();
     var telNorm = String(telefono || '').replace(/\D/g, '');
+    var nombreNorm = String(nombre || '').trim().toLowerCase();
+    var apellidoNorm = String(apellido || '').trim().toLowerCase();
+
     for (var i = 0; i < contactos.length; i++) {
       var c = contactos[i];
       var rEmail = String(c.email || '').trim().toLowerCase();
       var rTel1 = String(c.telefono_1 || '').replace(/\D/g, '');
       var rTel2 = String(c.telefono_2 || '').replace(/\D/g, '');
+      var rNombre = String(c.nombre || '').trim().toLowerCase();
+      var rApellido = String(c.apellido || '').trim().toLowerCase();
       var matchType = '';
       if (emailNorm && rEmail && emailNorm === rEmail) matchType = 'Email';
       else if (telNorm && telNorm.length >= 7 && (telNorm === rTel1 || telNorm === rTel2)) matchType = 'Teléfono';
+      else if (nombreNorm && apellidoNorm && rNombre && rApellido && nombreNorm === rNombre && apellidoNorm === rApellido) matchType = 'Nombre+Apellido';
       if (matchType) {
         var linkedLead = contactoLeadIdx[String(c.id_contacto || '')];
+        var isBlacklisted = c.lista_negra === 'TRUE' || c.lista_negra === true;
         matches.push({
           id: linkedLead ? linkedLead.id_lead : '',
+          id_contacto: c.id_contacto,
           nombre: ((c.nombre || '') + ' ' + (c.apellido || '')).trim(),
           email: c.email || '',
           telefono: c.telefono_1 || '',
           status: linkedLead ? (linkedLead.status || '') : '',
-          matchType: matchType
+          matchType: matchType,
+          listaNegra: isBlacklisted
         });
-        if (matches.length >= 3) break;
+        if (matches.length >= 5) break;
       }
     }
     return { found: matches.length > 0, matches: matches };
@@ -2141,7 +2290,13 @@ function checkDuplicateLeads(email, telefono) {
   }
 }
 
-function createNewLeadOrDeal(payload, type) {
+function createNewLeadOrDeal(payload, type, callerEmail) {
+  var lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(15000);
+  } catch (lockErr) {
+    return { status: 'error', message: 'Sistema ocupado, intenta de nuevo en unos segundos.' };
+  }
   try {
     var isDeal = (type === 'deal');
     var ss = SpreadsheetApp.openById(SHEET_ID);
@@ -2151,7 +2306,7 @@ function createNewLeadOrDeal(payload, type) {
       if (!dealsSheet) return { status: 'error', message: 'fact_deals no encontrada' };
       var colMap = getColumnMap_(dealsSheet);
       var newId = getNextId_(dealsSheet, 'id_deal');
-      var headers = dealsSheet.getRange(1, 1, 1, dealsSheet.getLastColumn()).getValues()[0];
+      var headers = dealsSheet.getRange(1, 1, 1, dealsSheet.getLastColumn()).getDisplayValues()[0];
       var newRow = new Array(headers.length).fill('');
       if (colMap['id_deal']) newRow[colMap['id_deal'] - 1] = newId;
       if (colMap['status_venta']) newRow[colMap['status_venta'] - 1] = payload['Status de Venta'] || 'Recien llegado';
@@ -2164,41 +2319,108 @@ function createNewLeadOrDeal(payload, type) {
         }
       }
       var insertRow = getFirstEmptyRow_(dealsSheet, 'id_deal');
-      dealsSheet.getRange(insertRow, 1, 1, newRow.length).setValues([newRow]);
-      logChange_('Deal', newId, Session.getActiveUser().getEmail() || 'System', 'CREACIÓN MANUAL', '', 'Nuevo deal');
+      var dealTarget = dealsSheet.getRange(insertRow, 1, 1, newRow.length);
+      dealTarget.clearFormat();
+      dealTarget.setValues([newRow]);
+      logChange_('Deal', newId, callerEmail || Session.getActiveUser().getEmail() || 'System', 'CREACIÓN MANUAL', '', 'Nuevo deal');
       return { status: 'success', data: { id: newId } };
     } else {
-      // Create contact first
+      // ── STEP 1: Find existing contact or create new one ──
       var contactSheet = ss.getSheetByName(T_CONTACTOS);
-      var contactColMap = getColumnMap_(contactSheet);
-      var newContactId = getNextId_(contactSheet, 'id_contacto');
-      var cHeaders = contactSheet.getRange(1, 1, 1, contactSheet.getLastColumn()).getValues()[0];
-      var cRow = new Array(cHeaders.length).fill('');
-      var cSet = function (n, v) { var c = contactColMap[n]; if (c) cRow[c - 1] = v; };
-      cSet('id_contacto', newContactId);
-      cSet('nombre', payload['Nombre'] || '');
-      cSet('apellido', payload['Apellido'] || '');
-      cSet('email', payload['Email'] || '');
-      cSet('telefono_1', payload['Teléfono'] || '');
-      cSet('telefono_2', payload['Teléfono 2'] || '');
-      cSet('empresa', payload['empresa'] || '');
-      cSet('area', payload['Area'] || '');
-      cSet('pais', payload['Pais'] || '');
-      cSet('ciudad', payload['City'] || '');
-      cSet('empleados', payload['Empleados'] || '');
-      cSet('nivel', payload['Nivel'] || '');
-      cSet('fecha_creacion', new Date());
-      contactSheet.appendRow(cRow);
+      if (!contactSheet) return { status: 'error', message: 'Hoja dim_contactos no encontrada' };
 
-      // Create lead
+      var contactColMap, newContactId, cHeaders, cRow, cInsertRow;
+      try { contactColMap = getColumnMap_(contactSheet); } catch (e1) { return { status: 'error', message: '[S1-colMap] ' + e1.message }; }
+
+      var existingContactos = readTable_(T_CONTACTOS);
+
+      if (payload['_linkedContactId']) {
+        // Explicit contact link from UI picker
+        newContactId = payload['_linkedContactId'];
+        var linkedC = null;
+        for (var lci = 0; lci < existingContactos.length; lci++) {
+          if (String(existingContactos[lci].id_contacto) === String(newContactId)) { linkedC = existingContactos[lci]; break; }
+        }
+        if (linkedC && (linkedC.lista_negra === 'TRUE' || linkedC.lista_negra === true)) {
+          return { status: 'error', message: 'Este contacto está en la Lista Negra y no puede recibir nuevas fichas.' };
+        }
+        // Check if this contact already has leads (mark as duplicate)
+        var existingLeadsForLink = readTable_(T_LEADS);
+        var firstLeadForLink = findFirstLeadForContact_(existingLeadsForLink, newContactId);
+        if (firstLeadForLink) {
+          payload['_isDuplicate'] = true;
+          payload['_idLeadOriginal'] = firstLeadForLink;
+        }
+      } else {
+        // Smart duplicate detection: search for existing contact
+        var matchResult = findExistingContact_(existingContactos,
+          payload['Email'] || '', payload['Teléfono'] || '', payload['Nombre'] || '', payload['Apellido'] || '');
+
+        if (matchResult.found && matchResult.contacto) {
+          // Check if contact is blacklisted
+          if (matchResult.contacto.lista_negra === 'TRUE' || matchResult.contacto.lista_negra === true) {
+            return { status: 'error', message: 'Este contacto está en la Lista Negra y no puede recibir nuevas fichas.' };
+          }
+          // Reuse existing contact
+          newContactId = matchResult.contacto.id_contacto;
+          // Force duplicate flag if not already set
+          if (!payload['_isDuplicate']) {
+            payload['_isDuplicate'] = true;
+            var existingLeads = readTable_(T_LEADS);
+            payload['_idLeadOriginal'] = findFirstLeadForContact_(existingLeads, newContactId) || '';
+          }
+        } else {
+        // Create new contact
+        try { newContactId = parseInt(getNextId_(contactSheet, 'id_contacto'), 10) || 1; } catch (e2) { return { status: 'error', message: '[S1-nextId] ' + e2.message }; }
+        try { cHeaders = contactSheet.getRange(1, 1, 1, contactSheet.getLastColumn()).getDisplayValues()[0]; } catch (e3) { return { status: 'error', message: '[S1-headers] ' + e3.message }; }
+
+        cRow = new Array(cHeaders.length).fill('');
+        var cSet = function (n, v) { var c = contactColMap[n]; if (c) cRow[c - 1] = v; };
+        cSet('id_contacto', newContactId);
+        cSet('nombre', payload['Nombre'] || '');
+        cSet('apellido', payload['Apellido'] || '');
+        cSet('email', payload['Email'] || '');
+        cSet('telefono_1', payload['Teléfono'] || '');
+        cSet('telefono_2', payload['Teléfono 2'] || '');
+        cSet('empresa', payload['empresa'] || '');
+        cSet('area', payload['Area'] || '');
+        cSet('pais', payload['Pais'] || '');
+        cSet('ciudad', payload['City'] || '');
+        cSet('empleados', payload['Empleados'] || '');
+        cSet('nivel', payload['Nivel'] || '');
+        cSet('fecha_creacion', new Date());
+
+        try { cInsertRow = getFirstEmptyRow_(contactSheet, 'id_contacto'); } catch (e4) { return { status: 'error', message: '[S1-emptyRow] ' + e4.message }; }
+
+        try {
+          var cTarget = contactSheet.getRange(cInsertRow, 1, 1, cRow.length);
+          cTarget.clearFormat();
+          cTarget.setValues([cRow]);
+        } catch (contactErr) {
+          return { status: 'error', message: '[S1-insert row=' + cInsertRow + ' cols=' + cRow.length + ' id=' + newContactId + '] ' + contactErr.message };
+        }
+      } // end else (create new contact)
+      } // end else (no explicit _linkedContactId)
+
+      // ── STEP 2: Create lead ──
       var leadsSheet = ss.getSheetByName(T_LEADS);
-      var leadColMap = getColumnMap_(leadsSheet);
-      var newLeadId = getNextId_(leadsSheet, 'id_lead');
-      var lHeaders = leadsSheet.getRange(1, 1, 1, leadsSheet.getLastColumn()).getValues()[0];
+      if (!leadsSheet) return { status: 'error', message: 'Hoja fact_leads no encontrada' };
+      var leadColMap, newLeadId;
+      try { leadColMap = getColumnMap_(leadsSheet); } catch (e5) { return { status: 'error', message: '[S2-colMap] ' + e5.message }; }
+      try { newLeadId = parseInt(getNextId_(leadsSheet, 'id_lead'), 10) || 1; } catch (e6) { return { status: 'error', message: '[S2-nextId] ' + e6.message }; }
+      var lHeaders = leadsSheet.getRange(1, 1, 1, leadsSheet.getLastColumn()).getDisplayValues()[0];
       var lRow = new Array(lHeaders.length).fill('');
       var lSet = function (n, v) { var c = leadColMap[n]; if (c) lRow[c - 1] = v; };
       lSet('id_lead', newLeadId);
       lSet('id_contacto', newContactId);
+      // Set campaign to "Manual" for manually created leads
+      try {
+        var campanasSheet = ss.getSheetByName(T_CAMPANAS);
+        if (campanasSheet) {
+          var manualCampId = getOrCreateCampana_(campanasSheet, 'Manual', 'CRM', 'Manual');
+          lSet('id_campana', manualCampId);
+        }
+      } catch (campErr) { Logger.log('Manual campaign error: ' + campErr.message); }
       // Phase 21: If duplicate info provided, set status and FK link
       if (payload['_isDuplicate'] && payload['_idLeadOriginal']) {
         lSet('status', 'Duplicado');
@@ -2212,19 +2434,580 @@ function createNewLeadOrDeal(payload, type) {
       lSet('notas', payload['Notas'] || '');
       lSet('tipo_seguimiento', payload['Tipo de Seguimiento'] || '');
       lSet('status_seguimiento', payload['Status del Seguimiento'] || '');
+      lSet('id_vendedor_sdr', payload['Vendedor asignado (SDR)'] || '');
+      lSet('razon_perdida', payload['Razón de pérdida'] || '');
       // Phase 8: Write global pricing config to new lead
       var newLeadPricingCfg = getPricingConfig();
+      var _firstProd = (newLeadPricingCfg.productos && newLeadPricingCfg.productos.length > 0) ? newLeadPricingCfg.productos[0] : null;
       lSet('tipo_cliente_pricing', newLeadPricingCfg.tipoCliente || '');
-      lSet('ticket_promedio', newLeadPricingCfg.ticketPromedio || 0);
-      lSet('licencias_promedio', newLeadPricingCfg.licenciasPromedio || 0);
+      lSet('ticket_promedio', _firstProd ? (parseFloat(_firstProd.ticketPromedio) || 0) : 0);
+      lSet('licencias', _firstProd ? (parseFloat(_firstProd.licenciasPromedio) || 0) : 0);
       var insertRow = getFirstEmptyRow_(leadsSheet, 'id_lead');
-      leadsSheet.getRange(insertRow, 1, 1, lRow.length).setValues([lRow]);
-      logChange_('Lead', newLeadId, Session.getActiveUser().getEmail() || 'System', 'CREACIÓN MANUAL', '', 'Nuevo lead');
+      try {
+        var lTarget = leadsSheet.getRange(insertRow, 1, 1, lRow.length);
+        lTarget.clearFormat();
+        lTarget.setValues([lRow]);
+      } catch (leadErr) {
+        return { status: 'error', message: '[LEAD row=' + insertRow + ' cols=' + lRow.length + ' id=' + newLeadId + '] ' + leadErr.message };
+      }
+      logChange_('Lead', newLeadId, callerEmail || Session.getActiveUser().getEmail() || 'System', 'CREACIÓN MANUAL', '', 'Nuevo lead');
       return { status: 'success', data: { id: newLeadId, isDuplicate: !!payload['_isDuplicate'], originalId: payload['_idLeadOriginal'] || '' } };
     }
   } catch (err) {
-    Logger.log('createNewLeadOrDeal ERROR: ' + err.message);
+    return { status: 'error', message: '[OUTER] ' + err.message };
+  } finally {
+    try { lock.releaseLock(); } catch (ignore) {}
+  }
+}
+
+// ============ API: DUPLICATE ANALYSIS ============
+
+function analyzeAllDuplicates() {
+  try {
+    var contactos = readTable_(T_CONTACTOS);
+    var leads = readTable_(T_LEADS);
+    var deals = readTable_(T_DEALS);
+
+    // Build lead/deal lists per contact
+    var leadsByC = {}, dealsByC = {};
+    for (var li = 0; li < leads.length; li++) {
+      var lc = String(leads[li].id_contacto || '');
+      if (!leadsByC[lc]) leadsByC[lc] = [];
+      leadsByC[lc].push({ id: leads[li].id_lead, status: leads[li].status || '', fecha: leads[li].fecha_ingreso || '' });
+    }
+    for (var di = 0; di < deals.length; di++) {
+      var dc2 = String(deals[di].id_contacto || '');
+      if (!dealsByC[dc2]) dealsByC[dc2] = [];
+      dealsByC[dc2].push({ id: deals[di].id_deal, status: deals[di].status_venta || '' });
+    }
+
+    // Group contacts by email / phone / nombre+apellido
+    var groups = [];
+    var assigned = {};
+
+    for (var i = 0; i < contactos.length; i++) {
+      var c = contactos[i];
+      var cid = String(c.id_contacto || '');
+      if (assigned[cid]) continue;
+
+      var eNorm = String(c.email || '').trim().toLowerCase();
+      var tNorm = String(c.telefono_1 || '').replace(/\D/g, '');
+      var nNorm = String(c.nombre || '').trim().toLowerCase();
+      var aNorm = String(c.apellido || '').trim().toLowerCase();
+
+      var group = [c];
+      assigned[cid] = true;
+
+      for (var j = i + 1; j < contactos.length; j++) {
+        var c2 = contactos[j];
+        var cid2 = String(c2.id_contacto || '');
+        if (assigned[cid2]) continue;
+
+        var e2 = String(c2.email || '').trim().toLowerCase();
+        var t2 = String(c2.telefono_1 || '').replace(/\D/g, '');
+        var n2 = String(c2.nombre || '').trim().toLowerCase();
+        var a2 = String(c2.apellido || '').trim().toLowerCase();
+
+        var match = (eNorm && e2 && eNorm === e2) ||
+                    (tNorm.length >= 7 && t2.length >= 7 && tNorm === t2) ||
+                    (nNorm && aNorm && nNorm === n2 && aNorm === a2);
+
+        if (match) {
+          group.push(c2);
+          assigned[cid2] = true;
+        }
+      }
+
+      if (group.length > 1) {
+        groups.push(group.map(function (gc) {
+          var gcid = String(gc.id_contacto || '');
+          return {
+            id_contacto: gc.id_contacto, nombre: gc.nombre || '', apellido: gc.apellido || '',
+            email: gc.email || '', telefono_1: gc.telefono_1 || '', empresa: gc.empresa || '',
+            fecha_creacion: gc.fecha_creacion || '', lista_negra: gc.lista_negra || '',
+            leads: leadsByC[gcid] || [], deals: dealsByC[gcid] || []
+          };
+        }));
+      }
+    }
+
+    // Sort each group oldest → newest
+    groups.forEach(function (g) {
+      g.sort(function (a, b) { return new Date(a.fecha_creacion || 0) - new Date(b.fecha_creacion || 0); });
+    });
+
+    return JSON.stringify({ groups: groups, total: groups.length });
+  } catch (e) {
+    Logger.log('analyzeAllDuplicates ERROR: ' + e.message);
+    return JSON.stringify({ groups: [], total: 0, error: e.message });
+  }
+}
+
+// ============ PHANTOM DUPLICATE CLEANUP ============
+
+/**
+ * Scans fact_leads for "phantom" duplicate leads caused by the processor bug:
+ * the same Framer row re-processed every 5 minutes because timestamps of
+ * duplicate-contact submissions were not persisted between runs.
+ *
+ * Detection: groups leads by (id_contacto + fecha_ingreso). Within each group,
+ * keeps the FIRST lead (lowest id_lead) and marks all subsequent leads with
+ * status="Duplicado" as phantoms.
+ *
+ * @param {string} mode - 'preview' (default) or 'execute'
+ * @return {string} JSON with { phantoms: [...], totalFound, totalCleaned, error? }
+ */
+function cleanPhantomDuplicates(mode) {
+  var lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(30000);
+  } catch (lockErr) {
+    return JSON.stringify({ error: 'Sistema ocupado, intenta de nuevo.' });
+  }
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var leadsSheet = ss.getSheetByName(T_LEADS);
+    var califSheet = ss.getSheetByName('fact_calificacion');
+    if (!leadsSheet) return JSON.stringify({ error: 'fact_leads no encontrada' });
+
+    var leads = readTable_(T_LEADS);
+    var contactos = readTable_(T_CONTACTOS);
+    var contactosIdx = indexBy_(contactos, 'id_contacto');
+
+    // ── Group leads by (id_contacto, fecha_ingreso_normalized) ──
+    var groups = {};
+    for (var i = 0; i < leads.length; i++) {
+      var ld = leads[i];
+      var cid = String(ld.id_contacto || '').trim();
+      var fecha = String(ld.fecha_ingreso || '').trim();
+      if (!cid || !fecha) continue;
+
+      // Normalize: try ISO, fall back to string
+      var fechaNorm;
+      try { fechaNorm = new Date(fecha).toISOString(); } catch (e) { fechaNorm = fecha; }
+
+      var key = cid + '|' + fechaNorm;
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(ld);
+    }
+
+    // ── Identify phantoms ──
+    var phantoms = [];
+    var keys = Object.keys(groups);
+    for (var k = 0; k < keys.length; k++) {
+      var grp = groups[keys[k]];
+      if (grp.length < 2) continue;
+
+      // Sort by id_lead ascending (oldest first = keeper)
+      grp.sort(function (a, b) { return Number(a.id_lead) - Number(b.id_lead); });
+
+      // The first non-Duplicado lead is the keeper; if all are Duplicado, keep the first one
+      var keeperIdx = 0;
+      for (var g = 0; g < grp.length; g++) {
+        if (String(grp[g].status || '').trim() !== 'Duplicado') { keeperIdx = g; break; }
+      }
+
+      for (var g2 = 0; g2 < grp.length; g2++) {
+        if (g2 === keeperIdx) continue;
+        // Only delete leads that are "Duplicado" — never touch active/working leads
+        if (String(grp[g2].status || '').trim() !== 'Duplicado') continue;
+        var contact = contactosIdx[String(grp[g2].id_contacto || '')] || {};
+        phantoms.push({
+          id_lead: grp[g2].id_lead,
+          _row: grp[g2]._row,
+          id_contacto: grp[g2].id_contacto,
+          nombre: ((contact.nombre || '') + ' ' + (contact.apellido || '')).trim(),
+          email: contact.email || '',
+          fecha_ingreso: grp[g2].fecha_ingreso || '',
+          keeper_id: grp[keeperIdx].id_lead
+        });
+      }
+    }
+
+    // Sort phantoms by _row DESCENDING (delete from bottom up to preserve row indices)
+    phantoms.sort(function (a, b) { return b._row - a._row; });
+
+    var totalFound = phantoms.length;
+    var totalCleaned = 0;
+
+    if (mode === 'execute' && totalFound > 0) {
+      // Build set of phantom lead IDs for O(1) lookup
+      var phantomIds = {};
+      for (var p = 0; p < phantoms.length; p++) {
+        phantomIds[String(phantoms[p].id_lead)] = true;
+      }
+
+      // ── BATCH STRATEGY: read all → filter → clear → rewrite ──
+      // This is O(2) API calls (clear + setValues) instead of O(N) deleteRow calls.
+      // Critical for 100+ phantoms to avoid the 6-minute GAS timeout.
+
+      // 1. Rewrite fact_leads (keep non-phantom rows)
+      var leadsAll = leadsSheet.getDataRange().getDisplayValues();
+      var leadsHeader = leadsAll[0];
+      var leadsKeep = [leadsHeader];
+      for (var li = 1; li < leadsAll.length; li++) {
+        var leadId = String(leadsAll[li][0] || '').trim();
+        if (!phantomIds[leadId]) {
+          leadsKeep.push(leadsAll[li]);
+        } else {
+          totalCleaned++;
+        }
+      }
+      // Clear data rows (preserve header) and rewrite
+      if (leadsAll.length > 1) {
+        leadsSheet.getRange(2, 1, leadsAll.length - 1, leadsHeader.length).clearContent();
+      }
+      if (leadsKeep.length > 1) {
+        leadsSheet.getRange(2, 1, leadsKeep.length - 1, leadsHeader.length)
+          .setValues(leadsKeep.slice(1));
+      }
+
+      // 2. Rewrite fact_calificacion (keep non-phantom rows)
+      if (califSheet) {
+        var califAll = califSheet.getDataRange().getDisplayValues();
+        if (califAll.length > 1) {
+          var califHeader = califAll[0];
+          // Find id_lead column index in calificacion
+          var califLeadCol = -1;
+          for (var ch = 0; ch < califHeader.length; ch++) {
+            if (String(califHeader[ch]).trim().toLowerCase() === 'id_lead') { califLeadCol = ch; break; }
+          }
+          if (califLeadCol !== -1) {
+            var califKeep = [califHeader];
+            for (var ci = 1; ci < califAll.length; ci++) {
+              var califLeadId = String(califAll[ci][califLeadCol] || '').trim();
+              if (!phantomIds[califLeadId]) {
+                califKeep.push(califAll[ci]);
+              }
+            }
+            califSheet.getRange(2, 1, califAll.length - 1, califHeader.length).clearContent();
+            if (califKeep.length > 1) {
+              califSheet.getRange(2, 1, califKeep.length - 1, califHeader.length)
+                .setValues(califKeep.slice(1));
+            }
+          }
+        }
+      }
+
+      SpreadsheetApp.flush();
+      Logger.log('cleanPhantomDuplicates: cleaned ' + totalCleaned + ' phantom leads (batch mode)');
+    }
+
+    // Build summary for frontend (limit preview to 50 for performance)
+    var preview = phantoms.slice(0, 50).map(function (ph) {
+      return {
+        id_lead: ph.id_lead,
+        nombre: ph.nombre,
+        email: ph.email,
+        fecha_ingreso: ph.fecha_ingreso,
+        keeper_id: ph.keeper_id
+      };
+    });
+
+    return JSON.stringify({
+      phantoms: preview,
+      totalFound: totalFound,
+      totalCleaned: totalCleaned,
+      mode: mode || 'preview'
+    });
+  } catch (e) {
+    Logger.log('cleanPhantomDuplicates ERROR: ' + e.message);
+    return JSON.stringify({ error: e.message, totalFound: 0, totalCleaned: 0 });
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// ============ API: CONTACTOS ============
+
+function getContacts() {
+  try {
+    var contactos = readTable_(T_CONTACTOS);
+    var leads = readTable_(T_LEADS);
+    var deals = readTable_(T_DEALS);
+    var leadCount = {}, dealCount = {};
+    for (var i = 0; i < leads.length; i++) {
+      var c = String(leads[i].id_contacto || '');
+      leadCount[c] = (leadCount[c] || 0) + 1;
+    }
+    for (var j = 0; j < deals.length; j++) {
+      var d = String(deals[j].id_contacto || '');
+      dealCount[d] = (dealCount[d] || 0) + 1;
+    }
+    var result = contactos.map(function (c) {
+      var cid = String(c.id_contacto || '');
+      return {
+        _row: c._row, id_contacto: c.id_contacto,
+        nombre: c.nombre || '', apellido: c.apellido || '',
+        empresa: c.empresa || '', email: c.email || '',
+        telefono_1: c.telefono_1 || '', telefono_2: c.telefono_2 || '',
+        area: c.area || '', pais: c.pais || '', ciudad: c.ciudad || '',
+        empleados: c.empleados || '', nivel: c.nivel || '',
+        fecha_creacion: c.fecha_creacion || '',
+        lista_negra: c.lista_negra === 'TRUE' || c.lista_negra === true,
+        motivo_lista_negra: c.motivo_lista_negra || '',
+        fecha_lista_negra: c.fecha_lista_negra || '',
+        es_prueba: c.es_prueba === 'TRUE' || c.es_prueba === true,
+        _leadCount: leadCount[cid] || 0,
+        _dealCount: dealCount[cid] || 0
+      };
+    });
+    return JSON.stringify(result);
+  } catch (e) {
+    Logger.log('getContacts ERROR: ' + e.message);
+    return '[]';
+  }
+}
+
+// ============ BULK UPDATE ============
+
+function bulkUpdateField(rows, fieldName, newValue, isDeal, callerEmail) {
+  var lock = LockService.getScriptLock();
+  try { lock.waitLock(15000); } catch (e) { return { status: 'error', message: 'Sistema ocupado' }; }
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var tableName = isDeal ? T_DEALS : T_LEADS;
+    var fieldMap = isDeal ? DEAL_FIELD_MAP : LEAD_FIELD_MAP;
+    var sheet = ss.getSheetByName(tableName);
+    if (!sheet) return { status: 'error', message: 'Hoja no encontrada' };
+    var colMap = getColumnMap_(sheet);
+    var dbCol = fieldMap[fieldName] || fieldName;
+    if (dbCol.indexOf('_DIM_CONTACTO_') === 0 || dbCol.indexOf('_FACT_CALIFICACION_') === 0) {
+      return { status: 'error', message: 'Este campo no es editable masivamente' };
+    }
+    var targetCol = colMap[dbCol];
+    if (!targetCol) return { status: 'error', message: 'Columna no encontrada: ' + dbCol };
+    for (var i = 0; i < rows.length; i++) {
+      sheet.getRange(rows[i], targetCol).setValue(newValue);
+    }
+    logChange_(isDeal ? 'Deal' : 'Lead', 'BULK(' + rows.length + ')', callerEmail || Session.getActiveUser().getEmail(), 'EDICIÓN MASIVA', '', fieldName + ' → ' + String(newValue));
+    return { status: 'success', updated: rows.length };
+  } catch (err) {
     return { status: 'error', message: err.message };
+  } finally {
+    try { lock.releaseLock(); } catch (e) {}
+  }
+}
+
+function bulkUpdateContacts(rows, fieldName, newValue, callerEmail) {
+  var lock = LockService.getScriptLock();
+  try { lock.waitLock(15000); } catch (e) { return { status: 'error', message: 'Sistema ocupado' }; }
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var sheet = ss.getSheetByName(T_CONTACTOS);
+    if (!sheet) return { status: 'error', message: 'dim_contactos no encontrada' };
+    var colMap = getColumnMap_(sheet);
+    var targetCol = colMap[fieldName];
+    if (!targetCol) return { status: 'error', message: 'Columna no encontrada: ' + fieldName };
+    for (var i = 0; i < rows.length; i++) {
+      sheet.getRange(rows[i], targetCol).setValue(newValue);
+    }
+    logChange_('Contacto', 'BULK(' + rows.length + ')', callerEmail || Session.getActiveUser().getEmail(), 'EDICIÓN MASIVA', '', fieldName + ' → ' + String(newValue));
+    return { status: 'success', updated: rows.length };
+  } catch (err) {
+    return { status: 'error', message: err.message };
+  } finally {
+    try { lock.releaseLock(); } catch (e) {}
+  }
+}
+
+function createContact(contactData, callerEmail) {
+  var lock = LockService.getScriptLock();
+  try { lock.waitLock(10000); } catch (e) { return { status: 'error', message: 'Sistema ocupado' }; }
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var sheet = ss.getSheetByName(T_CONTACTOS);
+    if (!sheet) return { status: 'error', message: 'dim_contactos no encontrada' };
+    var colMap = getColumnMap_(sheet);
+    var newId = getNextId_(sheet, 'id_contacto');
+    var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getDisplayValues()[0];
+    var row = new Array(headers.length).fill('');
+    var set = function (n, v) { var c = colMap[n]; if (c) row[c - 1] = v; };
+    set('id_contacto', newId);
+    set('nombre', contactData.nombre || '');
+    set('apellido', contactData.apellido || '');
+    set('email', contactData.email || '');
+    set('telefono_1', contactData.telefono_1 || '');
+    set('telefono_2', contactData.telefono_2 || '');
+    set('empresa', contactData.empresa || '');
+    set('area', contactData.area || '');
+    set('pais', contactData.pais || '');
+    set('ciudad', contactData.ciudad || '');
+    set('empleados', contactData.empleados || '');
+    set('nivel', contactData.nivel || '');
+    set('fecha_creacion', new Date());
+    if (contactData.es_prueba) set('es_prueba', 'TRUE');
+    var insertRow = getFirstEmptyRow_(sheet, 'id_contacto');
+    var target = sheet.getRange(insertRow, 1, 1, row.length);
+    target.clearFormat();
+    target.setValues([row]);
+    logChange_('Contacto', newId, callerEmail || Session.getActiveUser().getEmail(), 'CREACIÓN MANUAL', '', 'Nuevo contacto');
+    return { status: 'success', data: { id: newId } };
+  } catch (err) {
+    return { status: 'error', message: err.message };
+  } finally {
+    try { lock.releaseLock(); } catch (e) {}
+  }
+}
+
+function updateContact(rowNumber, updates, callerEmail) {
+  var lock = LockService.getScriptLock();
+  try { lock.waitLock(10000); } catch (e) { return { status: 'error', message: 'Sistema ocupado' }; }
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var sheet = ss.getSheetByName(T_CONTACTOS);
+    if (!sheet) return { status: 'error', message: 'dim_contactos no encontrada' };
+    var colMap = getColumnMap_(sheet);
+    var user = callerEmail || Session.getActiveUser().getEmail() || 'System';
+    var idCol = colMap['id_contacto'];
+    var idContacto = idCol ? sheet.getRange(rowNumber, idCol).getValue() : rowNumber;
+    var updated = 0;
+    for (var key in updates) {
+      if (!updates.hasOwnProperty(key)) continue;
+      var col = colMap[key.toLowerCase()];
+      if (col) {
+        var oldVal = sheet.getRange(rowNumber, col).getValue();
+        sheet.getRange(rowNumber, col).setValue(updates[key]);
+        logChange_('Contacto', idContacto, user, key, oldVal, updates[key]);
+        updated++;
+      }
+    }
+    return { status: 'success', updated: updated };
+  } catch (e) {
+    return { status: 'error', message: e.message };
+  } finally {
+    try { lock.releaseLock(); } catch (ignore) {}
+  }
+}
+
+function getContactRelated(idContacto) {
+  try {
+    var cid = String(idContacto);
+    var leads = readTable_(T_LEADS);
+    var deals = readTable_(T_DEALS);
+    var relLeads = [], relDeals = [];
+    for (var i = 0; i < leads.length; i++) {
+      if (String(leads[i].id_contacto) === cid) {
+        relLeads.push({
+          id_lead: leads[i].id_lead, status: leads[i].status || '',
+          fecha_ingreso: leads[i].fecha_ingreso || '', servicio: leads[i].servicio_interes || '',
+          calidad: leads[i].calidad_contacto || '', _row: leads[i]._row
+        });
+      }
+    }
+    for (var j = 0; j < deals.length; j++) {
+      if (String(deals[j].id_contacto) === cid) {
+        relDeals.push({
+          id_deal: deals[j].id_deal, status_venta: deals[j].status_venta || '',
+          fecha_pase: deals[j].fecha_pase_ventas || '', _row: deals[j]._row
+        });
+      }
+    }
+    return JSON.stringify({ leads: relLeads, deals: relDeals });
+  } catch (e) {
+    return JSON.stringify({ leads: [], deals: [] });
+  }
+}
+
+// ============ API: LISTA NEGRA ============
+
+/**
+ * Agrega o quita un contacto de la Lista Negra.
+ * Escribe a dim_contactos y CASCADE: todos los leads/deals del contacto → Perdido.
+ * @param {number} rowNumber  Fila del lead/deal en su hoja
+ * @param {boolean} isDeal    true = fact_deals, false = fact_leads
+ * @param {boolean} addToList true = agregar, false = quitar
+ * @param {string} motivo     Razón (solo al agregar)
+ * @param {string} callerEmail
+ */
+function toggleListaNegra(rowNumber, isDeal, addToList, motivo, callerEmail) {
+  var lock = LockService.getScriptLock();
+  try { lock.waitLock(15000); } catch (e) { return { status: 'error', message: 'Sistema ocupado' }; }
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var user = callerEmail || Session.getActiveUser().getEmail() || 'System';
+
+    // Step 1: Read id_contacto from the source lead/deal row
+    var factSheet = ss.getSheetByName(isDeal ? T_DEALS : T_LEADS);
+    if (!factSheet) return { status: 'error', message: 'Hoja no encontrada' };
+    var factColMap = getColumnMap_(factSheet);
+    var idContactoCol = factColMap['id_contacto'];
+    if (!idContactoCol) return { status: 'error', message: 'Columna id_contacto no encontrada' };
+    var idContacto = String(factSheet.getRange(rowNumber, idContactoCol).getValue());
+
+    // Step 2: Find the dim_contactos row for this contact
+    var cSheet = ss.getSheetByName(T_CONTACTOS);
+    if (!cSheet) return { status: 'error', message: 'dim_contactos no encontrada' };
+    var cColMap = getColumnMap_(cSheet);
+    var cData = cSheet.getRange(2, 1, cSheet.getLastRow() - 1, cSheet.getLastColumn()).getValues();
+    var idcCol = cColMap['id_contacto'];
+    var cTargetRow = -1;
+    for (var i = 0; i < cData.length; i++) {
+      if (String(cData[i][idcCol - 1]) === idContacto) { cTargetRow = i + 2; break; }
+    }
+    if (cTargetRow === -1) return { status: 'error', message: 'Contacto ' + idContacto + ' no encontrado' };
+
+    // Step 3: Write lista_negra to dim_contactos
+    if (addToList) {
+      if (cColMap['lista_negra']) cSheet.getRange(cTargetRow, cColMap['lista_negra']).setValue('TRUE');
+      if (cColMap['fecha_lista_negra']) cSheet.getRange(cTargetRow, cColMap['fecha_lista_negra']).setValue(Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm:ss"));
+      if (cColMap['motivo_lista_negra']) cSheet.getRange(cTargetRow, cColMap['motivo_lista_negra']).setValue(motivo || '');
+      logChange_('Contacto', idContacto, user, 'LISTA NEGRA', '', 'Agregado: ' + (motivo || 'Sin motivo'));
+    } else {
+      if (cColMap['lista_negra']) cSheet.getRange(cTargetRow, cColMap['lista_negra']).setValue('');
+      if (cColMap['fecha_lista_negra']) cSheet.getRange(cTargetRow, cColMap['fecha_lista_negra']).setValue('');
+      if (cColMap['motivo_lista_negra']) cSheet.getRange(cTargetRow, cColMap['motivo_lista_negra']).setValue('');
+      logChange_('Contacto', idContacto, user, 'LISTA NEGRA', 'En lista negra', 'Removido');
+    }
+
+    // Step 4: CASCADE — set all related leads and deals to Perdido (only when adding)
+    var cascadedLeads = 0, cascadedDeals = 0;
+    if (addToList) {
+      // Cascade leads
+      var leadsSheet = ss.getSheetByName(T_LEADS);
+      if (leadsSheet && leadsSheet.getLastRow() >= 2) {
+        var lColMap = getColumnMap_(leadsSheet);
+        var lIdcCol = lColMap['id_contacto'];
+        var lStatusCol = lColMap['status'];
+        if (lIdcCol && lStatusCol) {
+          var lData = leadsSheet.getRange(2, lIdcCol, leadsSheet.getLastRow() - 1, 1).getValues();
+          for (var li = 0; li < lData.length; li++) {
+            if (String(lData[li][0]) === idContacto) {
+              var currentStatus = String(leadsSheet.getRange(li + 2, lStatusCol).getValue() || '').trim();
+              if (currentStatus !== 'Perdido') {
+                leadsSheet.getRange(li + 2, lStatusCol).setValue('Perdido');
+                cascadedLeads++;
+              }
+            }
+          }
+        }
+      }
+      // Cascade deals
+      var dealsSheet = ss.getSheetByName(T_DEALS);
+      if (dealsSheet && dealsSheet.getLastRow() >= 2) {
+        var dColMap = getColumnMap_(dealsSheet);
+        var dIdcCol = dColMap['id_contacto'];
+        var dStatusCol = dColMap['status_venta'];
+        if (dIdcCol && dStatusCol) {
+          var dData = dealsSheet.getRange(2, dIdcCol, dealsSheet.getLastRow() - 1, 1).getValues();
+          for (var di = 0; di < dData.length; di++) {
+            if (String(dData[di][0]) === idContacto) {
+              var dCurrentStatus = String(dealsSheet.getRange(di + 2, dStatusCol).getValue() || '').trim();
+              if (dCurrentStatus !== 'Perdido') {
+                dealsSheet.getRange(di + 2, dStatusCol).setValue('Perdido');
+                cascadedDeals++;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    return { status: 'success', added: addToList, idContacto: idContacto, cascadedLeads: cascadedLeads, cascadedDeals: cascadedDeals };
+  } catch (err) {
+    return { status: 'error', message: err.message };
+  } finally {
+    try { lock.releaseLock(); } catch (ignore) {}
   }
 }
 
@@ -2297,14 +3080,21 @@ function getLeadStats() {
     var vendedores = readTable_(T_VENDEDORES);
     var vendedoresIdx = indexBy_(vendedores, 'id_vendedor');
 
+    var campanas = readTable_(T_CAMPANAS);
+    var campanasIdx = indexBy_(campanas, 'id_campana');
+
     var total = leadRows.length;
     var byStatus = {};
     var byCalidad = {};
     var byVendedor = {};
+    var byCampana = {};
     var thisWeek = 0;
     var thisMonth = 0;
     var now = new Date();
-    var weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    // Semana calendario: lunes 00:00 de esta semana
+    var dayOfWeek = now.getDay(); // 0=Dom, 1=Lun, ..., 6=Sab
+    var daysSinceMonday = (dayOfWeek === 0) ? 6 : (dayOfWeek - 1);
+    var weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - daysSinceMonday);
     var monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
     for (var i = 0; i < leadRows.length; i++) {
@@ -2319,23 +3109,37 @@ function getLeadStats() {
       var vendNombre = String(vend.nombre || '').trim();
       if (vendNombre) byVendedor[vendNombre] = (byVendedor[vendNombre] || 0) + 1;
 
+      var camp = campanasIdx[String(lead.id_campana)] || {};
+      var campNombre = String(camp.campaign || 'Sin Campaña').trim();
+      byCampana[campNombre] = (byCampana[campNombre] || 0) + 1;
+
       var ts = lead.fecha_ingreso;
       if (ts) {
         var d = new Date(ts);
         if (!isNaN(d.getTime())) {
-          if (d >= weekAgo) thisWeek++;
+          if (d >= weekStart) thisWeek++;
           if (d >= monthStart) thisMonth++;
         }
       }
     }
 
+    // Formatear fechas para mostrar en dashboard (dd/MM)
+    var fmt = function (dt) {
+      var dd = ('0' + dt.getDate()).slice(-2);
+      var mm = ('0' + (dt.getMonth() + 1)).slice(-2);
+      return dd + '/' + mm;
+    };
+    var weekEnd = new Date(weekStart.getTime() + 6 * 24 * 60 * 60 * 1000);
+
     return {
       total: total, thisWeek: thisWeek, thisMonth: thisMonth,
-      byStatus: byStatus, byCalidad: byCalidad, byVendedor: byVendedor
+      weekRange: fmt(weekStart) + ' – ' + fmt(weekEnd),
+      monthRange: fmt(monthStart) + ' – ' + fmt(now),
+      byStatus: byStatus, byCalidad: byCalidad, byVendedor: byVendedor, byCampana: byCampana
     };
   } catch (err) {
     Logger.log('getLeadStats ERROR: ' + err.message);
-    return { total: 0, thisWeek: 0, thisMonth: 0, byStatus: {}, byCalidad: {}, byVendedor: {} };
+    return { total: 0, thisWeek: 0, thisMonth: 0, byStatus: {}, byCalidad: {}, byVendedor: {}, byCampana: {} };
   }
 }
 
@@ -2380,7 +3184,7 @@ function onEdit(e) {
   if (row === 1) return;
 
   var colMap = getColumnMap_(sheet);
-  var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getDisplayValues()[0];
   var colIndex = range.getColumn();
   var fieldName = headers[colIndex - 1] || 'Desconocido';
   var newValue = e.value;
@@ -2432,7 +3236,7 @@ function getHMNConfig() {
  * Guarda/actualiza variables HMN en cat_opciones.
  * @param {Object} variables - {HMN_SLA_Respuesta_SDR: '24', HMN_Meta_Facturacion_Mensual: '50000', ...}
  */
-function saveHMNConfig(variables) {
+function saveHMNConfig(variables, callerEmail) {
   var lock = LockService.getScriptLock();
   try {
     lock.waitLock(10000);
@@ -2441,7 +3245,7 @@ function saveHMNConfig(variables) {
     if (!sheet) throw new Error('Hoja cat_opciones no encontrada');
 
     var colMap = getColumnMap_(sheet);
-    var data = sheet.getDataRange().getValues();
+    var data; data = safeReadAll_(sheet);
     var catCol = colMap['categoria'];
     var valCol = colMap['valor'];
     var idCol = colMap['id_opcion'];
@@ -2450,7 +3254,7 @@ function saveHMNConfig(variables) {
 
     if (!catCol || !valCol) throw new Error('Columnas categoria/valor no encontradas en cat_opciones');
 
-    var user = Session.getActiveUser().getEmail() || 'API';
+    var user = callerEmail || Session.getActiveUser().getEmail() || 'API';
 
     for (var key in variables) {
       if (key.indexOf('HMN_') !== 0) continue;
@@ -2523,7 +3327,7 @@ function getAllUsers() {
 /**
  * Crea un nuevo usuario en config_users.
  */
-function createUser(email, nombre, rol) {
+function createUser(email, nombre, rol, callerEmail) {
   var lock = LockService.getScriptLock();
   try {
     lock.waitLock(10000);
@@ -2534,7 +3338,7 @@ function createUser(email, nombre, rol) {
     if (!sheet) throw new Error('Hoja config_users no encontrada');
 
     // Check for duplicate email
-    var data = sheet.getDataRange().getValues();
+    var data; data = safeReadAll_(sheet);
     var colMap = getColumnMap_(sheet);
     var emailCol = colMap['email'] || 1;
     for (var i = 1; i < data.length; i++) {
@@ -2557,7 +3361,7 @@ function createUser(email, nombre, rol) {
     if (colMap['password']) newRow[colMap['password'] - 1] = '123456';
 
     sheet.getRange(insertRow, 1, 1, numCols).setValues([newRow]);
-    logChange_('User', email, Session.getActiveUser().getEmail() || 'API', 'createUser', '', rol);
+    logChange_('User', email, callerEmail || Session.getActiveUser().getEmail() || 'API', 'createUser', '', rol);
 
     return { status: 'success' };
   } catch (err) {
@@ -2571,7 +3375,7 @@ function createUser(email, nombre, rol) {
 /**
  * Activa/desactiva un usuario en config_users.
  */
-function toggleUserActive(email) {
+function toggleUserActive(email, callerEmail) {
   var lock = LockService.getScriptLock();
   try {
     lock.waitLock(10000);
@@ -2580,7 +3384,7 @@ function toggleUserActive(email) {
     if (!sheet) throw new Error('Hoja config_users no encontrada');
 
     var colMap = getColumnMap_(sheet);
-    var data = sheet.getDataRange().getValues();
+    var data; data = safeReadAll_(sheet);
     var emailCol = colMap['email'] || 1;
     var activoCol = colMap['activo'];
 
@@ -2592,7 +3396,7 @@ function toggleUserActive(email) {
         var isActive = current === true || current === 'TRUE' || current === 1 || current === 'true';
         var newVal = !isActive;
         sheet.getRange(i + 1, activoCol).setValue(newVal);
-        logChange_('User', email, Session.getActiveUser().getEmail() || 'API', 'activo', String(isActive), String(newVal));
+        logChange_('User', email, callerEmail || Session.getActiveUser().getEmail() || 'API', 'activo', String(isActive), String(newVal));
         return { status: 'success' };
       }
     }
@@ -2608,7 +3412,7 @@ function toggleUserActive(email) {
 /**
  * Cambia el rol de un usuario en config_users.
  */
-function updateUserRole(email, newRole) {
+function updateUserRole(email, newRole, callerEmail) {
   var lock = LockService.getScriptLock();
   try {
     lock.waitLock(10000);
@@ -2617,7 +3421,7 @@ function updateUserRole(email, newRole) {
     if (!sheet) throw new Error('Hoja config_users no encontrada');
 
     var colMap = getColumnMap_(sheet);
-    var data = sheet.getDataRange().getValues();
+    var data; data = safeReadAll_(sheet);
     var emailCol = colMap['email'] || 1;
     var rolCol = colMap['rol'];
 
@@ -2627,7 +3431,7 @@ function updateUserRole(email, newRole) {
       if (String(data[i][emailCol - 1] || '').trim().toLowerCase() === email.trim().toLowerCase()) {
         var oldRole = String(data[i][rolCol - 1] || '');
         sheet.getRange(i + 1, rolCol).setValue(newRole.toUpperCase());
-        logChange_('User', email, Session.getActiveUser().getEmail() || 'API', 'rol', oldRole, newRole.toUpperCase());
+        logChange_('User', email, callerEmail || Session.getActiveUser().getEmail() || 'API', 'rol', oldRole, newRole.toUpperCase());
         return { status: 'success' };
       }
     }
@@ -2656,7 +3460,7 @@ function updateUserRole(email, newRole) {
  * @param {Array} [attachments] - Optional array of {filename, mimeType, data (Base64)}.
  * @return {Object} {status, message}
  */
-function sendDirectEmail(to, subject, body, entityId, entityType, htmlBody, attachments) {
+function sendDirectEmail(to, subject, body, entityId, entityType, htmlBody, attachments, callerEmail) {
   var lock = LockService.getScriptLock();
   try {
     lock.waitLock(15000);
@@ -2700,8 +3504,8 @@ function sendDirectEmail(to, subject, body, entityId, entityType, htmlBody, atta
     var ss = SpreadsheetApp.openById(SHEET_ID);
     var toquesSheet = ss.getSheetByName(T_TOQUES);
     if (toquesSheet) {
-      var nextId = getNextId_(toquesSheet, 'id_toque');
-      var user = Session.getActiveUser().getEmail() || 'API';
+      var nextId = getNextId_(toquesSheet, 'id_registro_toque');
+      var user = callerEmail || Session.getActiveUser().getEmail() || 'API';
       var now = new Date();
 
       // Lookup vendedor name from config_users
@@ -2715,12 +3519,12 @@ function sendDirectEmail(to, subject, body, entityId, entityType, htmlBody, atta
       }
 
       // Build new row matching the fact_toques schema dynamically
-      var headers = toquesSheet.getRange(1, 1, 1, toquesSheet.getLastColumn()).getValues()[0];
+      var headers = toquesSheet.getRange(1, 1, 1, toquesSheet.getLastColumn()).getDisplayValues()[0];
       var newRow = [];
       for (var h = 0; h < headers.length; h++) {
         var headerName = String(headers[h]).trim().toLowerCase();
         switch (headerName) {
-          case 'id_toque': newRow.push(nextId); break;
+          case 'id_registro_toque': newRow.push(nextId); break;
           case 'tipo_entidad': newRow.push(entityType === 'deal' ? 'Deal' : 'Lead'); break;
           case 'id_entidad': newRow.push(entityId || ''); break;
           case 'numero_toque': newRow.push(''); break;
@@ -2740,7 +3544,7 @@ function sendDirectEmail(to, subject, body, entityId, entityType, htmlBody, atta
     logChange_(
       entityType === 'deal' ? 'Deal' : 'Lead',
       entityId,
-      Session.getActiveUser().getEmail() || 'API',
+      callerEmail || Session.getActiveUser().getEmail() || 'API',
       'Envío de Email',
       '',
       'Asunto: ' + subject + ' | Para: ' + to + attachCount
@@ -2983,7 +3787,7 @@ function deleteCalendarEvent(eventId) {
  * @param {Object} payload - { leadId, aeEmail (optional), notas }
  * @return {Object} { status, message, dealId, aeAssigned }
  */
-function processHandoff(payload) {
+function processHandoff(payload, callerEmail) {
   var lock = LockService.getScriptLock();
   try {
     lock.waitLock(15000);
@@ -3073,7 +3877,7 @@ function processHandoff(payload) {
     }
 
     // 7. Log the transaction
-    var user = Session.getActiveUser().getEmail();
+    var user = callerEmail || Session.getActiveUser().getEmail() || 'System';
     logChange_('DEAL', newDealId, user, 'HANDOFF', '', 'Paso a Ventas → AE: ' + aeNombre + ' (' + aeEmail + ') [' + assignmentMethod + ']');
 
     return {
@@ -3123,9 +3927,9 @@ function getPricingConfig() {
  * @param {Object} config - { tipoCliente, productos: [{nombre, ticketPromedio}] }
  * @return {Object} { status, message }
  */
-function savePricingConfig(config) {
+function savePricingConfig(config, callerEmail) {
   try {
-    var email = Session.getActiveUser().getEmail();
+    var email = callerEmail || Session.getActiveUser().getEmail();
     var users = readTable_(T_USERS);
     var userRol = '';
     for (var i = 0; i < users.length; i++) {
@@ -3210,9 +4014,9 @@ function getFieldLayout(tipoFicha) {
  * @param {Array} fields - Array de objetos de configuración de campo.
  * @return {Object} { status, message }
  */
-function saveFieldLayout(tipoFicha, fields) {
+function saveFieldLayout(tipoFicha, fields, callerEmail) {
   try {
-    var email = Session.getActiveUser().getEmail();
+    var email = callerEmail || Session.getActiveUser().getEmail();
     var users = readTable_(T_USERS);
     var userRol = '';
     for (var i = 0; i < users.length; i++) {
@@ -3236,7 +4040,7 @@ function saveFieldLayout(tipoFicha, fields) {
     if (lastRow > 1) {
       var tipoCol = colMap['tipo_ficha'];
       if (tipoCol) {
-        var allVals = sheet.getRange(2, tipoCol, lastRow - 1, 1).getValues();
+        var allVals = sheet.getRange(2, tipoCol, lastRow - 1, 1).getDisplayValues();
         for (var d = allVals.length - 1; d >= 0; d--) {
           if (String(allVals[d][0]).toLowerCase() === String(tipoFicha).toLowerCase()) {
             sheet.deleteRow(d + 2);
@@ -3246,7 +4050,7 @@ function saveFieldLayout(tipoFicha, fields) {
     }
 
     // Insert new rows
-    var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getDisplayValues()[0];
     var nextId = getNextId_(sheet, 'id_field');
 
     for (var f = 0; f < fields.length; f++) {
@@ -3263,8 +4067,8 @@ function saveFieldLayout(tipoFicha, fields) {
       set('tipo_input', field.tipo_input || 'text');
       set('seccion', field.seccion || '');
       set('seccion_icono', field.seccion_icono || '');
-      set('orden_seccion', field.orden_seccion || 0);
-      set('orden_campo', field.orden_campo || f);
+      set('orden_seccion', field.orden_seccion != null && field.orden_seccion !== '' ? field.orden_seccion : 0);
+      set('orden_campo', field.orden_campo != null && field.orden_campo !== '' ? field.orden_campo : f);
       set('visible', field.visible !== false ? 'TRUE' : 'FALSE');
       set('ancho', field.ancho || 'half');
       set('requerido', field.requerido ? 'TRUE' : 'FALSE');
@@ -3541,6 +4345,7 @@ function getDealForLead(idLead) {
       fecha_cierre: deal.fecha_cierre || '',
       fecha_reagenda: deal.fecha_reagenda || '',
       razon_perdida: deal.razon_perdida || '',
+      razon_perdida_otra: deal.razon_perdida_otra || '',
       descuento_pct: deal.descuento_pct || '',
       es_recompra: deal.es_recompra || '',
       producto_cierre: deal.producto_cierre || '',
@@ -3629,6 +4434,7 @@ function getLeadForDeal(idDeal) {
       tipo_seguimiento: lead.tipo_seguimiento || '',
       status_seguimiento: lead.status_seguimiento || '',
       razon_perdida: lead.razon_perdida || '',
+      razon_perdida_otra: lead.razon_perdida_otra || '',
       fecha_ingreso: lead.fecha_ingreso || '',
       fecha_asignacion: lead.fecha_asignacion || '',
       fecha_ultimo_contacto: lead.fecha_ultimo_contacto || '',
@@ -3667,7 +4473,7 @@ function getLeadForDeal(idDeal) {
  * @param {number} dealRow - Row number of the deal in fact_deals
  * @return {Object} { status, url, message }
  */
-function uploadPaymentProof(base64Data, fileName, mimeType, dealRow) {
+function uploadPaymentProof(base64Data, fileName, mimeType, dealRow, callerEmail) {
   try {
     if (!base64Data || !fileName || !dealRow) {
       return { status: 'error', message: 'Faltan datos para subir el archivo' };
@@ -3703,7 +4509,7 @@ function uploadPaymentProof(base64Data, fileName, mimeType, dealRow) {
       // Log the change only if column exists and write succeeded
       var idDealCol = colMap['id_deal'];
       var idDeal = idDealCol ? sheet.getRange(dealRow, idDealCol).getValue() : '';
-      var userEmail = Session.getActiveUser().getEmail();
+      var userEmail = callerEmail || Session.getActiveUser().getEmail() || 'System';
       logChange_('deal', idDeal, userEmail, 'comprobante_pago_url', '', fileUrl);
     }
 
@@ -3810,7 +4616,7 @@ function savePlantilla(email, nombre, contenido, compartida, idPlantilla, tipo, 
     } else {
       // Create new
       var newId = getNextId_(sheet, 'id_plantilla');
-      var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+      var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getDisplayValues()[0];
       var newRow = new Array(headers.length).fill('');
       var set = function (n, v) { var c = colMap[n]; if (c) newRow[c - 1] = v; };
       set('id_plantilla', newId);
@@ -3856,4 +4662,611 @@ function deletePlantilla(email, idPlantilla, idVendedor) {
     Logger.log('deletePlantilla ERROR: ' + e.message);
     return { status: 'error', message: e.message };
   }
+}
+
+// ============ IMPORTADOR UNIVERSAL DE LEADS ============
+
+var T_IMPORT_TEMP = '_importar_temporal';
+
+/** Registry of CRM fields with aliases for smart matching. */
+var IMPORT_FIELD_REGISTRY_ = [
+  // ── Contacto ──
+  {key:'nombre',table:'contacto',label:'Nombre',aliases:['nombre','name','first_name','first name','primer nombre'],type:'text'},
+  {key:'apellido',table:'contacto',label:'Apellido',aliases:['apellido','last_name','last name','surname'],type:'text'},
+  {key:'email',table:'contacto',label:'Email',aliases:['email','correo','e-mail','mail','correo electronico'],type:'email'},
+  {key:'telefono_1',table:'contacto',label:'Teléfono',aliases:['tel','phone','telefono','celular','movil','whatsapp'],type:'phone'},
+  {key:'telefono_2',table:'contacto',label:'Teléfono 2',aliases:['telefono 2','phone 2','tel 2','celular 2'],type:'phone'},
+  {key:'empresa',table:'contacto',label:'Empresa',aliases:['empresa','company','organizacion','compania','razon social'],type:'text'},
+  {key:'area',table:'contacto',label:'Área/Industria',aliases:['industria','industry','area','sector','giro','ramo'],type:'text'},
+  {key:'nivel',table:'contacto',label:'Posición/Nivel',aliases:['posicion','position','cargo','puesto','nivel','title','job title','rol'],type:'text'},
+  {key:'empleados',table:'contacto',label:'Empleados',aliases:['empleados','colaboradores','employees','headcount','num empleados'],type:'number'},
+  {key:'ciudad',table:'contacto',label:'Ciudad',aliases:['ciudad','city','localidad','municipio'],type:'text'},
+  {key:'pais',table:'contacto',label:'País',aliases:['pais','country','nacion'],type:'text'},
+  {key:'link',table:'contacto',label:'Link/LinkedIn',aliases:['link','linkedin','url','perfil','profile'],type:'text'},
+  // ── Lead ──
+  {key:'fecha_ingreso',table:'lead',label:'Fecha de Ingreso',aliases:['timestamp','fecha','date','fecha_ingreso','created','fecha de registro','fecha ingreso'],type:'date'},
+  {key:'status',table:'lead',label:'Status',aliases:['status','estado','etapa','stage','estatus'],type:'select'},
+  {key:'calidad_contacto',table:'lead',label:'Calidad de Contacto',aliases:['calidad','quality','calidad de contacto','calidad contacto'],type:'select'},
+  {key:'numero_toques',table:'lead',label:'Número de Toques',aliases:['toques','touches','intentos','en que toque va','numero toques'],type:'number'},
+  {key:'tipo_seguimiento',table:'lead',label:'Tipo de Seguimiento',aliases:['tipo de seguimiento','tipo seguimiento','follow-up type'],type:'text'},
+  {key:'status_seguimiento',table:'lead',label:'Status del Seguimiento',aliases:['status del seguimiento','status seguimiento'],type:'text'},
+  {key:'razon_perdida',table:'lead',label:'Razón de Pérdida',aliases:['razon de perdida','loss reason','motivo perdida','razon perdida'],type:'text'},
+  {key:'razon_perdida_otra',table:'lead',label:'Razón Pérdida (Otra)',aliases:['razon perdida otra','other loss reason'],type:'text'},
+  {key:'monto_aproximado',table:'lead',label:'Monto Aproximado',aliases:['monto','monto aproximado','amount','valor','monto aproximado de inversion','inversion'],type:'currency'},
+  {key:'notas',table:'lead',label:'Notas',aliases:['notas','notes','comentarios','observaciones','remarks'],type:'text'},
+  {key:'fecha_asignacion',table:'lead',label:'Fecha de Asignación',aliases:['fecha de asignacion','assignment date','fecha asignacion'],type:'date'},
+  {key:'vendedor_sdr',table:'lead',label:'Vendedor SDR',aliases:['vendedor','vendedor asignado','sdr','assigned to','asignado','responsable'],type:'lookup'},
+  {key:'servicio_interes',table:'lead',label:'Servicio de Interés',aliases:['servicio','service','servicio de interes','producto','product'],type:'text'},
+  {key:'es_recompra',table:'lead',label:'Es Recompra',aliases:['recompra','es recompra','repurchase'],type:'boolean'},
+  // ── Campaña ──
+  {key:'source',table:'campana',label:'Source (UTM)',aliases:['source','fuente','origen','utm_source'],type:'text'},
+  {key:'medium',table:'campana',label:'Medium (UTM)',aliases:['medium','medio','utm_medium'],type:'text'},
+  {key:'campaign',table:'campana',label:'Campaign (UTM)',aliases:['campaign','campana','utm_campaign'],type:'text'},
+  {key:'term',table:'campana',label:'Term (UTM)',aliases:['term','termino','keyword','utm_term'],type:'text'},
+  {key:'content',table:'campana',label:'Content (UTM)',aliases:['content','contenido','ad content','utm_content','fbclid'],type:'text'},
+  // ── Calificación BANT ──
+  {key:'entendio_info_marketing',table:'calificacion',label:'¿Entendió info Marketing?',aliases:['entendio la informacion de marketing','entendio marketing'],type:'yn'},
+  {key:'mostro_interes_genuino',table:'calificacion',label:'¿Mostró interés genuino?',aliases:['mostro interes genuino','interes genuino'],type:'yn'},
+  {key:'necesidad_puntual',table:'calificacion',label:'Necesidad puntual',aliases:['cual es tu necesidad puntual','necesidad','need'],type:'text'},
+  {key:'perfil_adecuado',table:'calificacion',label:'¿Perfil adecuado?',aliases:['el perfil del prospecto es el adecuado','perfil adecuado'],type:'yn'},
+  {key:'necesita_decision_tercero',table:'calificacion',label:'¿Necesita decisión de tercero?',aliases:['necesitas tocar base con alguien','decision maker','necesita decision'],type:'yn'},
+  {key:'tiene_presupuesto',table:'calificacion',label:'¿Tiene presupuesto?',aliases:['tienes presupuesto asignado','presupuesto','budget'],type:'yn'},
+  {key:'monto_presupuesto',table:'calificacion',label:'Monto Presupuesto',aliases:['monto presupuesto','budget amount','cuanto'],type:'currency'},
+  // ── Special ──
+  {key:'_notas_extra',table:'lead',label:'Agregar a Notas',aliases:[],type:'notes_append'}
+];
+
+/** Normalize text: lowercase, strip accents/punctuation. */
+function normalizeImportText_(text) {
+  return String(text || '').trim().toLowerCase()
+    .replace(/[áàäâ]/g, 'a').replace(/[éèëê]/g, 'e').replace(/[íìïî]/g, 'i')
+    .replace(/[óòöô]/g, 'o').replace(/[úùüû]/g, 'u').replace(/ñ/g, 'n')
+    .replace(/[¿?¡!]/g, '').replace(/[.,;:]/g, '').replace(/\s+/g, ' ');
+}
+
+/** Match score (0-100) between CSV header and a field definition. */
+function fieldMatchScore_(csvHeader, fieldDef) {
+  var norm = normalizeImportText_(csvHeader);
+  if (!norm) return 0;
+  if (norm === fieldDef.key) return 100;
+  for (var i = 0; i < fieldDef.aliases.length; i++) {
+    if (norm === normalizeImportText_(fieldDef.aliases[i])) return 95;
+  }
+  for (var j = 0; j < fieldDef.aliases.length; j++) {
+    var alias = normalizeImportText_(fieldDef.aliases[j]);
+    if (alias.length >= 3 && norm.indexOf(alias) !== -1) return 80;
+    if (norm.length >= 3 && alias.indexOf(norm) !== -1) return 70;
+  }
+  var normWords = norm.split(' ');
+  var maxOverlap = 0;
+  for (var k = 0; k < fieldDef.aliases.length; k++) {
+    var aliasWords = normalizeImportText_(fieldDef.aliases[k]).split(' ');
+    var overlap = 0;
+    for (var w = 0; w < normWords.length; w++) {
+      if (normWords[w].length >= 3 && aliasWords.indexOf(normWords[w]) !== -1) overlap++;
+    }
+    var score = aliasWords.length > 0 ? (overlap / Math.max(normWords.length, aliasWords.length)) * 60 : 0;
+    if (score > maxOverlap) maxOverlap = score;
+  }
+  return Math.round(maxOverlap);
+}
+
+function capitalizeTable_(str) {
+  var labels = { contacto: 'Contacto', lead: 'Lead', campana: 'Campaña', calificacion: 'Calificación' };
+  return labels[str] || str;
+}
+
+/** Clean/transform import value by type. */
+function cleanImportValue_(value, type) {
+  var v = String(value || '').trim();
+  if (!v || v === 'undefined' || v === 'null') return '';
+  switch (type) {
+    case 'phone':
+      if (/^\d+\.\d+E\+\d+$/i.test(v)) v = String(Math.round(parseFloat(v)));
+      return v.replace(/[^\d+\-() ]/g, '');
+    case 'currency':
+      var num = v.replace(/[$,\s]/g, '');
+      var parsed = parseFloat(num);
+      return isNaN(parsed) ? '' : String(parsed);
+    case 'number':
+      var n = parseFloat(v.replace(/[,\s]/g, ''));
+      return isNaN(n) ? '' : String(Math.round(n));
+    case 'date':
+      if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(v)) {
+        var parts = v.split('/');
+        return parts[2] + '-' + ('0' + parts[0]).slice(-2) + '-' + ('0' + parts[1]).slice(-2);
+      }
+      if (v === '12/30/1899' || v === '0') return '';
+      return v;
+    case 'yn':
+      var lower = v.toLowerCase();
+      if (lower === 'si' || lower === 'sí' || lower === 'yes' || lower === 'true' || lower === '1') return 'Si';
+      if (lower === 'no' || lower === 'false' || lower === '0') return 'No';
+      return v;
+    case 'boolean':
+      var b = v.toLowerCase();
+      return (b === 'si' || b === 'sí' || b === 'yes' || b === 'true' || b === '1') ? 'TRUE' : 'FALSE';
+    case 'email':
+      return v.toLowerCase();
+    default:
+      return v;
+  }
+}
+
+/** Creates or clears the temp import sheet. */
+function initImportSheet() {
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var sheet = ss.getSheetByName(T_IMPORT_TEMP);
+    if (sheet) { sheet.clear(); } else { sheet = ss.insertSheet(T_IMPORT_TEMP); }
+    return { status: 'success', message: 'Hoja "' + T_IMPORT_TEMP + '" lista. Pega tus datos y haz clic en "Analizar datos".' };
+  } catch (e) {
+    return { status: 'error', message: e.message };
+  }
+}
+
+/** Reads temp sheet headers + sample data, returns smart mapping suggestions. */
+function readImportData() {
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var sheet = ss.getSheetByName(T_IMPORT_TEMP);
+    if (!sheet) return { status: 'error', message: 'No existe la hoja "' + T_IMPORT_TEMP + '". Créala primero.' };
+    var lastRow = sheet.getLastRow();
+    var lastCol = sheet.getLastColumn();
+    if (lastRow < 2 || lastCol < 1) return { status: 'error', message: 'La hoja está vacía o sin datos. Pega tus datos (con encabezados en fila 1) y vuelve a intentar.' };
+
+    var headers = sheet.getRange(1, 1, 1, lastCol).getDisplayValues()[0];
+    var sampleRows = sheet.getRange(2, 1, Math.min(5, lastRow - 1), lastCol).getDisplayValues();
+
+    // Generate smart suggestions — two-pass to avoid duplicate assignments
+    var candidates = [];
+    for (var h = 0; h < headers.length; h++) {
+      var header = headers[h];
+      if (!header || header === '|') { candidates.push(null); continue; }
+      var bestScore = 0, bestField = null;
+      for (var f = 0; f < IMPORT_FIELD_REGISTRY_.length; f++) {
+        var field = IMPORT_FIELD_REGISTRY_[f];
+        if (field.key === '_notas_extra') continue;
+        var score = fieldMatchScore_(header, field);
+        if (score > bestScore) { bestScore = score; bestField = field; }
+      }
+      candidates.push({ score: bestScore, field: bestField, header: header });
+    }
+
+    var usedFields = {};
+    var suggestions = [];
+    for (var c = 0; c < candidates.length; c++) {
+      var cand = candidates[c];
+      if (!cand || !cand.field || cand.score < 40) {
+        suggestions.push({ csvIndex: c, csvHeader: headers[c] || '', target: '', targetLabel: '', confidence: 0 });
+        continue;
+      }
+      var fieldKey = cand.field.table + '.' + cand.field.key;
+      if (usedFields[fieldKey] && usedFields[fieldKey].score >= cand.score) {
+        suggestions.push({ csvIndex: c, csvHeader: cand.header, target: '', targetLabel: '', confidence: 0 });
+      } else {
+        if (usedFields[fieldKey]) {
+          var prevIdx = usedFields[fieldKey].sugIdx;
+          suggestions[prevIdx].target = '';
+          suggestions[prevIdx].targetLabel = '';
+          suggestions[prevIdx].confidence = 0;
+        }
+        usedFields[fieldKey] = { score: cand.score, sugIdx: suggestions.length };
+        suggestions.push({
+          csvIndex: c, csvHeader: cand.header, target: fieldKey,
+          targetLabel: cand.field.label + ' (' + capitalizeTable_(cand.field.table) + ')',
+          confidence: cand.score
+        });
+      }
+    }
+
+    return {
+      status: 'success', headers: headers, sampleData: sampleRows, suggestions: suggestions,
+      totalRows: lastRow - 1,
+      fieldRegistry: IMPORT_FIELD_REGISTRY_.map(function(f) {
+        return { key: f.table + '.' + f.key, label: f.label, table: f.table, type: f.type };
+      })
+    };
+  } catch (e) {
+    return { status: 'error', message: e.message };
+  }
+}
+
+/** Preview import data with applied mappings. */
+function previewImportData(config) {
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var sheet = ss.getSheetByName(T_IMPORT_TEMP);
+    if (!sheet) return { status: 'error', message: 'Hoja temporal no encontrada.' };
+    var lastRow = sheet.getLastRow();
+    var lastCol = sheet.getLastColumn();
+    var headers = sheet.getRange(1, 1, 1, lastCol).getDisplayValues()[0];
+    var dataRows = sheet.getRange(2, 1, Math.min(10, lastRow - 1), lastCol).getDisplayValues();
+
+    var mappings = (config.mappings || []).filter(function(m) { return m.target; });
+    var previewHeaders = [];
+    var resolvedTypes = [];
+    for (var m = 0; m < mappings.length; m++) {
+      previewHeaders.push(mappings[m].targetLabel || mappings[m].target);
+      var parts = mappings[m].target.split('.');
+      var fType = 'text';
+      for (var fd = 0; fd < IMPORT_FIELD_REGISTRY_.length; fd++) {
+        if (IMPORT_FIELD_REGISTRY_[fd].table === parts[0] && IMPORT_FIELD_REGISTRY_[fd].key === parts[1]) {
+          fType = IMPORT_FIELD_REGISTRY_[fd].type; break;
+        }
+      }
+      resolvedTypes.push(fType);
+    }
+
+    var previewRows = [];
+    var validCount = 0, skipCount = 0;
+    for (var r = 0; r < dataRows.length; r++) {
+      var row = dataRows[r], previewRow = [], hasEmail = false, hasTel = false;
+      for (var p = 0; p < mappings.length; p++) {
+        var rawVal = row[mappings[p].csvIndex] || '';
+        var cleaned = cleanImportValue_(rawVal, resolvedTypes[p]);
+        previewRow.push(cleaned || rawVal);
+        if (mappings[p].target === 'contacto.email' && cleaned) hasEmail = true;
+        if (mappings[p].target === 'contacto.telefono_1' && cleaned) hasTel = true;
+      }
+      if (hasEmail || hasTel) validCount++; else skipCount++;
+      previewRows.push(previewRow);
+    }
+
+    return {
+      status: 'success', headers: previewHeaders, rows: previewRows,
+      totalRows: lastRow - 1, previewCount: dataRows.length,
+      stats: { valid: validCount, skipped: skipCount, note: 'Preview de ' + dataRows.length + ' de ' + (lastRow - 1) + ' filas' }
+    };
+  } catch (e) {
+    return { status: 'error', message: e.message };
+  }
+}
+
+/** Execute lead import — batch writes to all CRM tables. */
+function executeLeadImport(config, callerEmail) {
+  var lock = LockService.getScriptLock();
+  try { lock.waitLock(30000); } catch (lockErr) {
+    return { status: 'error', message: 'Sistema ocupado. Intenta en unos segundos.' };
+  }
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var tempSheet = ss.getSheetByName(T_IMPORT_TEMP);
+    if (!tempSheet) return { status: 'error', message: 'Hoja temporal no encontrada.' };
+    var lastRow = tempSheet.getLastRow();
+    var lastCol = tempSheet.getLastColumn();
+    if (lastRow < 2) return { status: 'error', message: 'Sin datos para importar.' };
+
+    var tempHeaders = tempSheet.getRange(1, 1, 1, lastCol).getDisplayValues()[0];
+    var tempData = tempSheet.getRange(2, 1, lastRow - 1, lastCol).getDisplayValues();
+    var mappings = (config.mappings || []).filter(function(m) { return m.target; });
+    if (!mappings.length) return { status: 'error', message: 'No hay columnas mapeadas.' };
+
+    // Open target sheets
+    var contactSheet = ss.getSheetByName(T_CONTACTOS);
+    var leadsSheet = ss.getSheetByName(T_LEADS);
+    var campSheet = ss.getSheetByName(T_CAMPANAS);
+    var califSheet = ss.getSheetByName(T_CALIFICACION);
+    if (!contactSheet || !leadsSheet) return { status: 'error', message: 'Hojas CRM no encontradas.' };
+
+    // Column maps & headers per table
+    var tables = {
+      contacto: { sheet: contactSheet, colMap: getColumnMap_(contactSheet), headers: contactSheet.getRange(1,1,1,contactSheet.getLastColumn()).getDisplayValues()[0] },
+      lead: { sheet: leadsSheet, colMap: getColumnMap_(leadsSheet), headers: leadsSheet.getRange(1,1,1,leadsSheet.getLastColumn()).getDisplayValues()[0] }
+    };
+    if (campSheet) tables.campana = { sheet: campSheet, colMap: getColumnMap_(campSheet), headers: campSheet.getRange(1,1,1,campSheet.getLastColumn()).getDisplayValues()[0] };
+    if (califSheet) tables.calificacion = { sheet: califSheet, colMap: getColumnMap_(califSheet), headers: califSheet.getRange(1,1,1,califSheet.getLastColumn()).getDisplayValues()[0] };
+
+    // Next IDs
+    var nextIds = {
+      contacto: parseInt(getNextId_(contactSheet, 'id_contacto'), 10) || 1,
+      lead: parseInt(getNextId_(leadsSheet, 'id_lead'), 10) || 1,
+      campana: campSheet ? (parseInt(getNextId_(campSheet, 'id_campana'), 10) || 1) : 1,
+      calificacion: califSheet ? (parseInt(getNextId_(califSheet, 'id_calificacion'), 10) || 1) : 1
+    };
+
+    // Pre-load vendedores for name→ID lookup
+    var vendedorByName = {};
+    try {
+      var vendedores = readTable_(T_VENDEDORES);
+      for (var vi = 0; vi < vendedores.length; vi++) {
+        vendedorByName[normalizeImportText_(vendedores[vi].nombre || '')] = vendedores[vi].id_vendedor;
+      }
+    } catch (ignore) {}
+
+    // Campaign dedup cache
+    var campaignCache = {};
+    if (campSheet) {
+      var existCamps = readTable_(T_CAMPANAS);
+      for (var ec = 0; ec < existCamps.length; ec++) {
+        var camp = existCamps[ec];
+        campaignCache[(camp.source || '') + '|' + (camp.medium || '') + '|' + (camp.campaign || '')] = camp.id_campana;
+      }
+    }
+
+    // Resolve mappings with field types
+    var resolvedMaps = [];
+    for (var rm = 0; rm < mappings.length; rm++) {
+      var parts = mappings[rm].target.split('.');
+      var tbl = parts[0], fld = parts[1], fType = 'text';
+      for (var fr = 0; fr < IMPORT_FIELD_REGISTRY_.length; fr++) {
+        if (IMPORT_FIELD_REGISTRY_[fr].table === tbl && IMPORT_FIELD_REGISTRY_[fr].key === fld) {
+          fType = IMPORT_FIELD_REGISTRY_[fr].type; break;
+        }
+      }
+      resolvedMaps.push({ csvIndex: mappings[rm].csvIndex, table: tbl, field: fld, type: fType });
+    }
+
+    // Helper: set cell value by column name
+    var setC = function(colMap, arr, name, val) { var c = colMap[name]; if (c) arr[c - 1] = val; };
+
+    // Process all rows
+    var newContacts = [], newLeads = [], newCampaigns = [], newCalifs = [];
+    var imported = 0, skipped = 0;
+
+    for (var i = 0; i < tempData.length; i++) {
+      var row = tempData[i];
+      var cf = {}, lf = {}, cpf = {}, clf = {};
+      var notesExtra = [];
+
+      for (var j = 0; j < resolvedMaps.length; j++) {
+        var rM = resolvedMaps[j];
+        var raw = (row[rM.csvIndex] || '').trim();
+        if (!raw || raw === 'undefined') continue;
+
+        if (rM.type === 'notes_append') {
+          notesExtra.push('[' + (tempHeaders[rM.csvIndex] || 'Info') + '] ' + raw);
+          continue;
+        }
+        var clean = cleanImportValue_(raw, rM.type);
+        if (!clean) continue;
+
+        if (rM.table === 'contacto') { cf[rM.field] = clean; }
+        else if (rM.table === 'lead') {
+          if (rM.field === 'notas') { lf.notas = (lf.notas || '') + (lf.notas ? '\n' : '') + clean; }
+          else { lf[rM.field] = clean; }
+        }
+        else if (rM.table === 'campana') { cpf[rM.field] = clean; }
+        else if (rM.table === 'calificacion') { clf[rM.field] = clean; }
+      }
+
+      // Append extra notes columns
+      if (notesExtra.length) {
+        lf.notas = (lf.notas || '') + (lf.notas ? '\n---\n' : '') + notesExtra.join('\n');
+      }
+
+      // Skip rows without email AND phone
+      if (!cf.email && !cf.telefono_1) { skipped++; continue; }
+
+      // ── Campaign ──
+      var campId = '';
+      if (cpf.source || cpf.medium || cpf.campaign) {
+        var ck = (cpf.source || '') + '|' + (cpf.medium || '') + '|' + (cpf.campaign || '');
+        if (campaignCache[ck]) {
+          campId = campaignCache[ck];
+        } else if (tables.campana) {
+          campId = nextIds.campana++;
+          campaignCache[ck] = campId;
+          var campRow = new Array(tables.campana.headers.length).fill('');
+          setC(tables.campana.colMap, campRow, 'id_campana', campId);
+          setC(tables.campana.colMap, campRow, 'source', cpf.source || '');
+          setC(tables.campana.colMap, campRow, 'medium', cpf.medium || '');
+          setC(tables.campana.colMap, campRow, 'campaign', cpf.campaign || '');
+          setC(tables.campana.colMap, campRow, 'term', cpf.term || '');
+          setC(tables.campana.colMap, campRow, 'content', cpf.content || '');
+          newCampaigns.push(campRow);
+        }
+      }
+
+      // ── Contact ──
+      var contactId = nextIds.contacto++;
+      var ctRow = new Array(tables.contacto.headers.length).fill('');
+      setC(tables.contacto.colMap, ctRow, 'id_contacto', contactId);
+      setC(tables.contacto.colMap, ctRow, 'nombre', cf.nombre || '');
+      setC(tables.contacto.colMap, ctRow, 'apellido', cf.apellido || '');
+      setC(tables.contacto.colMap, ctRow, 'email', cf.email || '');
+      setC(tables.contacto.colMap, ctRow, 'telefono_1', cf.telefono_1 || '');
+      setC(tables.contacto.colMap, ctRow, 'telefono_2', cf.telefono_2 || '');
+      setC(tables.contacto.colMap, ctRow, 'empresa', cf.empresa || '');
+      setC(tables.contacto.colMap, ctRow, 'area', cf.area || '');
+      setC(tables.contacto.colMap, ctRow, 'nivel', cf.nivel || '');
+      setC(tables.contacto.colMap, ctRow, 'empleados', cf.empleados || '');
+      setC(tables.contacto.colMap, ctRow, 'ciudad', cf.ciudad || '');
+      setC(tables.contacto.colMap, ctRow, 'pais', cf.pais || '');
+      setC(tables.contacto.colMap, ctRow, 'link', cf.link || '');
+      setC(tables.contacto.colMap, ctRow, 'fecha_creacion', lf.fecha_ingreso || new Date());
+      newContacts.push(ctRow);
+
+      // ── Lead ──
+      var leadId = nextIds.lead++;
+      var ldRow = new Array(tables.lead.headers.length).fill('');
+      setC(tables.lead.colMap, ldRow, 'id_lead', leadId);
+      setC(tables.lead.colMap, ldRow, 'id_contacto', contactId);
+      setC(tables.lead.colMap, ldRow, 'id_campana', campId);
+      setC(tables.lead.colMap, ldRow, 'status', lf.status || 'Nuevo');
+      setC(tables.lead.colMap, ldRow, 'calidad_contacto', lf.calidad_contacto || '');
+      setC(tables.lead.colMap, ldRow, 'servicio_interes', lf.servicio_interes || '');
+      setC(tables.lead.colMap, ldRow, 'fecha_ingreso', lf.fecha_ingreso || new Date());
+      setC(tables.lead.colMap, ldRow, 'fecha_asignacion', lf.fecha_asignacion || '');
+      setC(tables.lead.colMap, ldRow, 'numero_toques', lf.numero_toques || '');
+      setC(tables.lead.colMap, ldRow, 'tipo_seguimiento', lf.tipo_seguimiento || '');
+      setC(tables.lead.colMap, ldRow, 'status_seguimiento', lf.status_seguimiento || '');
+      setC(tables.lead.colMap, ldRow, 'razon_perdida', lf.razon_perdida || '');
+      setC(tables.lead.colMap, ldRow, 'razon_perdida_otra', lf.razon_perdida_otra || '');
+      setC(tables.lead.colMap, ldRow, 'monto_aproximado', lf.monto_aproximado || '');
+      setC(tables.lead.colMap, ldRow, 'notas', lf.notas || '');
+      setC(tables.lead.colMap, ldRow, 'es_recompra', lf.es_recompra || '');
+      if (lf.vendedor_sdr) {
+        var vId = vendedorByName[normalizeImportText_(lf.vendedor_sdr)];
+        if (vId) setC(tables.lead.colMap, ldRow, 'id_vendedor_sdr', vId);
+      }
+      newLeads.push(ldRow);
+
+      // ── Calificación BANT ──
+      var hasCalif = false;
+      for (var ck2 in clf) { if (clf.hasOwnProperty(ck2)) { hasCalif = true; break; } }
+      if (hasCalif && tables.calificacion) {
+        var califId = nextIds.calificacion++;
+        var calRow = new Array(tables.calificacion.headers.length).fill('');
+        setC(tables.calificacion.colMap, calRow, 'id_calificacion', califId);
+        setC(tables.calificacion.colMap, calRow, 'id_lead', leadId);
+        setC(tables.calificacion.colMap, calRow, 'entendio_info_marketing', clf.entendio_info_marketing || '');
+        setC(tables.calificacion.colMap, calRow, 'mostro_interes_genuino', clf.mostro_interes_genuino || '');
+        setC(tables.calificacion.colMap, calRow, 'necesidad_puntual', clf.necesidad_puntual || '');
+        setC(tables.calificacion.colMap, calRow, 'perfil_adecuado', clf.perfil_adecuado || '');
+        setC(tables.calificacion.colMap, calRow, 'necesita_decision_tercero', clf.necesita_decision_tercero || '');
+        setC(tables.calificacion.colMap, calRow, 'tiene_presupuesto', clf.tiene_presupuesto || '');
+        setC(tables.calificacion.colMap, calRow, 'monto_presupuesto', clf.monto_presupuesto || '');
+        setC(tables.calificacion.colMap, calRow, 'fecha_calificacion', lf.fecha_ingreso || new Date());
+        newCalifs.push(calRow);
+      }
+      imported++;
+    }
+
+    // ── Batch write to all tables ──
+    if (newCampaigns.length > 0 && tables.campana) {
+      var ci = getFirstEmptyRow_(tables.campana.sheet, 'id_campana');
+      tables.campana.sheet.getRange(ci, 1, newCampaigns.length, tables.campana.headers.length).setValues(newCampaigns);
+    }
+    if (newContacts.length > 0) {
+      var cti = getFirstEmptyRow_(tables.contacto.sheet, 'id_contacto');
+      tables.contacto.sheet.getRange(cti, 1, newContacts.length, tables.contacto.headers.length).setValues(newContacts);
+    }
+    if (newLeads.length > 0) {
+      var li = getFirstEmptyRow_(tables.lead.sheet, 'id_lead');
+      tables.lead.sheet.getRange(li, 1, newLeads.length, tables.lead.headers.length).setValues(newLeads);
+    }
+    if (newCalifs.length > 0 && tables.calificacion) {
+      var qi = getFirstEmptyRow_(tables.calificacion.sheet, 'id_calificacion');
+      tables.calificacion.sheet.getRange(qi, 1, newCalifs.length, tables.calificacion.headers.length).setValues(newCalifs);
+    }
+
+    logChange_('Import', 0, callerEmail || Session.getActiveUser().getEmail() || 'System', 'IMPORTACIÓN MASIVA', '',
+      imported + ' leads, ' + newContacts.length + ' contactos, ' + newCampaigns.length + ' campañas, ' + newCalifs.length + ' calificaciones');
+
+    return { status: 'success', imported: imported, skipped: skipped,
+      contacts: newContacts.length, campaigns: newCampaigns.length, qualifications: newCalifs.length };
+  } catch (err) {
+    return { status: 'error', message: err.message };
+  } finally {
+    try { lock.releaseLock(); } catch (ignore) {}
+  }
+}
+
+/** Delete the temp import sheet. */
+function clearImportSheet() {
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var sheet = ss.getSheetByName(T_IMPORT_TEMP);
+    if (sheet) ss.deleteSheet(sheet);
+    return { status: 'success' };
+  } catch (e) {
+    return { status: 'error', message: e.message };
+  }
+}
+
+
+// ============ DIAGNOSTICS ============
+
+/** Returns CRM version to verify deployment. */
+function getVersion() { return CRM_VERSION; }
+
+/**
+ * Repairs sheet header formats — sets row 1 to Plain Text on all sheets.
+ * Run ONCE from the Apps Script editor to permanently fix the root cause
+ * of "No se puede convertir X en int" errors.
+ */
+function repairSheetFormats() {
+  var ss = SpreadsheetApp.openById(SHEET_ID);
+  var sheets = ss.getSheets();
+  var fixed = [];
+  for (var i = 0; i < sheets.length; i++) {
+    var sh = sheets[i];
+    var name = sh.getName();
+    var lastCol = sh.getLastColumn();
+    if (lastCol > 0) {
+      sh.getRange(1, 1, 1, lastCol).setNumberFormat('@');
+      fixed.push(name + ' (' + lastCol + ' cols)');
+    }
+  }
+  return 'Fixed headers on: ' + fixed.join(', ');
+}
+
+/**
+ * Diagnostic test — run from GAS editor to identify exactly what fails.
+ * Returns detailed report of which operations work on each sheet.
+ */
+function diagnosticTest() {
+  var results = [];
+  results.push('CRM Version: ' + CRM_VERSION);
+  results.push('Timestamp: ' + new Date().toISOString());
+  results.push('');
+
+  var ss = SpreadsheetApp.openById(SHEET_ID);
+  var testSheets = ['dim_contactos', 'fact_leads', 'fact_toques', 'fact_deals'];
+
+  for (var s = 0; s < testSheets.length; s++) {
+    var name = testSheets[s];
+    var sheet = ss.getSheetByName(name);
+    if (!sheet) { results.push('SKIP: ' + name + ' not found'); continue; }
+
+    results.push('=== ' + name + ' ===');
+    var lastRow, lastCol;
+    try { lastRow = sheet.getLastRow(); results.push('  getLastRow: ' + lastRow); } catch(e) { results.push('  getLastRow FAIL: ' + e.message); }
+    try { lastCol = sheet.getLastColumn(); results.push('  getLastColumn: ' + lastCol); } catch(e) { results.push('  getLastColumn FAIL: ' + e.message); }
+
+    // Test 1: Read header row only (single row)
+    try {
+      var h = sheet.getRange(1, 1, 1, lastCol).getDisplayValues()[0];
+      results.push('  Header row (single): OK — ' + h.slice(0,3).join(', ') + '...');
+    } catch(e) { results.push('  Header row (single) FAIL: ' + e.message); }
+
+    // Test 2: Read data rows only (row 2+)
+    if (lastRow >= 2) {
+      try {
+        var d = sheet.getRange(2, 1, Math.min(lastRow - 1, 5), lastCol).getDisplayValues();
+        results.push('  Data rows (2-' + Math.min(lastRow, 6) + '): OK — ' + d.length + ' rows');
+      } catch(e) { results.push('  Data rows FAIL: ' + e.message); }
+    }
+
+    // Test 3: Full getDataRange (header + data together — the problematic one)
+    try {
+      var full = sheet.getDataRange().getDisplayValues();
+      results.push('  getDataRange FULL: OK — ' + full.length + ' rows');
+    } catch(e) { results.push('  getDataRange FULL FAIL: ' + e.message); }
+
+    // Test 4: safeReadAll_
+    try {
+      var safe = safeReadAll_(sheet);
+      results.push('  safeReadAll_: OK — ' + safe.length + ' rows');
+    } catch(e) { results.push('  safeReadAll_ FAIL: ' + e.message); }
+
+    // Test 5: getColumnMap_
+    try {
+      var cm = getColumnMap_(sheet);
+      var keys = Object.keys(cm);
+      results.push('  getColumnMap_: OK — ' + keys.length + ' cols');
+    } catch(e) { results.push('  getColumnMap_ FAIL: ' + e.message); }
+
+    // Test 6: getNextId_
+    var idColName = name === 'dim_contactos' ? 'id_contacto' :
+                    name === 'fact_leads' ? 'id_lead' :
+                    name === 'fact_toques' ? 'id_registro_toque' : 'id_deal';
+    try {
+      var nid = getNextId_(sheet, idColName);
+      results.push('  getNextId_(' + idColName + '): OK — ' + nid);
+    } catch(e) { results.push('  getNextId_ FAIL: ' + e.message); }
+
+    // Test 7: Column A number format
+    try {
+      var fmt = sheet.getRange(1, 1).getNumberFormat();
+      results.push('  Col A format: "' + fmt + '"');
+    } catch(e) { results.push('  Col A format FAIL: ' + e.message); }
+
+    results.push('');
+  }
+
+  var report = results.join('\n');
+  Logger.log(report);
+  return report;
 }

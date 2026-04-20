@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manual 2 — Guia del SDR</title>
+<style>
+  @page { size: A4; margin: 2cm 2.5cm; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #333; background: #fefcfb; line-height: 1.7; font-size: 11pt; }
+  .cover { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; background: linear-gradient(135deg, #4a2b2f 0%, #6b3a3f 50%, #4a2b2f 100%); color: #fefcfb; text-align: center; padding: 3rem; page-break-after: always; }
+  .cover-logo { width: 120px; height: 120px; border-radius: 50%; background: #dd934f; display: flex; align-items: center; justify-content: center; font-size: 3rem; font-weight: 900; color: #4a2b2f; margin-bottom: 2rem; box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
+  .cover h1 { font-size: 2.5rem; font-weight: 800; margin-bottom: 0.5rem; }
+  .cover h2 { font-size: 1.3rem; font-weight: 400; color: #dd934f; margin-bottom: 2rem; }
+  .cover .manual-number { background: #dd934f; color: #4a2b2f; padding: 0.5rem 2rem; border-radius: 30px; font-weight: 700; font-size: 1rem; margin-bottom: 1rem; }
+  .cover .subtitle { font-size: 1.1rem; opacity: 0.85; max-width: 500px; margin-top: 1rem; }
+  .toc { page-break-after: always; padding: 3rem 0; }
+  .toc h2 { color: #4a2b2f; font-size: 1.8rem; border-bottom: 3px solid #dd934f; padding-bottom: 0.5rem; margin-bottom: 2rem; }
+  .toc-item { display: flex; justify-content: space-between; align-items: baseline; padding: 0.6rem 0; border-bottom: 1px dotted #ddd; color: #333; }
+  .toc-section { font-weight: 700; color: #4a2b2f; font-size: 1.05rem; }
+  .toc-sub { padding-left: 1.5rem; font-size: 0.95rem; }
+  .content { padding: 1rem 0; }
+  h1.section-title { color: #4a2b2f; font-size: 1.8rem; font-weight: 800; border-left: 5px solid #dd934f; padding-left: 1rem; margin: 2.5rem 0 1rem 0; page-break-before: always; }
+  h1.section-title:first-of-type { page-break-before: avoid; }
+  h2 { color: #4a2b2f; font-size: 1.3rem; font-weight: 700; margin: 2rem 0 0.8rem 0; padding-bottom: 0.3rem; border-bottom: 2px solid #dd934f; }
+  h3 { color: #6b3a3f; font-size: 1.1rem; font-weight: 600; margin: 1.5rem 0 0.5rem 0; }
+  h4 { color: #dd934f; font-size: 1rem; font-weight: 600; margin: 1rem 0 0.5rem 0; }
+  p { margin: 0.5rem 0; }
+  .tip, .warning, .info, .important { border-radius: 8px; padding: 1rem 1.2rem; margin: 1rem 0; page-break-inside: avoid; }
+  .tip { background: #f0f9e8; border-left: 4px solid #4caf50; }
+  .tip::before { content: "CONSEJO: "; font-weight: 700; color: #4caf50; }
+  .warning { background: #fff8e1; border-left: 4px solid #ff9800; }
+  .warning::before { content: "IMPORTANTE: "; font-weight: 700; color: #ff9800; }
+  .info { background: #e8f4fd; border-left: 4px solid #2196f3; }
+  .info::before { content: "NOTA: "; font-weight: 700; color: #2196f3; }
+  .important { background: #fce4ec; border-left: 4px solid #e91e63; }
+  .important::before { content: "ATENCION: "; font-weight: 700; color: #e91e63; }
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.92rem; page-break-inside: avoid; }
+  thead th { background: #4a2b2f; color: #fefcfb; padding: 0.7rem 0.8rem; text-align: left; font-weight: 600; }
+  tbody td { padding: 0.6rem 0.8rem; border-bottom: 1px solid #e8e0dd; }
+  tbody tr:nth-child(even) { background: #faf5f0; }
+  .steps { counter-reset: step; margin: 1rem 0; }
+  .step { display: flex; gap: 1rem; margin: 1rem 0; padding: 1rem; background: #faf8f7; border-radius: 8px; border: 1px solid #e8e0dd; page-break-inside: avoid; }
+  .step-number { flex-shrink: 0; width: 36px; height: 36px; background: #dd934f; color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; }
+  .step-content { flex: 1; }
+  .step-content strong { color: #4a2b2f; }
+  .role-badge { display: inline-block; padding: 0.2rem 0.7rem; border-radius: 15px; font-size: 0.8rem; font-weight: 700; }
+  .role-sdr { background: #e3f2fd; color: #1565c0; }
+  .flow-diagram { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 0.3rem; margin: 1.5rem 0; padding: 1.5rem; background: #faf8f7; border-radius: 10px; border: 1px solid #e8e0dd; }
+  .flow-box { padding: 0.6rem 1rem; border-radius: 8px; font-weight: 600; font-size: 0.85rem; text-align: center; min-width: 90px; }
+  .flow-arrow { font-size: 1.3rem; color: #dd934f; font-weight: 900; }
+  .fb-brown { background: #4a2b2f; color: #fefcfb; }
+  .fb-gold { background: #dd934f; color: #fff; }
+  .fb-light { background: #f5ebe3; color: #4a2b2f; border: 2px solid #dd934f; }
+  .fb-green { background: #4caf50; color: #fff; }
+  .fb-blue { background: #2196f3; color: #fff; }
+  .fb-red { background: #e91e63; color: #fff; }
+  ul, ol { margin: 0.5rem 0 0.5rem 1.5rem; }
+  li { margin: 0.3rem 0; }
+  code { background: #f5ebe3; padding: 0.1rem 0.4rem; border-radius: 4px; font-size: 0.9em; color: #4a2b2f; }
+  .page-footer { text-align: center; font-size: 0.8rem; color: #999; padding: 2rem 0 1rem 0; border-top: 1px solid #e8e0dd; margin-top: 3rem; }
+  .card-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin: 1rem 0; }
+  .card { background: #faf8f7; border: 1px solid #e8e0dd; border-radius: 10px; padding: 1.2rem; page-break-inside: avoid; }
+  .card h4 { margin-top: 0; color: #4a2b2f; }
+  .card p { font-size: 0.92rem; color: #666; }
+  .highlight-box { background: linear-gradient(135deg, #4a2b2f, #6b3a3f); color: #fefcfb; padding: 1.5rem; border-radius: 10px; margin: 1.5rem 0; }
+  .highlight-box h3 { color: #dd934f; margin-top: 0; }
+  @media print { body { font-size: 10pt; } .cover { min-height: 100vh; } h1.section-title { page-break-before: always; } .step, table, .tip, .warning, .info, .important { page-break-inside: avoid; } }
+</style>
+</head>
+<body>
+
+<!-- COVER -->
+<div class="cover">
+  <div class="cover-logo">SDR</div>
+  <div class="manual-number">MANUAL 2 DE 5</div>
+  <h1>Guia del SDR</h1>
+  <h2>Sales Development Representative</h2>
+  <p class="subtitle">Tu guia completa para gestionar leads, registrar toques, calificar con BANT y hacer el pase a ventas como un profesional.</p>
+  <p style="margin-top:3rem; opacity:0.5; font-size:0.9rem;">Castillo &amp; Company &bull; 2026</p>
+</div>
+
+<!-- TOC -->
+<div class="toc">
+  <h2>Contenido de este Manual</h2>
+  <div class="toc-item toc-section">1. Tu Rol como SDR</div>
+  <div class="toc-item toc-section">2. El Dashboard</div>
+  <div class="toc-item toc-section">3. Vista de Prospectos</div>
+  <div class="toc-item toc-sub">3.1 Vista de Tabla</div>
+  <div class="toc-item toc-sub">3.2 Vista Kanban</div>
+  <div class="toc-item toc-sub">3.3 Filtrar y buscar leads</div>
+  <div class="toc-item toc-section">4. Crear un Nuevo Lead</div>
+  <div class="toc-item toc-sub">4.1 Deteccion de duplicados</div>
+  <div class="toc-item toc-section">5. La Ficha del Lead (Modal de Detalle)</div>
+  <div class="toc-item toc-sub">5.1 Pestana: Lead</div>
+  <div class="toc-item toc-sub">5.2 Pestana: Negociacion (solo lectura)</div>
+  <div class="toc-item toc-sub">5.3 Pestana: Logs de Toques</div>
+  <div class="toc-item toc-sub">5.4 Pestana: Historial</div>
+  <div class="toc-item toc-sub">5.5 Pestana: Notas</div>
+  <div class="toc-item toc-section">6. Registrar Toques</div>
+  <div class="toc-item toc-section">7. Calificacion BANT</div>
+  <div class="toc-item toc-sub">7.1 Las 5 preguntas clave</div>
+  <div class="toc-item toc-sub">7.2 Como se calcula la calidad</div>
+  <div class="toc-item toc-section">8. Pricing y Monto Estimado</div>
+  <div class="toc-item toc-section">9. El Pase a Ventas (Handoff)</div>
+  <div class="toc-item toc-sub">9.1 La Ficha de Negociacion</div>
+  <div class="toc-item toc-sub">9.2 Asignacion del AE</div>
+  <div class="toc-item toc-section">10. Alertas de Duplicados</div>
+  <div class="toc-item toc-section">11. Recompra</div>
+  <div class="toc-item toc-section">12. Calendario</div>
+  <div class="toc-item toc-section">13. Enviar Correos</div>
+  <div class="toc-item toc-section">14. Plantillas de Notas y Correos</div>
+</div>
+
+<!-- CONTENT -->
+<div class="content">
+
+<h1 class="section-title" style="page-break-before:avoid;">1. Tu Rol como SDR</h1>
+
+<p>Como SDR (Sales Development Representative), eres <strong>la primera linea de contacto</strong> del equipo con los clientes potenciales. Tu mision es:</p>
+
+<div class="highlight-box">
+  <h3>Responsabilidades del SDR:</h3>
+  <ul>
+    <li><strong>Recibir</strong> los leads que entran al CRM (desde formularios, campanas o captura manual)</li>
+    <li><strong>Contactar</strong> a los leads mediante llamadas, WhatsApp o correo (toques)</li>
+    <li><strong>Calificar</strong> a los leads usando el sistema BANT para determinar su calidad</li>
+    <li><strong>Transferir</strong> los leads calificados al equipo de ventas (AE) con toda la informacion relevante</li>
+    <li><strong>Reportar</strong> las razones cuando un lead no avanza</li>
+  </ul>
+</div>
+
+<div class="flow-diagram">
+  <div class="flow-box fb-blue">Lead Nuevo</div>
+  <span class="flow-arrow">&#8594;</span>
+  <div class="flow-box fb-light">Tu lo contactas</div>
+  <span class="flow-arrow">&#8594;</span>
+  <div class="flow-box fb-light">Calificas BANT</div>
+  <span class="flow-arrow">&#8594;</span>
+  <div class="flow-box fb-gold">Pase a Ventas</div>
+  <span class="flow-arrow">&#8594;</span>
+  <div class="flow-box fb-green">AE lo recibe</div>
+</div>
+
+<!-- === SECTION 2: DASHBOARD === -->
+<h1 class="section-title">2. El Dashboard</h1>
+
+<p>Al entrar al CRM, lo primero que ves es el <strong>Dashboard</strong> (tablero de inicio). Aqui tienes un resumen rapido de la actividad del equipo:</p>
+
+<div class="card-grid">
+  <div class="card">
+    <h4>Total Leads</h4>
+    <p>El numero total de leads registrados en el CRM. Te da una idea del volumen general de trabajo.</p>
+  </div>
+  <div class="card">
+    <h4>Esta Semana</h4>
+    <p>Leads que entraron en los ultimos 7 dias. Te ayuda a entender el flujo reciente.</p>
+  </div>
+  <div class="card">
+    <h4>Este Mes</h4>
+    <p>Leads que entraron desde el inicio del mes actual.</p>
+  </div>
+  <div class="card">
+    <h4>Paso a Ventas</h4>
+    <p>Leads que fueron transferidos exitosamente al AE. Este es tu KPI principal como SDR.</p>
+  </div>
+</div>
+
+<p>Debajo de las estadisticas veras dos graficos:</p>
+<ul>
+  <li><strong>Leads por Status</strong>: barras horizontales que muestran cuantos leads hay en cada etapa (Nuevo, En Seguimiento, Perdido, etc.)</li>
+  <li><strong>Leads por Vendedor</strong>: barras que muestran cuantos leads tiene asignados cada SDR</li>
+</ul>
+
+<!-- === SECTION 3: PROSPECTOS === -->
+<h1 class="section-title">3. Vista de Prospectos</h1>
+
+<p>La seccion de <strong>Prospectos</strong> es donde pasaras la mayor parte de tu tiempo. Aqui ves todos los leads asignados a ti y puedes trabajar con ellos.</p>
+
+<h2>3.1 Vista de Tabla</h2>
+
+<p>La vista de tabla muestra tus leads en filas con las siguientes columnas:</p>
+
+<table>
+  <thead>
+    <tr><th>Columna</th><th>Que muestra</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><strong>ID</strong></td><td>Numero unico del lead en el sistema</td></tr>
+    <tr><td><strong>Nombre</strong></td><td>Nombre completo del contacto</td></tr>
+    <tr><td><strong>Empresa</strong></td><td>Nombre de la empresa del lead</td></tr>
+    <tr><td><strong>Email</strong></td><td>Correo electronico</td></tr>
+    <tr><td><strong>Telefono</strong></td><td>Numero de telefono principal</td></tr>
+    <tr><td><strong>Status</strong></td><td>Estado actual del lead (etiqueta de color)</td></tr>
+    <tr><td><strong>Vendedor</strong></td><td>SDR asignado a este lead</td></tr>
+    <tr><td><strong>Acciones</strong></td><td>Boton "Ver" para abrir la ficha completa</td></tr>
+  </tbody>
+</table>
+
+<p>Haz clic en cualquier fila o en el boton "Ver" para abrir el <strong>modal de detalle</strong> del lead.</p>
+
+<h2>3.2 Vista Kanban</h2>
+
+<p>La vista Kanban muestra tus leads como <strong>tarjetas organizadas en columnas por status</strong>. Cada columna representa un estado diferente del lead.</p>
+
+<p>Cada tarjeta de lead muestra:</p>
+<ul>
+  <li><strong>#ID</strong> del lead (en morado)</li>
+  <li><strong>Etiqueta de Calidad</strong> (Alto = verde, Medio = azul, Bajo = ambar, Sin Calificar = gris)</li>
+  <li><strong>Nombre</strong> del lead</li>
+  <li><strong>Empresa</strong></li>
+  <li><strong>Etiqueta "Recompra"</strong> (si el lead es un cliente que regresa, se muestra una etiqueta morada especial)</li>
+  <li><strong>Telefono, email y vendedor asignado</strong> en la parte inferior</li>
+</ul>
+
+<h3>Arrastrar y soltar (Drag & Drop)</h3>
+
+<div class="steps">
+  <div class="step">
+    <div class="step-number">1</div>
+    <div class="step-content">
+      <strong>Mantén presionado el clic</strong> sobre la tarjeta del lead que quieres mover.
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">2</div>
+    <div class="step-content">
+      <strong>Arrastra</strong> la tarjeta hacia la columna del nuevo status que deseas asignarle.
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">3</div>
+    <div class="step-content">
+      <strong>Suelta</strong> la tarjeta. El CRM actualiza automaticamente el status del lead.
+    </div>
+  </div>
+</div>
+
+<div class="warning">Si arrastras un lead a la columna <strong>"Paso a Ventas"</strong>, el CRM NO cambia el status directamente. En su lugar, se abre el formulario de Pase a Ventas (Handoff) para que completes la calificacion BANT y la informacion necesaria antes de transferirlo.</div>
+
+<div class="info">Si el lead tiene campos obligatorios vacios, el CRM te bloqueara el cambio de status y mostrara un mensaje indicando que campos necesitas completar.</div>
+
+<h2>3.3 Filtrar y Buscar Leads</h2>
+
+<p>En la barra de herramientas superior de la vista de Prospectos encontraras:</p>
+
+<ul>
+  <li><strong>Filtro por Status</strong>: un dropdown que te permite ver solo los leads de un status especifico (ej: solo los "Nuevos", solo los "En Seguimiento")</li>
+  <li><strong>Buscador</strong>: escribe cualquier texto y el CRM filtra en tiempo real por nombre, empresa, email, telefono o ID</li>
+</ul>
+
+<!-- === SECTION 4: CREAR LEAD === -->
+<h1 class="section-title">4. Crear un Nuevo Lead</h1>
+
+<p>Si necesitas capturar un lead manualmente (por ejemplo, si alguien te llama o te contacta fuera de los formularios automaticos):</p>
+
+<div class="steps">
+  <div class="step">
+    <div class="step-number">1</div>
+    <div class="step-content">
+      <strong>Ve a la seccion "Prospectos"</strong> en la barra lateral.
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">2</div>
+    <div class="step-content">
+      <strong>Haz clic en el boton "+ Crear Lead"</strong> que aparece en la barra de herramientas superior.
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">3</div>
+    <div class="step-content">
+      <strong>Se abre el modal de creacion</strong>. Llena los campos del formulario: Nombre, Apellido, Email, Telefono, Empresa, Pais, Ciudad, etc. Los campos marcados con <strong style="color:red;">*</strong> son obligatorios.
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">4</div>
+    <div class="step-content">
+      <strong>Haz clic en "Crear Lead"</strong>. El CRM verificara automaticamente si ya existe un lead con el mismo email o telefono.
+    </div>
+  </div>
+</div>
+
+<h2>4.1 Deteccion de Duplicados</h2>
+
+<p>Cuando creas un nuevo lead, el CRM busca automaticamente si ya existe un contacto con el <strong>mismo email o telefono</strong>. Si encuentra coincidencias:</p>
+
+<ul>
+  <li>Se muestra un <strong>cuadro de dialogo</strong> listando los leads existentes que coinciden</li>
+  <li>Tu puedes elegir: <strong>"Crear como duplicado"</strong> (se crea pero se marca como duplicado con referencia al original) o <strong>"Cancelar"</strong> y editar el lead existente</li>
+</ul>
+
+<div class="tip">Crear un lead como duplicado no es malo. A veces la misma persona regresa por un canal diferente. El CRM los vincula para que puedas dar seguimiento a ambos.</div>
+
+<!-- === SECTION 5: FICHA DEL LEAD === -->
+<h1 class="section-title">5. La Ficha del Lead (Modal de Detalle)</h1>
+
+<p>Al hacer clic en un lead (ya sea en la tabla o en el Kanban), se abre un <strong>panel deslizante desde la derecha</strong> con toda la informacion del lead. Este panel tiene varias pestanas.</p>
+
+<h3>Encabezado del Modal</h3>
+<p>En la parte superior del modal veras:</p>
+<ul>
+  <li><strong>Titulo</strong>: "Lead #ID - Nombre del contacto"</li>
+  <li><strong>Badge de Status</strong>: etiqueta de color con el status actual</li>
+  <li><strong>Badge de Calidad BANT</strong>: etiqueta con la calificacion (Alto/Medio/Bajo/Sin Calificar)</li>
+  <li><strong>Contador de duplicados</strong>: si este lead tiene duplicados, aparece una etiqueta roja con el numero</li>
+  <li><strong>Boton "Enviar Correo"</strong>: abre el compositor de correo (solo si el lead tiene email)</li>
+  <li><strong>Boton X</strong>: cierra el modal</li>
+</ul>
+
+<h2>5.1 Pestana: Lead</h2>
+
+<p>Es la pestana principal donde ves y editas toda la informacion del lead. Esta organizada en <strong>secciones</strong>:</p>
+
+<h4>Seccion: Propietario del Lead</h4>
+<ul>
+  <li><strong>Vendedor Asignado</strong>: el SDR responsable de este lead. Puedes cambiarlo si eres Admin.</li>
+  <li><strong>Fecha y Hora de Asignacion</strong>: cuando se le asigno al SDR (automatico, solo lectura).</li>
+</ul>
+
+<h4>Seccion: Informacion de Contacto</h4>
+<ul>
+  <li><strong>Nombre, Apellido, Email, Telefono, Telefono 2</strong>: datos basicos del contacto</li>
+  <li><strong>Empresa, Area/Cargo, Pais, Ciudad</strong>: datos de la empresa</li>
+  <li><strong>Empleados, Nivel</strong>: tamano y nivel de la empresa</li>
+</ul>
+
+<h4>Seccion: Informacion de Campana (Solo Lectura)</h4>
+<p>Estos datos se llenan automaticamente desde el formulario de origen y <strong>no se pueden editar</strong>:</p>
+<ul>
+  <li>Source, Medium, Campaign, Term, Content (UTMs de marketing)</li>
+  <li>fbclid, IP, Link del formulario</li>
+</ul>
+
+<h4>Seccion: Informacion de Seguimiento</h4>
+<ul>
+  <li><strong>Status</strong>: el estado actual del lead. Es un desplegable con las opciones configuradas (Nuevo, Contactado, En Seguimiento, Paso a Ventas, Perdido, etc.).</li>
+  <li><strong>Calidad de Contacto</strong>: se calcula automaticamente del BANT. No lo editas manualmente.</li>
+  <li><strong>Toques de Contactacion</strong>: un numero grande que muestra cuantos toques llevas. Tiene un boton "+ Registrar Toque #N" para agregar el siguiente toque.</li>
+  <li><strong>Tipo de Seguimiento, Status del Seguimiento</strong>: campos auxiliares para tu gestion.</li>
+  <li><strong>Razon de Perdida</strong>: si marcas el lead como "Perdido", aqui seleccionas la razon. Si eliges "Otros", aparece un campo de texto libre para escribir una razon personalizada.</li>
+  <li><strong>Es recompra?</strong>: Si/No. Marcalo si este lead es un cliente que ya compro antes.</li>
+</ul>
+
+<h4>Seccion: Calificacion BANT</h4>
+<p>Aqui respondes las preguntas que determinan la calidad del lead. Ver seccion 7 para detalle completo.</p>
+
+<h4>Seccion: Pricing Global</h4>
+<p>Muestra el precio estimado del servicio basado en el producto seleccionado. Ver seccion 8 para detalle.</p>
+
+<h4>Seccion: Notas del Lead</h4>
+<p>Campo de texto libre para tus notas personales sobre el lead.</p>
+
+<div class="warning">Recuerda hacer clic en <strong>"Guardar Cambios"</strong> en la parte inferior del modal despues de editar cualquier campo. Los cambios no se guardan automaticamente.</div>
+
+<h2>5.2 Pestana: Negociacion (Solo Lectura)</h2>
+
+<p>Esta pestana solo aparece <strong>cuando el lead ya tiene un deal asociado</strong> (ya paso a ventas). Te permite ver el progreso de la negociacion sin poder editarla:</p>
+
+<ul>
+  <li>AE Asignado</li>
+  <li>Status de Venta (con badge de color)</li>
+  <li>Proyeccion</li>
+  <li>Monto de Proyeccion y Monto de Cierre</li>
+  <li>Producto de Cierre</li>
+  <li>Fechas clave: Pase a Ventas, Primer Contacto AE, Cierre</li>
+  <li>Razon de Perdida (si aplica)</li>
+  <li>Notas del AE</li>
+</ul>
+
+<div class="info">Como SDR, solo puedes <strong>ver</strong> la informacion del deal. No puedes editarla. Esto es para que puedas darle seguimiento al resultado de los leads que transferiste.</div>
+
+<h2>5.3 Pestana: Logs de Toques</h2>
+
+<p>Muestra la lista completa de todos los toques registrados, tanto tuyos como SDR como del AE (si ya paso a ventas):</p>
+
+<table>
+  <thead>
+    <tr><th>Columna</th><th>Que muestra</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><strong>Toque #</strong></td><td>Numero del toque (1, 2, 3...)</td></tr>
+    <tr><td><strong>Canal</strong></td><td>Como lo contactaste: Telefono, WhatsApp, Correo</td></tr>
+    <tr><td><strong>Fecha/Hora</strong></td><td>Cuando se registro el toque</td></tr>
+    <tr><td><strong>Rol</strong></td><td>Si fue un toque del SDR o del AE</td></tr>
+  </tbody>
+</table>
+
+<h2>5.4 Pestana: Historial</h2>
+
+<p>El historial muestra <strong>todo lo que ha pasado con este lead</strong> desde que entro al CRM, organizado en secciones:</p>
+
+<ul>
+  <li><strong>Eventos del Ciclo de Vida</strong>: cuando entro al CRM, cuando se le asigno un SDR, cuando se califico, etc.</li>
+  <li><strong>Cambios de Pipeline</strong>: cada cambio de status con quien lo hizo y cuando</li>
+  <li><strong>Cambios de Informacion</strong>: cada campo que se modifico, mostrando el valor anterior y el nuevo</li>
+  <li><strong>Historial de Contacto</strong>: interacciones registradas</li>
+</ul>
+
+<div class="tip">El historial es muy util para entender que paso con un lead cuando retomas un caso que alguien mas trabajo antes.</div>
+
+<h2>5.5 Pestana: Notas</h2>
+
+<p>En esta pestana puedes:</p>
+<ul>
+  <li>Escribir tus notas personales sobre el lead</li>
+  <li>Insertar <strong>plantillas predefinidas</strong> desde un dropdown (las creas en la seccion Cuenta)</li>
+  <li>Las plantillas reemplazan automaticamente variables como <code>{nombre}</code>, <code>{empresa}</code>, <code>{telefono}</code> con los datos del lead</li>
+  <li>Gestionar tus plantillas directamente desde aqui haciendo clic en "Gestionar Plantillas"</li>
+</ul>
+
+<!-- === SECTION 6: TOQUES === -->
+<h1 class="section-title">6. Registrar Toques</h1>
+
+<p>Cada vez que intentas contactar a un lead (ya sea por telefono, WhatsApp o correo), debes registrar un <strong>toque</strong> en el CRM. Los toques son <strong>obligatorios y secuenciales</strong>: debes registrar el toque 1 antes del 2, el 2 antes del 3, y asi sucesivamente.</p>
+
+<div class="steps">
+  <div class="step">
+    <div class="step-number">1</div>
+    <div class="step-content">
+      <strong>Abre la ficha del lead</strong> haciendo clic en el lead desde la tabla o el kanban.
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">2</div>
+    <div class="step-content">
+      <strong>Busca el campo "Toques de Contactacion"</strong> en la seccion de Seguimiento. Veras un numero grande (tu toque actual) y un boton que dice <strong>"+ Registrar Toque #N"</strong> (donde N es el siguiente toque).
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">3</div>
+    <div class="step-content">
+      <strong>Haz clic en el boton de registrar toque</strong>. Aparece un cuadro de confirmacion preguntandote por que canal contactaste al lead.
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">4</div>
+    <div class="step-content">
+      <strong>Selecciona el canal</strong>: Telefono, WhatsApp o Correo.
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">5</div>
+    <div class="step-content">
+      <strong>Confirma</strong>. El CRM registra el toque con la fecha, hora, canal y tu nombre como SDR.
+    </div>
+  </div>
+</div>
+
+<div class="important">Los toques son <strong>irreversibles</strong> y <strong>monotonicos</strong>: una vez registrado, no puedes borrarlo ni retroceder. Asegurate de estar listo antes de registrar.</div>
+
+<!-- === SECTION 7: BANT === -->
+<h1 class="section-title">7. Calificacion BANT</h1>
+
+<p>BANT es el sistema que usamos para determinar si un lead esta <strong>listo para pasar a ventas</strong>. Son preguntas que debes responder basandote en tu conversacion con el prospecto.</p>
+
+<h2>7.1 Las 5 Preguntas Clave</h2>
+
+<table>
+  <thead>
+    <tr><th>#</th><th>Pregunta</th><th>Respuesta ideal</th><th>Que mide</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>1</td>
+      <td><strong>El perfil del prospecto es el adecuado?</strong></td>
+      <td>Si</td>
+      <td>Si el lead encaja con nuestro cliente ideal</td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td><strong>Tiene presupuesto asignado para este proyecto?</strong></td>
+      <td>Si</td>
+      <td><strong>B</strong>udget - Si tiene dinero para comprar</td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td><strong>Mostro interes genuino?</strong></td>
+      <td>Si</td>
+      <td><strong>N</strong>eed - Si realmente necesita lo que ofrecemos</td>
+    </tr>
+    <tr>
+      <td>4</td>
+      <td><strong>Entendio la informacion de Marketing?</strong></td>
+      <td>Si</td>
+      <td>Si comprende nuestra propuesta de valor</td>
+    </tr>
+    <tr>
+      <td>5</td>
+      <td><strong>Necesita consultar con alguien para decidir?</strong></td>
+      <td><strong>No</strong></td>
+      <td><strong>A</strong>uthority - Si puede tomar la decision solo (No = mejor)</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="warning">Atencion con la pregunta 5: la respuesta ideal es <strong>"No"</strong> (no necesita consultar con nadie = tiene autoridad de decision). En las otras 4, la respuesta ideal es "Si".</div>
+
+<h2>7.2 Como se Calcula la Calidad</h2>
+
+<p>El CRM suma cuantas preguntas tienen la respuesta ideal y asigna automaticamente la calidad:</p>
+
+<table>
+  <thead>
+    <tr><th>Respuestas Ideales</th><th>Calidad</th><th>Color del Badge</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>5 de 5</td><td><strong>Alto</strong></td><td style="background:#4caf50;color:#fff;text-align:center;border-radius:4px;">Verde</td></tr>
+    <tr><td>3 a 4</td><td><strong>Medio</strong></td><td style="background:#5c6bc0;color:#fff;text-align:center;border-radius:4px;">Azul/Indigo</td></tr>
+    <tr><td>1 a 2</td><td><strong>Bajo</strong></td><td style="background:#f5a623;color:#fff;text-align:center;border-radius:4px;">Ambar</td></tr>
+    <tr><td>0</td><td><strong>Sin Calificar</strong></td><td style="background:#999;color:#fff;text-align:center;border-radius:4px;">Gris</td></tr>
+  </tbody>
+</table>
+
+<h3>Campos adicionales del BANT</h3>
+<p>Ademas de las 5 preguntas, la seccion BANT incluye campos extra que ayudan al AE:</p>
+<ul>
+  <li><strong>Cual es tu necesidad puntual?</strong> — texto libre para describir que necesita el lead</li>
+  <li><strong>Cuanto? (Presupuesto)</strong> — puedes indicar un monto exacto o un rango de inversion</li>
+  <li><strong>Cual es su region?</strong> — afecta el precio que se le muestra</li>
+  <li><strong>Que tipo de membresia es?</strong> — Manufacturers, Individuals, Attraction</li>
+  <li><strong>Pricing Tier</strong> — se calcula automaticamente segun region y membresia</li>
+  <li><strong>Preguntas adicionales</strong> — preguntas personalizadas que el admin puede configurar</li>
+</ul>
+
+<!-- === SECTION 8: PRICING === -->
+<h1 class="section-title">8. Pricing y Monto Estimado</h1>
+
+<p>El CRM tiene dos niveles de calculo de precios que te ayudan a darle al AE una estimacion del valor de la negociacion:</p>
+
+<h3>Pricing Global (Seccion "Pricing Global" en la ficha del lead)</h3>
+
+<div class="steps">
+  <div class="step">
+    <div class="step-number">1</div>
+    <div class="step-content">
+      <strong>Selecciona el Producto</strong> del dropdown. Veras la lista de productos configurados por el admin con su ticket promedio mensual.
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">2</div>
+    <div class="step-content">
+      <strong>Si es SaaS</strong>, ingresa el numero de <strong>Licencias</strong>. Para otros tipos de cliente, este campo no aplica.
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">3</div>
+    <div class="step-content">
+      <strong>El Monto Aproximado se calcula solo</strong>. Aparece en una tarjeta verde. La formula depende del tipo de cliente:
+      <ul>
+        <li><strong>SaaS</strong>: Ticket x Licencias x 12 meses</li>
+        <li><strong>Fichas Mensuales (FEE)</strong>: Ticket x 12 meses</li>
+        <li><strong>Proyectos</strong>: Ticket x 1 (pago unico)</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<h3>Pricing por Region (Seccion "Calificacion BANT" / Pricing Result)</h3>
+
+<p>Si seleccionaste la Region y el Tipo de Membresia del lead, el CRM busca automaticamente en el catalogo de productos y te muestra el precio para <strong>1 ano</strong> y <strong>2 anos</strong> en dos tarjetas separadas.</p>
+
+<!-- === SECTION 9: HANDOFF === -->
+<h1 class="section-title">9. El Pase a Ventas (Handoff)</h1>
+
+<p>El <strong>Pase a Ventas</strong> es el momento mas importante de tu trabajo como SDR: es cuando transfieres un lead calificado al Account Executive (AE) para que inicie la negociacion.</p>
+
+<h3>Cuando hacer el Pase a Ventas?</h3>
+<ul>
+  <li>Cuando el lead tiene calificacion BANT <strong>Alto</strong> o <strong>Medio</strong></li>
+  <li>Cuando el lead ha mostrado interes genuino y tiene presupuesto</li>
+  <li>Cuando ya tienes suficiente informacion para que el AE pueda trabajar</li>
+</ul>
+
+<h3>Como iniciar el Pase a Ventas</h3>
+
+<p>Hay dos formas:</p>
+<ol>
+  <li><strong>Desde la ficha del lead</strong>: haz clic en el boton <strong>"Pase a Ventas"</strong> en la parte inferior del modal</li>
+  <li><strong>Desde el Kanban</strong>: arrastra la tarjeta del lead a la columna <strong>"Paso a Ventas"</strong></li>
+</ol>
+
+<p>En ambos casos se abre la <strong>Ficha de Negociacion</strong>:</p>
+
+<h2>9.1 La Ficha de Negociacion</h2>
+
+<p>Es un formulario especial con todo lo que necesitas completar antes de transferir el lead:</p>
+
+<h4>A) Historial de Contacto</h4>
+<p>Una linea de tiempo visual que muestra todos tus toques anteriores con este lead. Los toques donde "Contesto" se muestran en verde, los demas en rojo.</p>
+
+<h4>B) Calificacion BANT (Obligatoria)</h4>
+<p>Debes completar al menos estos tres campos marcados con <strong style="color:red;">*</strong>:</p>
+<ul>
+  <li><strong>Cual es la necesidad puntual?</strong> — describe con detalle que necesita el lead</li>
+  <li><strong>Necesita consultarlo? (Autoridad)</strong> — Si o No</li>
+  <li><strong>Tiene presupuesto asignado?</strong> — Si o No</li>
+  <li><strong>De cuanto es el presupuesto?</strong> — solo aparece si respondiste "Si" al presupuesto</li>
+</ul>
+
+<h4>C) Monto Estimado Anual</h4>
+<p>Si el pricing esta configurado, veras una tarjeta verde con el monto estimado anual que le corresponde al lead segun su producto y tipo de cliente.</p>
+
+<h4>D) Notas para el AE ("Bandeja de Plata")</h4>
+<p>Un campo de texto libre donde puedes escribir cualquier informacion adicional que le sea util al AE para iniciar la negociacion. Aqui es donde brillas como SDR: mientras mas contexto le des al AE, mejor.</p>
+
+<h4>E) Asignacion del Account Executive</h4>
+
+<p>Dependiendo de como este configurado el sistema de routing (lo configura el Admin), veras una de estas opciones:</p>
+
+<table>
+  <thead>
+    <tr><th>Modo</th><th>Que ves</th><th>Que haces</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>SDR Asigna Manualmente</strong></td>
+      <td>Un dropdown con la lista de AEs activos</td>
+      <td>Tu seleccionas a que AE asignar el lead</td>
+    </tr>
+    <tr>
+      <td><strong>Round Robin Automatico</strong></td>
+      <td>Un aviso: "Asignacion automatica"</td>
+      <td>No haces nada. El sistema elige al siguiente AE automaticamente.</td>
+    </tr>
+    <tr>
+      <td><strong>Revision Gerencial</strong></td>
+      <td>Un aviso: "La negociacion ira al gerente"</td>
+      <td>No haces nada. El gerente lo revisara y lo asignara.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>9.2 Confirmar el Pase</h2>
+
+<div class="steps">
+  <div class="step">
+    <div class="step-number">1</div>
+    <div class="step-content">
+      <strong>Completa todos los campos obligatorios</strong> (necesidad, autoridad, presupuesto).
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">2</div>
+    <div class="step-content">
+      <strong>Selecciona el AE</strong> (si el modo es manual).
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">3</div>
+    <div class="step-content">
+      <strong>Haz clic en "Confirmar Traspaso al AE"</strong>. El boton estara deshabilitado hasta que llenes todo.
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">4</div>
+    <div class="step-content">
+      <strong>Listo!</strong> El CRM crea automaticamente un Deal, cambia el status del lead a "Paso a Ventas" y asigna el AE. Veras un mensaje de confirmacion.
+    </div>
+  </div>
+</div>
+
+<!-- === SECTION 10: DUPLICADOS === -->
+<h1 class="section-title">10. Alertas de Duplicados</h1>
+
+<p>Cuando entras a la seccion de Prospectos, el CRM verifica automaticamente si hubo <strong>leads duplicados en los ultimos 7 dias</strong>. Si los hay, aparece un <strong>banner amarillo</strong> en la parte superior de la vista que dice:</p>
+
+<div class="warning" style="background:#fff3cd;border-left-color:#ffc107;">Esta semana llegaron X leads duplicados: Juan Perez, Maria Lopez, [nombre]... Haz clic para ver el lead original.</div>
+
+<p>Esto te ayuda a:</p>
+<ul>
+  <li>Dar seguimiento tanto al lead original como al duplicado</li>
+  <li>No perder oportunidades de contacto</li>
+  <li>Mantener los datos limpios</li>
+</ul>
+
+<p>Puedes cerrar el banner haciendo clic en la X. Dentro de la ficha de un lead duplicado, veras un link que dice "Ver lead original #X" que te lleva directamente al lead original.</p>
+
+<!-- === SECTION 11: RECOMPRA === -->
+<h1 class="section-title">11. Recompra</h1>
+
+<p>Si un lead es un <strong>cliente que ya compro anteriormente</strong> y regresa para comprar de nuevo, debes marcarlo como recompra:</p>
+
+<div class="steps">
+  <div class="step">
+    <div class="step-number">1</div>
+    <div class="step-content">
+      <strong>Abre la ficha del lead</strong>.
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">2</div>
+    <div class="step-content">
+      <strong>Busca el campo "Es recompra?"</strong> en la seccion de Seguimiento.
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">3</div>
+    <div class="step-content">
+      <strong>Selecciona "Si"</strong>.
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">4</div>
+    <div class="step-content">
+      <strong>Guarda los cambios</strong>. La tarjeta del lead en el Kanban ahora mostrara una etiqueta morada "Recompra" y tendra un borde morado especial para identificarla rapidamente.
+    </div>
+  </div>
+</div>
+
+<!-- === SECTION 12: CALENDARIO === -->
+<h1 class="section-title">12. Calendario</h1>
+
+<p>El CRM incluye un calendario integrado con <strong>Google Calendar</strong>. Todo lo que crees aqui aparecera tambien en tu Google Calendar personal del Workspace y viceversa.</p>
+
+<h3>Como crear un evento</h3>
+
+<div class="steps">
+  <div class="step">
+    <div class="step-number">1</div>
+    <div class="step-content">
+      <strong>Ve a la seccion "Calendario"</strong> en la barra lateral.
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">2</div>
+    <div class="step-content">
+      <strong>Haz clic en cualquier fecha</strong> del calendario. Se abre el formulario rapido.
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">3</div>
+    <div class="step-content">
+      <strong>Selecciona el tipo</strong>: Evento, Tarea, Recordatorio o Registro Visual.
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">4</div>
+    <div class="step-content">
+      <strong>Llena el asunto y la fecha/hora</strong>. Opcionalmente agrega un recordatorio y visibilidad.
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">5</div>
+    <div class="step-content">
+      <strong>Haz clic en "Crear [tipo]"</strong>. El evento aparece en tu calendario con un color segun el tipo.
+    </div>
+  </div>
+</div>
+
+<table>
+  <thead>
+    <tr><th>Tipo</th><th>Color</th><th>Para que sirve</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Evento</td><td style="background:#2196f3;color:#fff;text-align:center;border-radius:4px;">Azul</td><td>Reuniones, calls, presentaciones</td></tr>
+    <tr><td>Tarea</td><td style="background:#ef9a9a;color:#fff;text-align:center;border-radius:4px;">Rosa claro</td><td>Pendientes por hacer</td></tr>
+    <tr><td>Recordatorio</td><td style="background:#f44336;color:#fff;text-align:center;border-radius:4px;">Rojo</td><td>Alertas importantes que no debes olvidar</td></tr>
+    <tr><td>Registro Visual</td><td style="background:#9e9e9e;color:#fff;text-align:center;border-radius:4px;">Gris</td><td>Notas de referencia en el calendario (todo el dia)</td></tr>
+  </tbody>
+</table>
+
+<div class="tip">Tambien puedes crear eventos directamente desde la ficha de un lead o deal, haciendo clic en el icono de calendario junto a los campos de fecha de reagenda.</div>
+
+<!-- === SECTION 13: CORREOS === -->
+<h1 class="section-title">13. Enviar Correos</h1>
+
+<p>Puedes enviar correos electronicos directamente desde el CRM sin salir a Gmail. El correo se envia desde <strong>tu cuenta de Gmail del Workspace</strong>.</p>
+
+<div class="steps">
+  <div class="step">
+    <div class="step-number">1</div>
+    <div class="step-content">
+      <strong>Abre la ficha de un lead</strong> que tenga email registrado.
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">2</div>
+    <div class="step-content">
+      <strong>Haz clic en "Enviar Correo"</strong> en el encabezado del modal.
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">3</div>
+    <div class="step-content">
+      Se abre el <strong>compositor de correo</strong> con el email del lead pre-llenado. Completa:
+      <ul>
+        <li><strong>Asunto</strong>: el titulo del correo</li>
+        <li><strong>Plantilla</strong> (opcional): selecciona una plantilla predefinida</li>
+        <li><strong>Cuerpo</strong>: usa el editor de texto enriquecido (negritas, colores, listas, links, imagenes)</li>
+        <li><strong>Archivos adjuntos</strong> (opcional): haz clic en "Agregar Archivos" (maximo 20MB total)</li>
+      </ul>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">4</div>
+    <div class="step-content">
+      <strong>Haz clic en "Enviar Correo"</strong>. El CRM envia el correo, registra automaticamente un toque con canal "Email" y lo guarda en el historial.
+    </div>
+  </div>
+</div>
+
+<div class="info">El editor de texto soporta formato enriquecido: puedes cambiar fuentes, tamanos, colores, agregar listas, links y hasta imagenes embebidas. Funciona igual que un procesador de texto.</div>
+
+<!-- === SECTION 14: PLANTILLAS === -->
+<h1 class="section-title">14. Plantillas de Notas y Correos</h1>
+
+<p>Las plantillas son textos predefinidos que puedes reutilizar en tus notas o correos. Te ahorran tiempo al no tener que escribir lo mismo una y otra vez.</p>
+
+<h3>Como crear una plantilla</h3>
+
+<div class="steps">
+  <div class="step">
+    <div class="step-number">1</div>
+    <div class="step-content">
+      <strong>Ve a la seccion "Cuenta"</strong> en la barra lateral.
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">2</div>
+    <div class="step-content">
+      <strong>Busca "Mis Plantillas"</strong> y haz clic en <strong>"+ Nueva Plantilla"</strong>.
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">3</div>
+    <div class="step-content">
+      <strong>Llena el formulario</strong>:
+      <ul>
+        <li><strong>Nombre</strong>: un titulo descriptivo (ej: "Primer contacto telefono")</li>
+        <li><strong>Tipo</strong>: Nota (para el campo de notas) o Email (para el compositor de correo)</li>
+        <li><strong>Contenido</strong>: escribe el texto usando variables automaticas</li>
+        <li><strong>Compartir con el equipo</strong>: marca esta casilla si quieres que otros la puedan usar</li>
+      </ul>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">4</div>
+    <div class="step-content">
+      <strong>Haz clic en "Crear"</strong>. Tu plantilla esta lista para usar.
+    </div>
+  </div>
+</div>
+
+<h3>Variables disponibles</h3>
+<p>Puedes usar estas variables en tus plantillas. El CRM las reemplaza automaticamente con los datos del lead:</p>
+
+<table>
+  <thead>
+    <tr><th>Variable</th><th>Se reemplaza por</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>{nombre}</code></td><td>Nombre del contacto</td></tr>
+    <tr><td><code>{apellido}</code></td><td>Apellido del contacto</td></tr>
+    <tr><td><code>{empresa}</code></td><td>Nombre de la empresa</td></tr>
+    <tr><td><code>{producto}</code></td><td>Servicio de interes del lead</td></tr>
+    <tr><td><code>{telefono}</code></td><td>Telefono del contacto</td></tr>
+  </tbody>
+</table>
+
+<p><strong>Ejemplo de plantilla</strong>:</p>
+<div class="info" style="font-style:italic;">
+Hola {nombre}, soy [tu nombre] de SWAT Squad. Vi que estas interesado en {producto} para {empresa}. Me gustaria agendar una llamada para platicarte mas sobre como podemos ayudarte. Cual seria un buen horario para ti?
+</div>
+
+</div><!-- /content -->
+
+<div class="page-footer">
+  CRM SWAT Squad &bull; Manual 2 de 5: Guia del SDR &bull; Castillo &amp; Company &copy; 2026
+</div>
+
+</body>
+</html>

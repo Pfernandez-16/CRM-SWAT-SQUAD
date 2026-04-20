@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guion de Reunion — Incidencias Resueltas CRM SWAT Squad</title>
+<style>
+  @page { size: A4; margin: 2cm 2.5cm; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #333;
+    background: #fefcfb;
+    line-height: 1.75;
+    font-size: 11.5pt;
+  }
+
+  /* ===== COVER ===== */
+  .cover {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background: linear-gradient(135deg, #4a2b2f 0%, #6b3a3f 50%, #4a2b2f 100%);
+    color: #fefcfb;
+    text-align: center;
+    padding: 3rem;
+    page-break-after: always;
+  }
+  .cover-logo {
+    width: 120px; height: 120px;
+    border-radius: 50%;
+    background: #dd934f;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 3rem; font-weight: 900; color: #4a2b2f;
+    margin-bottom: 2rem;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  }
+  .cover h1 { font-size: 2.4rem; font-weight: 800; margin-bottom: 0.5rem; letter-spacing: -1px; }
+  .cover h2 { font-size: 1.3rem; font-weight: 400; color: #dd934f; margin-bottom: 2rem; }
+  .cover .tag {
+    background: #dd934f; color: #4a2b2f;
+    padding: 0.5rem 2rem; border-radius: 30px;
+    font-weight: 700; font-size: 1rem; margin-bottom: 1rem;
+  }
+  .cover .subtitle { font-size: 1.05rem; opacity: 0.85; max-width: 550px; margin-top: 1rem; }
+  .cover .footer-cover { position: absolute; bottom: 2rem; font-size: 0.85rem; opacity: 0.6; }
+
+  /* ===== LAYOUT ===== */
+  .content { max-width: 780px; margin: 0 auto; padding: 1rem 1.5rem; }
+
+  h1.section-title {
+    color: #4a2b2f; font-size: 1.7rem; font-weight: 800;
+    border-left: 5px solid #dd934f; padding-left: 1rem;
+    margin: 2.5rem 0 1rem 0; page-break-before: always;
+  }
+  h1.section-title:first-of-type { page-break-before: avoid; }
+  h2 { color: #4a2b2f; font-size: 1.25rem; font-weight: 700; margin: 1.8rem 0 0.7rem 0; border-bottom: 2px solid #dd934f; padding-bottom: 0.3rem; }
+  h3 { color: #6b3a3f; font-size: 1.05rem; font-weight: 600; margin: 1.3rem 0 0.4rem 0; }
+  p { margin: 0.5rem 0; }
+  ul, ol { margin: 0.5rem 0 0.5rem 1.5rem; }
+  li { margin: 0.3rem 0; }
+
+  /* ===== SPEAKING CARDS ===== */
+  .talk-card {
+    background: #faf8f7;
+    border: 1px solid #e8e0dd;
+    border-radius: 12px;
+    padding: 1.3rem 1.5rem;
+    margin: 1.2rem 0;
+    page-break-inside: avoid;
+    position: relative;
+  }
+  .talk-card::before {
+    content: attr(data-icon);
+    position: absolute;
+    top: -12px; left: 16px;
+    background: #dd934f; color: #fff;
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.85rem; font-weight: 800;
+  }
+  .talk-card h3 { margin-top: 0.3rem; color: #4a2b2f; }
+
+  /* Talk script styling */
+  .say {
+    background: #fff;
+    border-left: 4px solid #dd934f;
+    padding: 0.8rem 1rem;
+    margin: 0.8rem 0;
+    border-radius: 0 8px 8px 0;
+    font-style: italic;
+    color: #4a2b2f;
+    line-height: 1.8;
+  }
+  .say::before {
+    content: "Di algo como:";
+    display: block;
+    font-style: normal;
+    font-weight: 700;
+    font-size: 0.75rem;
+    color: #dd934f;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 0.3rem;
+  }
+
+  /* If they ask... */
+  .if-ask {
+    background: #e8f4fd;
+    border-left: 4px solid #2196f3;
+    padding: 0.8rem 1rem;
+    margin: 0.8rem 0;
+    border-radius: 0 8px 8px 0;
+  }
+  .if-ask::before {
+    content: "Si preguntan...";
+    display: block;
+    font-weight: 700;
+    font-size: 0.75rem;
+    color: #2196f3;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 0.3rem;
+  }
+
+  /* Key point */
+  .key-point {
+    background: #f0f9e8;
+    border-left: 4px solid #4caf50;
+    padding: 0.8rem 1rem;
+    margin: 0.8rem 0;
+    border-radius: 0 8px 8px 0;
+  }
+  .key-point::before {
+    content: "Punto clave:";
+    display: block;
+    font-weight: 700;
+    font-size: 0.75rem;
+    color: #4caf50;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 0.3rem;
+  }
+
+  /* Warning / caution */
+  .caution {
+    background: #fff8e1;
+    border-left: 4px solid #ff9800;
+    padding: 0.8rem 1rem;
+    margin: 0.8rem 0;
+    border-radius: 0 8px 8px 0;
+  }
+  .caution::before {
+    content: "Ojo con esto:";
+    display: block;
+    font-weight: 700;
+    font-size: 0.75rem;
+    color: #ff9800;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 0.3rem;
+  }
+
+  /* Duration badge */
+  .duration {
+    display: inline-block;
+    background: #4a2b2f; color: #fefcfb;
+    padding: 0.2rem 0.8rem; border-radius: 20px;
+    font-size: 0.8rem; font-weight: 700;
+    margin-left: 0.5rem; vertical-align: middle;
+  }
+
+  /* Transition */
+  .transition {
+    text-align: center;
+    color: #dd934f;
+    font-weight: 700;
+    font-size: 0.9rem;
+    padding: 0.5rem 0;
+    margin: 1rem 0;
+  }
+  .transition::before { content: "--- "; }
+  .transition::after { content: " ---"; }
+
+  /* Summary box */
+  .summary-box {
+    background: linear-gradient(135deg, #4a2b2f 0%, #6b3a3f 100%);
+    color: #fefcfb; border-radius: 10px;
+    padding: 1.5rem 2rem; margin: 1.5rem 0;
+    page-break-inside: avoid;
+  }
+  .summary-box h3 { color: #dd934f; margin-top: 0; }
+  .summary-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 1rem; margin-top: 1rem;
+  }
+  .summary-stat { text-align: center; }
+  .summary-stat .number { font-size: 2rem; font-weight: 900; color: #dd934f; }
+  .summary-stat .label { font-size: 0.85rem; opacity: 0.8; }
+
+  /* Agenda table */
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.92rem; page-break-inside: avoid; }
+  thead th { background: #4a2b2f; color: #fefcfb; padding: 0.7rem 0.8rem; text-align: left; font-weight: 600; }
+  tbody td { padding: 0.6rem 0.8rem; border-bottom: 1px solid #e8e0dd; }
+  tbody tr:nth-child(even) { background: #faf5f0; }
+
+  .checklist { list-style: none; margin-left: 0; }
+  .checklist li { padding: 0.3rem 0; }
+  .checklist li::before { content: "[ ] "; font-family: monospace; color: #999; }
+
+  @media print {
+    .cover { min-height: 100vh; }
+    .talk-card, .say, .if-ask, .key-point, .caution { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ COVER ============ -->
+<div class="cover">
+  <div class="cover-logo">SS</div>
+  <div class="tag">GUION DE REUNION</div>
+  <h1>Incidencias Resueltas<br>CRM SWAT Squad</h1>
+  <h2>Para Juan Matute</h2>
+  <p class="subtitle">
+    Guia paso a paso para presentar al equipo SWAT Squad todas las correcciones,
+    mejoras y nuevas funcionalidades implementadas. Incluye que decir, como explicarlo
+    y como responder preguntas.
+  </p>
+  <p class="footer-cover">Castillo & CO &bull; 14 de Abril 2026 &bull; Uso Interno</p>
+</div>
+
+<!-- ============ CONTENT ============ -->
+<div class="content">
+
+  <!-- ==================== ANTES DE LA REUNION ==================== -->
+  <h1 class="section-title">Antes de la Reunion</h1>
+
+  <h2>Agenda Sugerida <span class="duration">~25-35 min</span></h2>
+  <table>
+    <thead>
+      <tr><th>Bloque</th><th>Tema</th><th>Tiempo</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>1</td><td>Intro: que se hizo y por que</td><td>3 min</td></tr>
+      <tr><td>2</td><td>Problemas criticos que estaban ocultos</td><td>7 min</td></tr>
+      <tr><td>3</td><td>Problemas del dia a dia que se corrigieron</td><td>6 min</td></tr>
+      <tr><td>4</td><td>Mejoras de experiencia de usuario</td><td>5 min</td></tr>
+      <tr><td>5</td><td>Nuevas funcionalidades que salieron de los fixes</td><td>5 min</td></tr>
+      <tr><td>6</td><td>Estado actual + pendientes</td><td>4 min</td></tr>
+      <tr><td>7</td><td>Preguntas</td><td>5 min</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Checklist Pre-Reunion</h2>
+  <ul class="checklist">
+    <li>Tener el CRM abierto en una pestana para demos rapidas</li>
+    <li>Tener este documento abierto (impreso o en pantalla)</li>
+    <li>Saber quien esta en la reunion (Christian, Rosario, Diana, Erika, etc.)</li>
+    <li>Tener agua a la mano — vas a hablar bastante</li>
+  </ul>
+
+  <!-- ==================== BLOQUE 1 ==================== -->
+  <h1 class="section-title">Bloque 1: Introduccion <span class="duration">3 min</span></h1>
+
+  <div class="talk-card" data-icon="1">
+    <h3>Abre con el panorama general</h3>
+
+    <div class="say">
+      Buenas, equipo. La razon de esta reunion es ponerlos al dia con todo el trabajo tecnico que se ha hecho en el CRM durante las ultimas semanas. Hicimos una auditoria completa del sistema, encontramos varios problemas que estaban ocultos — algunos bastante importantes — y todos ya fueron corregidos. Ademas, aprovechamos para meter mejoras que hacen que el CRM sea mas facil de usar en el dia a dia.
+    </div>
+
+    <div class="say">
+      En total resolvimos 15 incidencias: 4 eran criticas (afectaban datos y reportes), 7 eran funcionales (cosas que fallaban al usar el sistema), y 4 eran mejoras de experiencia que hacian el trabajo mas confuso de lo necesario. Hoy les voy a explicar cada una en lenguaje simple para que entiendan que paso, que impacto tenia, y como quedo.
+    </div>
+
+    <div class="key-point">
+      El mensaje principal es: <strong>encontramos los problemas antes de que el CRM entre en uso real, y ya estan todos resueltos.</strong> El sistema ahora es mas confiable y mas facil de usar.
+    </div>
+  </div>
+
+  <div class="transition">Pasamos a lo mas importante</div>
+
+  <!-- ==================== BLOQUE 2 ==================== -->
+  <h1 class="section-title">Bloque 2: Problemas Criticos <span class="duration">7 min</span></h1>
+
+  <p>Estos son los que mas importan. Explicarlos bien genera confianza en que el equipo tecnico esta encima del proyecto.</p>
+
+  <!-- 2A -->
+  <div class="talk-card" data-icon="A">
+    <h3>El pase de leads a ventas no usaba las reglas de distribucion</h3>
+
+    <div class="say">
+      Este era el bug mas grave. Cuando un SDR pasaba un lead a ventas, el sistema tenia programada una logica inteligente de distribucion: Round Robin, que el SDR elija el AE, o que pase por aprobacion del gerente. Pero resulta que por un error en el codigo, esa logica nunca se ejecutaba. El lead se pasaba directo sin pasar por ninguna regla.
+    </div>
+
+    <div class="say">
+      O sea, todas las configuraciones de distribucion que se hicieran desde el panel de admin no tenian efecto. El lead iba directo al AE que el SDR seleccionara manualmente, sin validacion.
+    </div>
+
+    <div class="key-point">
+      <strong>Ya esta corregido.</strong> Ahora cuando un SDR pasa un lead, el sistema respeta las reglas configuradas: si esta en Round Robin, se reparte automaticamente. Si esta en revision por gerente, se retiene hasta que apruebe.
+    </div>
+
+    <div class="if-ask">
+      <strong>"Y los leads que ya se pasaron antes?"</strong> — Esos se pasaron correctamente en terminos de datos, lo que no se aplico fue el routing automatico. Los leads llegaron a sus AEs, solo que la asignacion fue manual en lugar de automatica. No se perdio informacion.
+    </div>
+  </div>
+
+  <!-- 2B -->
+  <div class="talk-card" data-icon="B">
+    <h3>El ranking de SDRs mostraba 0% de conversion para todos</h3>
+
+    <div class="say">
+      En los reportes hay una seccion de ranking de SDRs donde se muestra la tasa de conversion de cada vendedor — o sea, de cada 100 leads que toca, cuantos pasan a ventas. Esa metrica estaba en 0% para todos los SDRs, sin importar su rendimiento real.
+    </div>
+
+    <div class="say">
+      El problema era que el sistema buscaba un dato en un lugar equivocado de la base de datos — un campo que simplemente no existia. Como no lo encontraba, asumia que nadie habia convertido nada. Ya se corrigio: ahora busca el dato correcto y muestra la conversion real de cada SDR.
+    </div>
+
+    <div class="if-ask">
+      <strong>"Entonces los reportes pasados estaban mal?"</strong> — Si, especificamente la metrica de CVR en el ranking SDR. Los demas datos del ranking (toques, leads asignados, etc.) estaban bien. Solo la conversion estaba en cero.
+    </div>
+  </div>
+
+  <!-- 2C -->
+  <div class="talk-card" data-icon="C">
+    <h3>Un error de escritura en el status causaba inconsistencias</h3>
+
+    <div class="say">
+      Este es mas sutil pero importante. En una parte del codigo el status del lead se escribia como "Pase a Ventas" con 'e', y en el resto del sistema se buscaba "Paso a Ventas" con 'o'. Esa diferencia de una sola letra hacia que algunos leads no aparecieran correctamente en los filtros y reportes.
+    </div>
+
+    <div class="key-point">
+      Ya esta unificado. En todo el sistema el status se escribe como <strong>"Paso a Ventas"</strong>, de forma consistente.
+    </div>
+  </div>
+
+  <div class="transition">Ahora pasamos a los problemas operativos del dia a dia</div>
+
+  <!-- ==================== BLOQUE 3 ==================== -->
+  <h1 class="section-title">Bloque 3: Problemas del Dia a Dia <span class="duration">6 min</span></h1>
+
+  <p>Estos son los que el equipo podria haber notado al usar el CRM. Explicarlos valida su experiencia: "si, eso que les pasaba era un bug real y ya se arreglo".</p>
+
+  <!-- 3A -->
+  <div class="talk-card" data-icon="A">
+    <h3>La barra de busqueda hacia que se congelara la pantalla</h3>
+
+    <div class="say">
+      Si alguien escribia en la barra de busqueda, en ciertos casos la pantalla se quedaba en blanco. Esto pasaba porque al filtrar resultados, la paginacion se descontrolaba — el sistema intentaba mostrar una pagina que ya no existia. Ademas, si un campo tenia un numero en lugar de texto, el buscador no sabia como compararlo y se rompia.
+    </div>
+
+    <div class="say">
+      Ya se corrigio. La busqueda ahora funciona de manera estable, y ademas la ampliamos: antes solo buscaba por nombre y empresa. Ahora busca tambien por status, vendedor, notas, pais, servicio y calidad del contacto.
+    </div>
+  </div>
+
+  <!-- 3B -->
+  <div class="talk-card" data-icon="B">
+    <h3>Ordenar la tabla por empresa crasheaba el CRM</h3>
+
+    <div class="say">
+      Un problema relacionado: al hacer clic en el encabezado de "Empresa" para ordenar la tabla, el CRM se rompia. La causa era similar — algunos campos venian de la base de datos como numeros en lugar de texto, y la funcion de ordenamiento no los manejaba. Ya esta corregido, ahora se pueden ordenar todas las columnas sin problema.
+    </div>
+  </div>
+
+  <!-- 3C -->
+  <div class="talk-card" data-icon="C">
+    <h3>La calidad de contacto no se calculaba bien con ciertos datos</h3>
+
+    <div class="say">
+      El CRM calcula automaticamente la calidad de un contacto basandose en los campos BANT: si tiene presupuesto, si es el perfil adecuado, si mostro interes, etcetera. El problema era que a veces esos campos se guardaban como "Si" (texto) y a veces como un valor verdadero/falso del sistema. La formula no reconocia ambos formatos, asi que a veces la calidad salia incorrecta. Ya se normalizo para que funcione con cualquier formato.
+    </div>
+  </div>
+
+  <!-- 3D -->
+  <div class="talk-card" data-icon="D">
+    <h3>Otros fixes menores pero importantes</h3>
+
+    <div class="say">
+      Tambien corregimos tres cosas mas: el calculo de precios para SaaS daba cero cuando faltaba el campo de licencias — ahora asume 1 como minimo. La funcion de registrar toques buscaba una columna con nombre equivocado en la base de datos — ya apunta al nombre correcto. Y algunas funciones usaban un metodo para conectarse a la hoja de calculo que no funciona en todos los contextos — se cambio por uno que siempre funciona.
+    </div>
+
+    <div class="caution">
+      No profundices mucho en estos tres a menos que pregunten. Son tecnicos y el equipo no los habria notado directamente. Lo importante es que estaban ahi y ya se resolvieron.
+    </div>
+  </div>
+
+  <div class="transition">Ahora hablemos de las mejoras de experiencia</div>
+
+  <!-- ==================== BLOQUE 4 ==================== -->
+  <h1 class="section-title">Bloque 4: Mejoras de Experiencia <span class="duration">5 min</span></h1>
+
+  <p>Estas no son bugs per se, pero hacen que el CRM sea mas facil de usar. Al equipo le va a gustar saber que se penso en su dia a dia.</p>
+
+  <!-- 4A -->
+  <div class="talk-card" data-icon="A">
+    <h3>Plantillas de email: ahora es claro que se insertaron</h3>
+
+    <div class="say">
+      Antes, cuando seleccionabas una plantilla de email, no habia ninguna confirmacion visual. No sabias si se habia insertado o no, y el panel de plantillas se quedaba abierto tapando el editor. Ahora aparece un mensaje de confirmacion y el panel se cierra solo. Quiero aclarar algo importante: las plantillas nunca envian el email automaticamente, solo insertan el texto en el editor para que ustedes lo revisen antes de enviar.
+    </div>
+  </div>
+
+  <!-- 4B -->
+  <div class="talk-card" data-icon="B">
+    <h3>La calidad de contacto ahora tiene colores en la tabla</h3>
+
+    <div class="say">
+      Antes la columna de calidad en la tabla de leads era texto plano — todo se veia igual. Ahora tiene badges con colores: verde para Excelente, azul para Bueno, amarillo para Regular, rojo para Malo. Esto les permite escanear rapidamente la calidad de sus leads sin tener que abrir cada ficha.
+    </div>
+
+    <div class="key-point">
+      Si estas mostrando el CRM en pantalla, este es un buen momento para abrir la vista de leads y mostrar los badges. Es muy visual y se entiende al instante.
+    </div>
+  </div>
+
+  <!-- 4C -->
+  <div class="talk-card" data-icon="C">
+    <h3>El sidebar del SDR ya no muestra la seccion de Negociaciones</h3>
+
+    <div class="say">
+      Los SDRs tenian un enlace a "Negociaciones" en el menu lateral, pero esa vista esta disenada para los Account Executives. En su lugar, ahora los SDRs pueden ver la informacion del deal de cada lead directamente desde la ficha del lead, en una pestana que se llama "Negociacion". Es mas comodo porque ven todo en el mismo lugar.
+    </div>
+  </div>
+
+  <!-- 4D -->
+  <div class="talk-card" data-icon="D">
+    <h3>El conteo de leads en el Kanban ahora refleja los filtros</h3>
+
+    <div class="say">
+      En la vista Kanban, cada columna tiene un numerito que dice cuantos leads hay. Antes, si filtrabas por busqueda y quedaban solo 3 leads visibles, el numero seguia diciendo 15 porque contaba el total. Ahora muestra el conteo real de lo que estas viendo.
+    </div>
+  </div>
+
+  <div class="transition">Y lo mejor: cosas nuevas que salieron de los fixes</div>
+
+  <!-- ==================== BLOQUE 5 ==================== -->
+  <h1 class="section-title">Bloque 5: Funcionalidades Nuevas <span class="duration">5 min</span></h1>
+
+  <p>Mientras se arreglaban bugs, se identificaron oportunidades de mejora que se implementaron de una vez. Esto demuestra que no solo se parcheo — se mejoro.</p>
+
+  <div class="talk-card" data-icon="*">
+    <h3>Cosas nuevas que no existian antes</h3>
+
+    <div class="say">
+      Aprovechando que estabamos metidos en el codigo, implementamos varias cosas nuevas:
+    </div>
+
+    <div class="say">
+      <strong>Ordenamiento de tablas:</strong> Ahora pueden hacer clic en cualquier encabezado de columna — nombre, empresa, fecha, status, calidad, monto — y la tabla se ordena. Antes no se podia ordenar por nada.<br><br>
+      <strong>Busqueda ampliada:</strong> La busqueda ahora cubre muchos mas campos. En leads busca por status, vendedor, notas, pais, servicio y calidad. En deals busca por status de venta, proyeccion, AE, monto y mas.<br><br>
+      <strong>Columnas nuevas en las tablas:</strong> Se agregaron columnas que faltaban: Fecha de Ingreso, Calidad, Numero de Toques, Pais, Monto Estimado en leads. Y Proyeccion, Pais, Fecha de Ingreso en deals.<br><br>
+      <strong>Vistas cruzadas SDR y AE:</strong> Ahora el SDR puede ver la informacion del deal de su lead sin salir de la ficha. Y el AE puede ver toda la informacion del lead original — contacto, BANT completo, campana, notas — desde la ficha del deal. Los datos se cargan frescos cada vez que se abre.<br><br>
+      <strong>Calidad auto-calculada:</strong> La calidad del contacto ahora se calcula automaticamente basandose en los campos BANT. Ya no hay que llenarla a mano.
+    </div>
+
+    <div class="key-point">
+      Si puedes, abre el CRM y muestra la vista de un lead > pestana "Negociacion", y luego un deal > pestana "Prospecto". Es la mejora mas impactante visualmente.
+    </div>
+  </div>
+
+  <div class="transition">Cerramos con el estado actual</div>
+
+  <!-- ==================== BLOQUE 6 ==================== -->
+  <h1 class="section-title">Bloque 6: Estado Actual <span class="duration">4 min</span></h1>
+
+  <div class="talk-card" data-icon="!">
+    <h3>Mensaje de cierre</h3>
+
+    <div class="say">
+      Para cerrar: a dia de hoy el CRM tiene cero bugs criticos abiertos. Todas las 15 incidencias que se encontraron durante la auditoria ya estan resueltas. Las 8 funcionalidades que Christian pidio en la ultima reunion de checkpoint tambien estan implementadas: deals en solo lectura para SDRs, reportes verticales, campos obligatorios, alertas de duplicados, pricing multi-producto, razon de perdida personalizada, upload de comprobante de pago, y el indicador de recompra.
+    </div>
+
+    <div class="summary-box">
+      <h3>Numeros para mencionar</h3>
+      <div class="summary-grid">
+        <div class="summary-stat">
+          <div class="number">15</div>
+          <div class="label">Incidencias Resueltas</div>
+        </div>
+        <div class="summary-stat">
+          <div class="number">8</div>
+          <div class="label">Features Nuevas</div>
+        </div>
+        <div class="summary-stat">
+          <div class="number">0</div>
+          <div class="label">Bugs Abiertos</div>
+        </div>
+        <div class="summary-stat">
+          <div class="number">100%</div>
+          <div class="label">Resolucion</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="talk-card" data-icon="?">
+    <h3>Cosas que quedan pendientes (si preguntan)</h3>
+
+    <div class="say">
+      Hay algunas cosas que estan pendientes pero son decisiones, no bugs. La metrica de SPAM en los reportes esta en cero porque no existe un campo en la base de datos para clasificar spam — necesitamos definir como quieren marcarlo. La autenticacion avanzada con recuperacion de contrasena y esas cosas esta para una version futura. Y el import masivo de leads por CSV/Excel tambien queda para la siguiente fase.
+    </div>
+
+    <div class="if-ask">
+      <strong>"Y el reporte de campanas de Facebook y Google Ads?"</strong> — Eso queda pendiente porque requiere conectarse a las APIs de Meta y Google, y lo vamos a hacer junto con el equipo de landing page. No es algo que se pueda hacer solo desde el CRM.
+    </div>
+
+    <div class="if-ask">
+      <strong>"Cuando se puede empezar a usar con Yoda?"</strong> — Tecnicamente el CRM ya esta listo para pruebas con Yoda. Lo que falta es que Christian haga la parametrizacion: configurar los productos, los campos obligatorios por etapa, y los usuarios.
+    </div>
+
+    <div class="if-ask">
+      <strong>"Hay riesgo de que vuelvan a aparecer estos bugs?"</strong> — Los bugs que encontramos eran problemas de la primera version del codigo. Ya se hizo auditoria completa, se corrigieron las causas raiz (no solo los sintomas), y las correcciones estan en la version actual del sistema.
+    </div>
+  </div>
+
+  <!-- ==================== BLOQUE 7 ==================== -->
+  <h1 class="section-title">Bloque 7: Preguntas <span class="duration">5 min</span></h1>
+
+  <div class="talk-card" data-icon="Q">
+    <h3>Preguntas frecuentes y como responderlas</h3>
+
+    <div class="if-ask">
+      <strong>"Se perdieron datos por estos bugs?"</strong> — No. Los bugs afectaban como se mostraban los datos (reportes en cero, busquedas fallidas) y como se procesaban ciertos flujos (distribucion de leads), pero los datos en si estan intactos en la base de datos.
+    </div>
+
+    <div class="if-ask">
+      <strong>"Por que no se detectaron antes?"</strong> — Porque eran bugs silenciosos. El sistema no daba error — simplemente mostraba datos incorrectos (como 0% de conversion) o ejecutaba un flujo simplificado en lugar del avanzado. Se necesitaba una auditoria de codigo linea por linea para encontrarlos, que es exactamente lo que se hizo.
+    </div>
+
+    <div class="if-ask">
+      <strong>"Quien los arreglo?"</strong> — El equipo de desarrollo de Castillo & CO. Se trabajo con herramientas de analisis de codigo para hacer la auditoria y se documentaron todas las correcciones con trazabilidad completa.
+    </div>
+
+    <div class="if-ask">
+      <strong>"Esto tiene costo adicional?"</strong> — Esta dentro del alcance del proyecto. Las correcciones de bugs son parte del proceso normal de desarrollo y aseguramiento de calidad.
+    </div>
+
+    <div class="if-ask">
+      <strong>"Podemos ver un demo?"</strong> — Si, claro. [Abre el CRM y muestra: 1) la barra de busqueda funcionando, 2) los badges de calidad en la tabla, 3) el sorting por columnas, 4) la vista cruzada SDR/AE en un lead]
+    </div>
+  </div>
+
+  <!-- ==================== TIPS FINALES ==================== -->
+  <h1 class="section-title">Tips para la Reunion</h1>
+
+  <div class="talk-card" data-icon="*">
+    <h3>Tono y enfoque</h3>
+    <ul>
+      <li><strong>No te disculpes por los bugs.</strong> Presental como parte normal del proceso: "se hizo auditoria, se encontraron, se corrigieron". Es profesional, no es un error.</li>
+      <li><strong>Enfocate en el impacto para ellos</strong>, no en los detalles tecnicos. A Christian le importa que el routing funcione, no que habia un localeCompare fallido.</li>
+      <li><strong>Usa las vistas cruzadas como cierre fuerte.</strong> Es lo mas visual e impactante. SDR ve el deal, AE ve el lead original — eso les encanta.</li>
+      <li><strong>Si alguien pregunta algo muy tecnico</strong>, es valido decir: "Eso lo tenemos documentado en el reporte tecnico, te lo puedo compartir despues de la reunion".</li>
+      <li><strong>Cierra con confianza:</strong> "El CRM esta limpio, auditado y listo para produccion".</li>
+    </ul>
+  </div>
+
+  <br><br>
+  <p style="text-align:center;color:#999;font-size:0.85rem;">
+    Preparado para Juan Matute &bull; 14 de Abril 2026 &bull; Castillo & CO
+  </p>
+
+</div>
+
+</body>
+</html>

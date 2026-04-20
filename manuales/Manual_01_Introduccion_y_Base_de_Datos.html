@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manual 1 — Introduccion al CRM SWAT Squad</title>
+<style>
+  @page {
+    size: A4;
+    margin: 2cm 2.5cm;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #333;
+    background: #fefcfb;
+    line-height: 1.7;
+    font-size: 11pt;
+  }
+
+  /* ===== COVER PAGE ===== */
+  .cover {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background: linear-gradient(135deg, #4a2b2f 0%, #6b3a3f 50%, #4a2b2f 100%);
+    color: #fefcfb;
+    text-align: center;
+    padding: 3rem;
+    page-break-after: always;
+  }
+  .cover-logo {
+    width: 120px; height: 120px;
+    border-radius: 50%;
+    background: #dd934f;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 3rem; font-weight: 900; color: #4a2b2f;
+    margin-bottom: 2rem;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  }
+  .cover h1 {
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin-bottom: 0.5rem;
+    letter-spacing: -1px;
+  }
+  .cover h2 {
+    font-size: 1.3rem;
+    font-weight: 400;
+    color: #dd934f;
+    margin-bottom: 2rem;
+  }
+  .cover .manual-number {
+    background: #dd934f;
+    color: #4a2b2f;
+    padding: 0.5rem 2rem;
+    border-radius: 30px;
+    font-weight: 700;
+    font-size: 1rem;
+    margin-bottom: 1rem;
+  }
+  .cover .subtitle {
+    font-size: 1.1rem;
+    opacity: 0.85;
+    max-width: 500px;
+    margin-top: 1rem;
+  }
+  .cover .footer-cover {
+    position: absolute;
+    bottom: 2rem;
+    font-size: 0.85rem;
+    opacity: 0.6;
+  }
+
+  /* ===== TABLE OF CONTENTS ===== */
+  .toc {
+    page-break-after: always;
+    padding: 3rem 0;
+  }
+  .toc h2 {
+    color: #4a2b2f;
+    font-size: 1.8rem;
+    border-bottom: 3px solid #dd934f;
+    padding-bottom: 0.5rem;
+    margin-bottom: 2rem;
+  }
+  .toc-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 0.6rem 0;
+    border-bottom: 1px dotted #ddd;
+    text-decoration: none;
+    color: #333;
+  }
+  .toc-item:hover { color: #dd934f; }
+  .toc-section {
+    font-weight: 700;
+    color: #4a2b2f;
+    font-size: 1.05rem;
+  }
+  .toc-sub {
+    padding-left: 1.5rem;
+    font-size: 0.95rem;
+  }
+
+  /* ===== CONTENT ===== */
+  .content { padding: 1rem 0; }
+
+  h1.section-title {
+    color: #4a2b2f;
+    font-size: 1.8rem;
+    font-weight: 800;
+    border-left: 5px solid #dd934f;
+    padding-left: 1rem;
+    margin: 2.5rem 0 1rem 0;
+    page-break-before: always;
+  }
+  h1.section-title:first-of-type { page-break-before: avoid; }
+
+  h2 {
+    color: #4a2b2f;
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin: 2rem 0 0.8rem 0;
+    padding-bottom: 0.3rem;
+    border-bottom: 2px solid #dd934f;
+  }
+  h3 {
+    color: #6b3a3f;
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 1.5rem 0 0.5rem 0;
+  }
+  h4 {
+    color: #dd934f;
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 1rem 0 0.5rem 0;
+  }
+
+  p { margin: 0.5rem 0; }
+
+  /* ===== CALLOUT BOXES ===== */
+  .tip, .warning, .info, .important {
+    border-radius: 8px;
+    padding: 1rem 1.2rem;
+    margin: 1rem 0;
+    page-break-inside: avoid;
+  }
+  .tip {
+    background: #f0f9e8;
+    border-left: 4px solid #4caf50;
+  }
+  .tip::before { content: "CONSEJO: "; font-weight: 700; color: #4caf50; }
+  .warning {
+    background: #fff8e1;
+    border-left: 4px solid #ff9800;
+  }
+  .warning::before { content: "IMPORTANTE: "; font-weight: 700; color: #ff9800; }
+  .info {
+    background: #e8f4fd;
+    border-left: 4px solid #2196f3;
+  }
+  .info::before { content: "NOTA: "; font-weight: 700; color: #2196f3; }
+  .important {
+    background: #fce4ec;
+    border-left: 4px solid #e91e63;
+  }
+  .important::before { content: "ATENCION: "; font-weight: 700; color: #e91e63; }
+
+  /* ===== TABLES ===== */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+    font-size: 0.92rem;
+    page-break-inside: avoid;
+  }
+  thead th {
+    background: #4a2b2f;
+    color: #fefcfb;
+    padding: 0.7rem 0.8rem;
+    text-align: left;
+    font-weight: 600;
+  }
+  tbody td {
+    padding: 0.6rem 0.8rem;
+    border-bottom: 1px solid #e8e0dd;
+  }
+  tbody tr:nth-child(even) { background: #faf5f0; }
+  tbody tr:hover { background: #f5ebe3; }
+
+  /* ===== STEPS ===== */
+  .steps { counter-reset: step; margin: 1rem 0; }
+  .step {
+    display: flex;
+    gap: 1rem;
+    margin: 1rem 0;
+    padding: 1rem;
+    background: #faf8f7;
+    border-radius: 8px;
+    border: 1px solid #e8e0dd;
+    page-break-inside: avoid;
+  }
+  .step-number {
+    flex-shrink: 0;
+    width: 36px; height: 36px;
+    background: #dd934f;
+    color: #fff;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800;
+    font-size: 1rem;
+  }
+  .step-content { flex: 1; }
+  .step-content strong { color: #4a2b2f; }
+
+  /* ===== ROLE BADGES ===== */
+  .role-badge {
+    display: inline-block;
+    padding: 0.2rem 0.7rem;
+    border-radius: 15px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    margin: 0.1rem 0.2rem;
+  }
+  .role-sdr { background: #e3f2fd; color: #1565c0; }
+  .role-ae { background: #e8f5e9; color: #2e7d32; }
+  .role-admin { background: #f3e5f5; color: #7b1fa2; }
+  .role-gerente { background: #fff3e0; color: #e65100; }
+
+  /* ===== DIAGRAMS / VISUAL ===== */
+  .flow-diagram {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    margin: 1.5rem 0;
+    padding: 1.5rem;
+    background: #faf8f7;
+    border-radius: 10px;
+    border: 1px solid #e8e0dd;
+  }
+  .flow-box {
+    padding: 0.6rem 1rem;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-align: center;
+    min-width: 100px;
+  }
+  .flow-arrow {
+    font-size: 1.3rem;
+    color: #dd934f;
+    font-weight: 900;
+  }
+  .fb-brown { background: #4a2b2f; color: #fefcfb; }
+  .fb-gold { background: #dd934f; color: #fff; }
+  .fb-light { background: #f5ebe3; color: #4a2b2f; border: 2px solid #dd934f; }
+  .fb-green { background: #4caf50; color: #fff; }
+  .fb-blue { background: #2196f3; color: #fff; }
+  .fb-red { background: #e91e63; color: #fff; }
+
+  /* ===== SCREENSHOT PLACEHOLDER ===== */
+  .screenshot {
+    background: #f5f0eb;
+    border: 2px dashed #dd934f;
+    border-radius: 10px;
+    padding: 2rem;
+    text-align: center;
+    color: #999;
+    margin: 1rem 0;
+    font-style: italic;
+  }
+
+  /* ===== LISTS ===== */
+  ul, ol {
+    margin: 0.5rem 0 0.5rem 1.5rem;
+  }
+  li { margin: 0.3rem 0; }
+
+  /* ===== INLINE CODE ===== */
+  code {
+    background: #f5ebe3;
+    padding: 0.1rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.9em;
+    color: #4a2b2f;
+  }
+
+  /* ===== FOOTER ===== */
+  .page-footer {
+    text-align: center;
+    font-size: 0.8rem;
+    color: #999;
+    padding: 2rem 0 1rem 0;
+    border-top: 1px solid #e8e0dd;
+    margin-top: 3rem;
+  }
+
+  /* ===== PRINT ===== */
+  @media print {
+    body { font-size: 10pt; }
+    .cover { min-height: 100vh; }
+    h1.section-title { page-break-before: always; }
+    .step, table, .tip, .warning, .info, .important { page-break-inside: avoid; }
+    .no-print { display: none; }
+  }
+
+  /* ===== GRID CARDS ===== */
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    margin: 1rem 0;
+  }
+  .card {
+    background: #faf8f7;
+    border: 1px solid #e8e0dd;
+    border-radius: 10px;
+    padding: 1.2rem;
+    page-break-inside: avoid;
+  }
+  .card-icon {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+  }
+  .card h4 {
+    margin-top: 0;
+    color: #4a2b2f;
+  }
+  .card p { font-size: 0.92rem; color: #666; }
+
+  .highlight-box {
+    background: linear-gradient(135deg, #4a2b2f, #6b3a3f);
+    color: #fefcfb;
+    padding: 1.5rem;
+    border-radius: 10px;
+    margin: 1.5rem 0;
+  }
+  .highlight-box h3 { color: #dd934f; margin-top: 0; }
+  .highlight-box ul { color: #e8e0dd; }
+</style>
+</head>
+<body>
+
+<!-- ==================== COVER ==================== -->
+<div class="cover">
+  <div class="cover-logo">C&C</div>
+  <div class="manual-number">MANUAL 1 DE 5</div>
+  <h1>CRM SWAT Squad</h1>
+  <h2>Introduccion, Navegacion y Base de Datos</h2>
+  <p class="subtitle">Todo lo que necesitas saber para entender el CRM desde cero: como acceder, como esta organizada la informacion y que puede hacer cada rol del equipo.</p>
+  <p style="margin-top:3rem; opacity:0.5; font-size:0.9rem;">Castillo &amp; Company &bull; 2026</p>
+</div>
+
+<!-- ==================== TABLE OF CONTENTS ==================== -->
+<div class="toc">
+  <h2>Contenido de este Manual</h2>
+  <div class="toc-item toc-section">1. Bienvenida al CRM SWAT Squad</div>
+  <div class="toc-item toc-sub">1.1 Que es el CRM y para que sirve</div>
+  <div class="toc-item toc-sub">1.2 Como acceder al CRM</div>
+  <div class="toc-item toc-sub">1.3 Requisitos previos</div>
+  <div class="toc-item toc-section">2. Roles y Permisos del Equipo</div>
+  <div class="toc-item toc-sub">2.1 SDR (Sales Development Representative)</div>
+  <div class="toc-item toc-sub">2.2 AE (Account Executive)</div>
+  <div class="toc-item toc-sub">2.3 ADMIN (Administrador)</div>
+  <div class="toc-item toc-sub">2.4 GERENTE</div>
+  <div class="toc-item toc-sub">2.5 Tabla comparativa de permisos</div>
+  <div class="toc-item toc-section">3. Navegacion General del CRM</div>
+  <div class="toc-item toc-sub">3.1 Barra lateral (Sidebar)</div>
+  <div class="toc-item toc-sub">3.2 Barra superior (Top Bar)</div>
+  <div class="toc-item toc-sub">3.3 Modos de vista: Tabla y Kanban</div>
+  <div class="toc-item toc-sub">3.4 Busqueda</div>
+  <div class="toc-item toc-sub">3.5 Tema claro y oscuro</div>
+  <div class="toc-item toc-section">4. Clock-In / Clock-Out (Asistencia)</div>
+  <div class="toc-item toc-section">5. La Base de Datos (Google Sheets)</div>
+  <div class="toc-item toc-sub">5.1 Estructura estrella (Star Schema)</div>
+  <div class="toc-item toc-sub">5.2 Tablas de dimension</div>
+  <div class="toc-item toc-sub">5.3 Tablas de hechos</div>
+  <div class="toc-item toc-sub">5.4 Tablas de configuracion</div>
+  <div class="toc-item toc-sub">5.5 Tablas de log</div>
+  <div class="toc-item toc-sub">5.6 Como se relacionan las tablas</div>
+  <div class="toc-item toc-section">6. Flujo General del Negocio</div>
+  <div class="toc-item toc-section">7. Glosario de Terminos</div>
+</div>
+
+<!-- ==================== CONTENT ==================== -->
+<div class="content">
+
+<!-- === SECTION 1 === -->
+<h1 class="section-title" style="page-break-before: avoid;">1. Bienvenida al CRM SWAT Squad</h1>
+
+<h2>1.1 Que es el CRM y para que sirve</h2>
+<p>El <strong>CRM SWAT Squad</strong> es una herramienta web creada especificamente para el equipo de SWAT Squad. Su objetivo es centralizar toda la informacion de los clientes potenciales (leads) y las negociaciones (deals) en un solo lugar, para que todo el equipo pueda trabajar de forma organizada y eficiente.</p>
+
+<div class="highlight-box">
+  <h3>Con el CRM puedes:</h3>
+  <ul>
+    <li>Registrar y organizar todos los leads que llegan al equipo</li>
+    <li>Dar seguimiento a cada cliente potencial con un sistema de toques</li>
+    <li>Calificar leads con el sistema BANT (presupuesto, autoridad, necesidad, tiempo)</li>
+    <li>Transferir leads calificados del SDR al AE de forma ordenada</li>
+    <li>Gestionar negociaciones y pipeline de ventas</li>
+    <li>Enviar correos y agendar eventos directamente desde el CRM</li>
+    <li>Generar reportes detallados del rendimiento del equipo</li>
+    <li>Configurar productos, precios y reglas de negocio</li>
+  </ul>
+</div>
+
+<h2>1.2 Como acceder al CRM</h2>
+
+<div class="steps">
+  <div class="step">
+    <div class="step-number">1</div>
+    <div class="step-content">
+      <strong>Abre tu navegador web</strong> (se recomienda Google Chrome para la mejor experiencia).
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">2</div>
+    <div class="step-content">
+      <strong>Ingresa la URL del CRM</strong> que te proporcionara tu administrador. Es un enlace de Google Apps Script que se ve asi: <code>https://script.google.com/macros/s/.../exec</code>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">3</div>
+    <div class="step-content">
+      <strong>Inicia sesion con tu cuenta de Google Workspace</strong>. El CRM detecta automaticamente tu email y te asigna tu rol. No necesitas crear una cuenta aparte: tu administrador ya te registro en el sistema.
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">4</div>
+    <div class="step-content">
+      <strong>Espera a que cargue</strong>. Veras una pantalla con el texto "Cargando CRM..." con un icono girando. Esto toma unos segundos la primera vez.
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">5</div>
+    <div class="step-content">
+      <strong>Listo!</strong> Una vez cargado, veras el Dashboard del CRM con la barra lateral a la izquierda y tu area de trabajo a la derecha.
+    </div>
+  </div>
+</div>
+
+<div class="warning">Si al entrar ves el mensaje de rol "GUEST" o no puedes ver ninguna seccion, contacta a tu administrador para que te registre en el sistema con el rol correcto.</div>
+
+<h2>1.3 Requisitos previos</h2>
+<ul>
+  <li><strong>Navegador web</strong>: Google Chrome (recomendado), Firefox o Edge</li>
+  <li><strong>Cuenta Google Workspace</strong>: la misma que usas para Gmail y Calendar del equipo</li>
+  <li><strong>Conexion a internet</strong>: el CRM funciona 100% en la nube</li>
+  <li><strong>Estar registrado</strong>: tu administrador debe haber creado tu usuario en el CRM</li>
+</ul>
+
+<!-- === SECTION 2 === -->
+<h1 class="section-title">2. Roles y Permisos del Equipo</h1>
+
+<p>El CRM tiene <strong>4 roles principales</strong>. Cada rol determina que secciones puedes ver y que acciones puedes realizar. Tu rol fue asignado por el administrador cuando te registro en el sistema.</p>
+
+<div class="card-grid">
+  <div class="card">
+    <div class="card-icon">📞</div>
+    <h4><span class="role-badge role-sdr">SDR</span> Sales Development Representative</h4>
+    <p>Es el primer contacto con el cliente. Se encarga de <strong>recibir los leads, contactarlos, calificarlos</strong> y, si estan listos, <strong>pasarlos al equipo de ventas</strong> (AE).</p>
+  </div>
+  <div class="card">
+    <div class="card-icon">💼</div>
+    <h4><span class="role-badge role-ae">AE</span> Account Executive</h4>
+    <p>Recibe los leads calificados del SDR y se encarga de <strong>negociar, cotizar, cerrar la venta</strong> y gestionar la cobranza del deal.</p>
+  </div>
+  <div class="card">
+    <div class="card-icon">🔧</div>
+    <h4><span class="role-badge role-admin">ADMIN</span> Administrador</h4>
+    <p>Tiene <strong>acceso completo</strong> a todo el CRM. Puede configurar campos, usuarios, catálogos, reglas de routing y pricing. Ve todos los leads y deals del equipo.</p>
+  </div>
+  <div class="card">
+    <div class="card-icon">📊</div>
+    <h4><span class="role-badge role-gerente">GERENTE</span></h4>
+    <p>Tiene <strong>vision completa de lectura</strong>. Puede ver todos los datos, generar reportes y configurar pricing, pero no puede modificar la configuracion de campos.</p>
+  </div>
+</div>
+
+<h2>2.5 Tabla comparativa de permisos</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Funcionalidad</th>
+      <th><span class="role-badge role-sdr">SDR</span></th>
+      <th><span class="role-badge role-ae">AE</span></th>
+      <th><span class="role-badge role-admin">ADMIN</span></th>
+      <th><span class="role-badge role-gerente">GERENTE</span></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>Ver Dashboard</td><td>Si</td><td>Si</td><td>Si</td><td>Si</td></tr>
+    <tr><td>Ver/editar Leads propios</td><td>Si</td><td>No</td><td>Todos</td><td>Todos (lectura)</td></tr>
+    <tr><td>Crear nuevos Leads</td><td>Si</td><td>No</td><td>Si</td><td>No</td></tr>
+    <tr><td>Registrar toques (Lead)</td><td>Si</td><td>No</td><td>Si</td><td>No</td></tr>
+    <tr><td>Calificar BANT</td><td>Si</td><td>Si</td><td>Si</td><td>No</td></tr>
+    <tr><td>Pase a Ventas (Handoff)</td><td>Si</td><td>No</td><td>Si</td><td>No</td></tr>
+    <tr><td>Ver Negociaciones</td><td>Solo lectura</td><td>Si (propias)</td><td>Todas</td><td>Todas</td></tr>
+    <tr><td>Editar Deal / Cotizar</td><td>No</td><td>Si</td><td>Si</td><td>No</td></tr>
+    <tr><td>Registrar toques (Deal)</td><td>No</td><td>Si</td><td>Si</td><td>No</td></tr>
+    <tr><td>Subir comprobante de pago</td><td>No</td><td>Si</td><td>Si</td><td>No</td></tr>
+    <tr><td>Enviar correos</td><td>Si</td><td>Si</td><td>Si</td><td>Si</td></tr>
+    <tr><td>Usar Calendario</td><td>Si</td><td>Si</td><td>Si</td><td>Si</td></tr>
+    <tr><td>Ver Reportes</td><td>Si</td><td>Si</td><td>Si</td><td>Si</td></tr>
+    <tr><td>Gestionar Usuarios</td><td>No</td><td>No</td><td>Si</td><td>No</td></tr>
+    <tr><td>Configurar Catalogos</td><td>No</td><td>No</td><td>Si</td><td>No</td></tr>
+    <tr><td>Configurar Campos</td><td>No</td><td>No</td><td>Si</td><td>No</td></tr>
+    <tr><td>Configurar Routing</td><td>No</td><td>No</td><td>Si</td><td>No</td></tr>
+    <tr><td>Configurar Pricing</td><td>No</td><td>No</td><td>Si</td><td>Si</td></tr>
+    <tr><td>Configurar HMN (Variables)</td><td>No</td><td>No</td><td>Si</td><td>No</td></tr>
+    <tr><td>Ver Historial de Asistencia</td><td>No</td><td>No</td><td>Si</td><td>Si</td></tr>
+  </tbody>
+</table>
+
+<!-- === SECTION 3 === -->
+<h1 class="section-title">3. Navegacion General del CRM</h1>
+
+<p>El CRM tiene dos zonas principales que siempre estan visibles: la <strong>barra lateral</strong> (sidebar) a la izquierda y la <strong>barra superior</strong> (top bar) arriba.</p>
+
+<h2>3.1 Barra Lateral (Sidebar)</h2>
+
+<p>La barra lateral es tu menu de navegacion principal. Desde aqui accedes a todas las secciones del CRM.</p>
+
+<table>
+  <thead>
+    <tr><th>Icono</th><th>Seccion</th><th>Descripcion</th><th>Quien la ve</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Dashboard</td>
+      <td><strong>Dashboard</strong></td>
+      <td>Pantalla de inicio con estadisticas generales rapidas: total de leads, leads esta semana, este mes, y los que pasaron a ventas.</td>
+      <td>Todos</td>
+    </tr>
+    <tr>
+      <td>Prospectos</td>
+      <td><strong>Prospectos</strong></td>
+      <td>Lista de todos los leads (clientes potenciales). Aqui se crean, editan, califican y se les da seguimiento.</td>
+      <td>SDR, ADMIN, GERENTE</td>
+    </tr>
+    <tr>
+      <td>Negociaciones</td>
+      <td><strong>Negociaciones</strong></td>
+      <td>Lista de todos los deals (negociaciones activas). Aqui el AE gestiona el pipeline de ventas.</td>
+      <td>Todos (SDR: solo lectura)</td>
+    </tr>
+    <tr>
+      <td>Reportes</td>
+      <td><strong>Reportes</strong></td>
+      <td>Generador de reportes con filtros de fecha y comparativas. Incluye reporte SDR y reporte AE.</td>
+      <td>Todos</td>
+    </tr>
+    <tr>
+      <td>Calendario</td>
+      <td><strong>Calendario</strong></td>
+      <td>Calendario integrado con Google Calendar. Puedes crear eventos, tareas, recordatorios.</td>
+      <td>Todos</td>
+    </tr>
+    <tr>
+      <td>Configuracion</td>
+      <td><strong>Configuracion</strong></td>
+      <td>Panel de administracion: usuarios, catalogos, campos, routing, pricing, HMN, asistencia.</td>
+      <td>ADMIN, GERENTE (limitado)</td>
+    </tr>
+    <tr>
+      <td>Cuenta</td>
+      <td><strong>Cuenta</strong></td>
+      <td>Tu perfil personal. Aqui cambias el tema (oscuro/claro) y gestionas tus plantillas de notas y correo.</td>
+      <td>Todos</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="tip">Puedes colapsar la barra lateral haciendo clic en el icono de menu en la parte superior. Cuando esta colapsada, solo se ven los iconos (sin texto) para tener mas espacio de trabajo.</div>
+
+<p>En la parte inferior de la barra lateral veras tu <strong>avatar</strong> (las iniciales de tu nombre en un circulo morado), tu nombre y tu rol. Si haces clic ahi, te lleva a tu seccion de Cuenta.</p>
+
+<h2>3.2 Barra Superior (Top Bar)</h2>
+
+<p>La barra superior cambia segun la seccion en la que te encuentres. Siempre muestra:</p>
+
+<table>
+  <thead>
+    <tr><th>Elemento</th><th>Ubicacion</th><th>Que hace</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Titulo de pagina</strong></td>
+      <td>Izquierda</td>
+      <td>Muestra el nombre de la seccion actual (ej: "Prospectos", "Negociaciones")</td>
+    </tr>
+    <tr>
+      <td><strong>Boton de Asistencia</strong></td>
+      <td>Derecha</td>
+      <td>Boton verde "Marcar Asistencia" para hacer clock-in, o cronometro + boton rojo "Salir" si ya estas conectado</td>
+    </tr>
+    <tr>
+      <td><strong>Vista Tabla / Kanban</strong></td>
+      <td>Derecha</td>
+      <td>Solo en Prospectos y Negociaciones. Alterna entre ver los datos como tabla o como tablero Kanban</td>
+    </tr>
+    <tr>
+      <td><strong>Buscador</strong></td>
+      <td>Derecha</td>
+      <td>Solo en Prospectos y Negociaciones. Busca por nombre, empresa, email, telefono o ID</td>
+    </tr>
+    <tr>
+      <td><strong>Tema oscuro/claro</strong></td>
+      <td>Derecha</td>
+      <td>Alterna entre el tema oscuro (fondo negro) y el tema claro (fondo blanco)</td>
+    </tr>
+    <tr>
+      <td><strong>Refrescar</strong></td>
+      <td>Derecha</td>
+      <td>Recarga todos los datos del CRM desde la base de datos</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>3.3 Modos de Vista: Tabla y Kanban</h2>
+
+<p>En las secciones de <strong>Prospectos</strong> y <strong>Negociaciones</strong> puedes ver tus datos de dos formas:</p>
+
+<h3>Vista de Tabla</h3>
+<p>Muestra los datos como una tabla tradicional con filas y columnas. Cada fila es un lead o deal. Puedes:</p>
+<ul>
+  <li>Hacer clic en cualquier fila para abrir el detalle completo</li>
+  <li>Filtrar por status usando el dropdown en la barra de herramientas</li>
+  <li>Navegar entre paginas con los botones "Anterior" y "Siguiente" (50 registros por pagina)</li>
+</ul>
+
+<h3>Vista Kanban</h3>
+<p>Muestra los datos como un <strong>tablero visual</strong> con columnas, donde cada columna es un status. Dentro de cada columna hay tarjetas (cards) representando cada lead o deal. Puedes:</p>
+<ul>
+  <li><strong>Arrastrar y soltar</strong> (drag & drop) una tarjeta de una columna a otra para cambiar su status</li>
+  <li>Hacer clic en una tarjeta para abrir su detalle</li>
+  <li>Ver de un vistazo cuantos leads hay en cada etapa del proceso</li>
+</ul>
+
+<div class="warning">Cuando arrastras un lead a la columna "Paso a Ventas", el CRM no cambia el status directamente. En su lugar, se abre automaticamente el formulario de <strong>Pase a Ventas</strong> (Handoff) para que completes la informacion necesaria antes de transferirlo al AE.</div>
+
+<h2>3.4 Busqueda</h2>
+
+<p>El buscador esta disponible en las vistas de Prospectos y Negociaciones. Escribe cualquier termino y el CRM filtrara en tiempo real buscando coincidencias en:</p>
+<ul>
+  <li>Nombre y apellido del contacto</li>
+  <li>Nombre de la empresa</li>
+  <li>Email</li>
+  <li>Telefono</li>
+  <li>Numero de ID</li>
+</ul>
+
+<h2>3.5 Tema Claro y Oscuro</h2>
+
+<p>El CRM tiene dos temas visuales que puedes alternar en cualquier momento:</p>
+
+<div class="card-grid">
+  <div class="card">
+    <h4>Tema Oscuro (por defecto)</h4>
+    <p>Fondo negro/azul oscuro con textos claros. Ideal para trabajar muchas horas seguidas sin cansar la vista. Los colores de acento son morados y azules.</p>
+  </div>
+  <div class="card">
+    <h4>Tema Claro</h4>
+    <p>Fondo blanco/gris claro con textos oscuros. Ideal para ambientes bien iluminados o si prefieres un look mas tradicional.</p>
+  </div>
+</div>
+
+<p>Para cambiar el tema, haz clic en el <strong>icono de sol/luna</strong> en la barra superior, o ve a la seccion de <strong>Cuenta</strong> y selecciona tu preferencia. El CRM recuerda tu eleccion para la proxima vez que entres.</p>
+
+<!-- === SECTION 4 === -->
+<h1 class="section-title">4. Clock-In / Clock-Out (Asistencia)</h1>
+
+<p>El CRM incluye un sistema de control de asistencia para registrar cuando cada miembro del equipo inicia y termina su jornada de trabajo.</p>
+
+<h3>Como hacer Clock-In (Marcar Entrada)</h3>
+<div class="steps">
+  <div class="step">
+    <div class="step-number">1</div>
+    <div class="step-content">
+      <strong>Al entrar al CRM</strong>, veras un boton verde en la barra superior que dice "Marcar Asistencia".
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">2</div>
+    <div class="step-content">
+      <strong>Haz clic en el boton</strong>. El sistema registra tu hora de entrada.
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">3</div>
+    <div class="step-content">
+      <strong>Veras un cronometro</strong> que comienza a contar tu tiempo de sesion activa (ej: "2h 15m"). Esto confirma que ya estas "conectado".
+    </div>
+  </div>
+</div>
+
+<h3>Como hacer Clock-Out (Marcar Salida)</h3>
+<div class="steps">
+  <div class="step">
+    <div class="step-number">1</div>
+    <div class="step-content">
+      <strong>Cuando termines tu jornada</strong>, haz clic en el boton rojo "Salir" que aparece junto al cronometro.
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-number">2</div>
+    <div class="step-content">
+      <strong>El sistema registra tu hora de salida</strong> y calcula cuanto tiempo estuviste conectado (ej: "6h 30m").
+    </div>
+  </div>
+</div>
+
+<div class="info">Si olvidas hacer clock-out, el sistema te desconectara automaticamente despues de <strong>30 minutos de inactividad</strong>.</div>
+
+<div class="tip">Los administradores y gerentes pueden ver el historial de asistencia de todo el equipo desde la seccion de Configuracion, lo cual les permite monitorear las horas de trabajo del equipo.</div>
+
+<!-- === SECTION 5 === -->
+<h1 class="section-title">5. La Base de Datos (Google Sheets)</h1>
+
+<p>Toda la informacion del CRM se almacena en una <strong>hoja de calculo de Google Sheets</strong>. No necesitas abrir directamente el Google Sheets para trabajar — el CRM se encarga de leer y escribir los datos por ti. Pero es importante que entiendas como esta organizada la informacion.</p>
+
+<h2>5.1 Estructura Estrella (Star Schema)</h2>
+
+<p>La base de datos usa un modelo llamado <strong>"Esquema Estrella"</strong>. Piensa en ello como un sistema donde hay una tabla central (los leads o deals) rodeada de tablas auxiliares que guardan informacion complementaria.</p>
+
+<div class="flow-diagram">
+  <div class="flow-box fb-light">dim_contactos<br>(Personas)</div>
+  <span class="flow-arrow">&larr;</span>
+  <div class="flow-box fb-brown">fact_leads<br>(Leads)</div>
+  <span class="flow-arrow">&rarr;</span>
+  <div class="flow-box fb-light">dim_vendedores<br>(Vendedores)</div>
+  <br>
+  <div class="flow-box fb-light">dim_campanas<br>(Campanas)</div>
+  <span class="flow-arrow">&larr;</span>
+  <div class="flow-box fb-gold">fact_deals<br>(Deals)</div>
+  <span class="flow-arrow">&rarr;</span>
+  <div class="flow-box fb-light">dim_productos<br>(Productos)</div>
+</div>
+
+<h2>5.2 Tablas de Dimension (Informacion de Referencia)</h2>
+
+<p>Estas tablas guardan informacion que se reutiliza entre varios registros:</p>
+
+<table>
+  <thead>
+    <tr><th>Nombre de la Hoja</th><th>Que guarda</th><th>Ejemplo de datos</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>dim_contactos</strong></td>
+      <td>Datos personales de cada persona: nombre, apellido, email, telefono, empresa, pais, ciudad, cargo.</td>
+      <td>Juan Perez, juan@empresa.com, +52 555 1234567</td>
+    </tr>
+    <tr>
+      <td><strong>dim_campanas</strong></td>
+      <td>Informacion de como llego cada lead (UTMs de marketing): source, medium, campaign, term, content.</td>
+      <td>facebook, cpc, promo-marzo-2026</td>
+    </tr>
+    <tr>
+      <td><strong>dim_vendedores</strong></td>
+      <td>Datos de cada vendedor/SDR/AE del equipo: nombre, email, rol, orden en el Round Robin.</td>
+      <td>Maria Lopez, maria@swat.com, SDR</td>
+    </tr>
+    <tr>
+      <td><strong>dim_productos</strong></td>
+      <td>Catalogo de productos con precios por region, tipo de membresia y duracion (1 ano / 2 anos).</td>
+      <td>Region: Latin America, Manufacturers, $5,000/ano</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>5.3 Tablas de Hechos (Datos Operativos)</h2>
+
+<p>Estas son las tablas donde vive la actividad real del CRM:</p>
+
+<table>
+  <thead>
+    <tr><th>Nombre de la Hoja</th><th>Que guarda</th><th>Para que sirve</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>fact_leads</strong></td>
+      <td>Cada lead (cliente potencial) con su status, vendedor asignado, calidad, servicio de interes, notas.</td>
+      <td>Es la tabla principal que ve el SDR. Un registro por cada lead que entra.</td>
+    </tr>
+    <tr>
+      <td><strong>fact_deals</strong></td>
+      <td>Cada negociacion activa con status de venta, montos, fechas de cierre, AE asignado, razon de perdida.</td>
+      <td>Es la tabla principal que ve el AE. Se crea cuando un lead "Paso a Ventas".</td>
+    </tr>
+    <tr>
+      <td><strong>fact_calificacion</strong></td>
+      <td>Las respuestas BANT de cada lead: perfil, presupuesto, interes, autoridad, region, membresia.</td>
+      <td>Calcula automaticamente la calidad del lead (Alto/Medio/Bajo).</td>
+    </tr>
+    <tr>
+      <td><strong>fact_toques</strong></td>
+      <td>Registro de cada intento de contacto (toque): numero, fecha, canal (telefono/whatsapp/correo), vendedor.</td>
+      <td>Lleva la cuenta de cuantas veces se ha contactado al lead.</td>
+    </tr>
+    <tr>
+      <td><strong>fact_interacciones</strong></td>
+      <td>Log de interacciones sistema: si contesto, no contesto, tipo de resultado.</td>
+      <td>Alimenta los reportes de semaforo de contactabilidad.</td>
+    </tr>
+    <tr>
+      <td><strong>fact_deal_productos</strong></td>
+      <td>Productos asociados a cada deal: nombre, cantidad, precio unitario, descuento, subtotal.</td>
+      <td>Permite al AE detallar la cotizacion producto por producto.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>5.4 Tablas de Configuracion</h2>
+
+<table>
+  <thead>
+    <tr><th>Nombre de la Hoja</th><th>Que guarda</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>cat_opciones</strong></td>
+      <td>Todas las opciones de los desplegables del CRM (status de lead, razones de perdida, regiones, tipos de membresia, etc.) + variables HMN (SLAs, metas).</td>
+    </tr>
+    <tr>
+      <td><strong>config_users</strong></td>
+      <td>Usuarios registrados en el CRM con su email, nombre, rol, si estan activos, y su horario de clock-in.</td>
+    </tr>
+    <tr>
+      <td><strong>config_plantillas_notas</strong></td>
+      <td>Plantillas de notas y correos guardadas por cada usuario.</td>
+    </tr>
+    <tr>
+      <td><strong>config_field_layout</strong></td>
+      <td>Configuracion de campos: que campos se muestran en cada ficha, en que orden, si son obligatorios, etc.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>5.5 Tablas de Log (Registros Historicos)</h2>
+
+<table>
+  <thead>
+    <tr><th>Nombre de la Hoja</th><th>Que guarda</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>log_transacciones</strong></td>
+      <td>Registro de cada cambio hecho en el CRM: quien cambio que campo, de que valor a que valor, y cuando. Es el historial de auditoria completo.</td>
+    </tr>
+    <tr>
+      <td><strong>log_asistencia</strong></td>
+      <td>Registro de entradas y salidas (clock-in/out) de cada usuario con duracion de sesion.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>5.6 Como se Relacionan las Tablas</h2>
+
+<p>Las tablas se conectan entre si usando <strong>IDs (identificadores unicos)</strong>. Por ejemplo:</p>
+
+<ul>
+  <li>Cada registro en <code>fact_leads</code> tiene un <code>id_contacto</code> que apunta a una fila en <code>dim_contactos</code></li>
+  <li>Cada registro en <code>fact_leads</code> tiene un <code>id_vendedor</code> que apunta a una fila en <code>dim_vendedores</code></li>
+  <li>Cuando un lead se convierte en deal, <code>fact_deals</code> guarda el <code>id_lead</code> para saber de que lead vino</li>
+  <li>Los toques en <code>fact_toques</code> tienen un <code>id_entidad</code> que apunta al lead o deal correspondiente</li>
+</ul>
+
+<div class="info">No necesitas manipular estas tablas directamente. El CRM se encarga de todas las relaciones automaticamente. Esta seccion es solo para que entiendas como funciona "por dentro".</div>
+
+<!-- === SECTION 6 === -->
+<h1 class="section-title">6. Flujo General del Negocio</h1>
+
+<p>Este es el recorrido completo de un cliente potencial desde que entra al CRM hasta que se cierra la venta:</p>
+
+<div class="flow-diagram" style="flex-direction: column; align-items: stretch; gap: 0;">
+  <div style="display:flex; align-items:center; gap:0.5rem; margin:0.3rem 0;">
+    <div class="flow-box fb-blue" style="min-width:180px;">1. Llega el Lead</div>
+    <div style="flex:1; font-size:0.85rem; color:#666;">Un formulario, campaña de marketing o captura manual ingresa un nuevo lead al CRM con status "Nuevo".</div>
+  </div>
+  <div style="text-align:center; color:#dd934f; font-size:1.5rem;">&#8595;</div>
+  <div style="display:flex; align-items:center; gap:0.5rem; margin:0.3rem 0;">
+    <div class="flow-box fb-light" style="min-width:180px;">2. SDR lo Contacta</div>
+    <div style="flex:1; font-size:0.85rem; color:#666;">El SDR registra toques (llamadas, WhatsApp, correos) y el CRM lleva la cuenta automaticamente.</div>
+  </div>
+  <div style="text-align:center; color:#dd934f; font-size:1.5rem;">&#8595;</div>
+  <div style="display:flex; align-items:center; gap:0.5rem; margin:0.3rem 0;">
+    <div class="flow-box fb-light" style="min-width:180px;">3. SDR Califica BANT</div>
+    <div style="flex:1; font-size:0.85rem; color:#666;">El SDR responde las preguntas de calificacion y el CRM calcula automaticamente la calidad: Alto, Medio o Bajo.</div>
+  </div>
+  <div style="text-align:center; color:#dd934f; font-size:1.5rem;">&#8595;</div>
+  <div style="display:flex; align-items:center; gap:0.5rem; margin:0.3rem 0;">
+    <div class="flow-box fb-gold" style="min-width:180px;">4. Pase a Ventas</div>
+    <div style="flex:1; font-size:0.85rem; color:#666;">Si el lead esta calificado, el SDR llena la Ficha de Negociacion y lo transfiere al AE. Se crea un Deal automaticamente.</div>
+  </div>
+  <div style="text-align:center; color:#dd934f; font-size:1.5rem;">&#8595;</div>
+  <div style="display:flex; align-items:center; gap:0.5rem; margin:0.3rem 0;">
+    <div class="flow-box fb-light" style="min-width:180px;">5. AE Negocia</div>
+    <div style="flex:1; font-size:0.85rem; color:#666;">El AE contacta al cliente, cotiza, negocia, agenda demos y avanza el deal por las etapas del pipeline.</div>
+  </div>
+  <div style="text-align:center; color:#dd934f; font-size:1.5rem;">&#8595;</div>
+  <div style="display:flex; align-items:center; gap:0.5rem; margin:0.3rem 0;">
+    <div class="flow-box fb-green" style="min-width:180px;">6. Cierre de Venta</div>
+    <div style="flex:1; font-size:0.85rem; color:#666;">El AE registra el monto de cierre, sube el comprobante de pago y marca el deal como "Vendido" o "Fondeado".</div>
+  </div>
+</div>
+
+<div class="important">Si en cualquier punto del proceso el lead o deal se pierde, se marca como "Perdido" y se registra la razon de perdida para alimentar los reportes del equipo.</div>
+
+<!-- === SECTION 7 === -->
+<h1 class="section-title">7. Glosario de Terminos</h1>
+
+<table>
+  <thead>
+    <tr><th>Termino</th><th>Significado</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><strong>Lead</strong></td><td>Un cliente potencial que aun no ha sido calificado o transferido a ventas. Es la "materia prima" del equipo SDR.</td></tr>
+    <tr><td><strong>Deal</strong></td><td>Una negociacion activa. Se crea cuando un lead "Pasa a Ventas" y es gestionada por el AE.</td></tr>
+    <tr><td><strong>Toque</strong></td><td>Cada intento de contacto con un lead o deal (llamada, WhatsApp, correo). Se registran en orden numerico: Toque 1, Toque 2, etc.</td></tr>
+    <tr><td><strong>BANT</strong></td><td>Metodologia de calificacion: Budget (Presupuesto), Authority (Autoridad), Need (Necesidad), Timing (Tiempo). Determina si un lead esta listo para ventas.</td></tr>
+    <tr><td><strong>Handoff</strong></td><td>El momento en que el SDR transfiere un lead calificado al AE. También se llama "Pase a Ventas".</td></tr>
+    <tr><td><strong>Pipeline</strong></td><td>Las etapas por las que pasa un deal: primer contacto, cotizacion, negociacion, demo, firma, fondeo.</td></tr>
+    <tr><td><strong>Kanban</strong></td><td>Vista visual tipo tablero donde cada columna es un status y cada tarjeta es un lead o deal.</td></tr>
+    <tr><td><strong>Round Robin</strong></td><td>Sistema de asignacion automatica que reparte leads o deals entre los vendedores de forma equitativa y rotativa.</td></tr>
+    <tr><td><strong>Routing</strong></td><td>Las reglas que determinan como se asigna un AE cuando un lead pasa a ventas (manual, automatico o revision gerencial).</td></tr>
+    <tr><td><strong>CVR</strong></td><td>Conversion Rate (Tasa de Conversion). Porcentaje de leads que pasan a la siguiente etapa.</td></tr>
+    <tr><td><strong>Win Rate</strong></td><td>Tasa de ganancia. Porcentaje de deals que se cierran exitosamente vs. el total.</td></tr>
+    <tr><td><strong>Cross-Selling</strong></td><td>Cuando un lead llega interesado en un producto pero termina comprando otro diferente (o adicional).</td></tr>
+    <tr><td><strong>Recompra</strong></td><td>Cuando un cliente que ya compro antes regresa para comprar nuevamente.</td></tr>
+    <tr><td><strong>HMN</strong></td><td>Variables de configuracion del negocio: SLAs, metas, limites. "Health Management Numbers".</td></tr>
+    <tr><td><strong>Catalogo</strong></td><td>Lista de opciones predefinidas para los campos desplegables del CRM (ej: status de lead, razones de perdida).</td></tr>
+    <tr><td><strong>Plantilla</strong></td><td>Texto predefinido que puedes insertar en notas o correos con variables automaticas como {nombre}, {empresa}.</td></tr>
+    <tr><td><strong>Clock-In / Clock-Out</strong></td><td>Sistema de registro de asistencia. Marcar entrada y salida de tu jornada de trabajo.</td></tr>
+    <tr><td><strong>Delta</strong></td><td>La diferencia porcentual entre dos periodos al comparar reportes. Verde = mejora, Rojo = empeoramiento.</td></tr>
+  </tbody>
+</table>
+
+</div><!-- /content -->
+
+<div class="page-footer">
+  CRM SWAT Squad &bull; Manual 1 de 5: Introduccion, Navegacion y Base de Datos &bull; Castillo &amp; Company &copy; 2026
+</div>
+
+</body>
+</html>
